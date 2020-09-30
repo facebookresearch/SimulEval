@@ -20,6 +20,7 @@ from simuleval.online import start_client, start_server
 from simuleval.utils.agent_finder import find_agent_cls
 from simuleval.utils.functional import split_list_into_chunks
 
+
 logging.basicConfig(
     format='%(asctime)s | %(levelname)-8s | %(name)-16s | %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S',

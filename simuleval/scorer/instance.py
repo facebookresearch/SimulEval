@@ -76,7 +76,7 @@ class Instance(object):
         if self.start_time is None:
             self.start_time = time.time()
 
-        current_time = time.time()
+        current_time = time.time() + self.step_to_delay(self.step)
 
         for hypo in list_hypo:
             self.hypos.append(hypo)
@@ -123,7 +123,7 @@ class Instance(object):
 
     def sentence_level_eval(self):
         self.metrics["sentence_bleu"] = sacrebleu.sentence_bleu(
-            self.prediction(), self.reference()
+            self.prediction(), [self.reference()]
         ).score
         self.metrics["latency"] = eval_all_latency(
             self.delays, self.source_length() + 1)
