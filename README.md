@@ -27,3 +27,16 @@ simuleval \
 # License
 
 SimulEval is licensed under Creative Commons BY-SA 4.0.
+
+# Citation
+
+Please cite as:
+
+```
+@inproceedings{simuleval2020,
+  title = {Simuleval: An evaluation toolkit for simultaneous translation},
+  author = {Xutai Ma, Mohammad Javad Dousti, Changhan Wang, Jiatao Gu, Juan Pino},
+  booktitle = {Proceedings of the EMNLP},
+  year = {2020},
+}
+```
