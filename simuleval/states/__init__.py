@@ -5,7 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 from . states import BaseStates
-from . states import Entry, ListEntry, QueueEntry
+from . states import Entry, ListEntry, QueueEntry, SignalEntry
 from . speech_states import SpeechStates
 from . text_states import TextStates
 
@@ -14,6 +14,7 @@ __all__ = [
     "TextStates",
     "SpeechStates",
     "ListEntry",
+    "SignalEntry",
     "Entry",
     "QueueEntry",
 ]

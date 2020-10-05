@@ -69,7 +69,12 @@ class Scorer(object):
             print(
                 "Warning: these hypothesis don't have EOS in predictions",
                 file=sys.stderr)
-            print(", ".join(not_finish_write_id), file=sys.stderr)
+            print(
+                ", ".join((str(x) for x in not_finish_write_id)),
+                file=sys.stderr
+            )
+            for idx in not_finish_write_id:
+                self.instances[idx].sentence_level_eval()
 
         if len(empty_hypo_id) > 0:
             print("Warning: these hypothesis are empty", file=sys.stderr)

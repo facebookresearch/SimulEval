@@ -231,7 +231,7 @@ class AudioInstance(Instance):
 
     def len_sample_to_ms(self, length):
         assert getattr(self, "sample_rate", None), "Read a audio file first"
-        return length / self.sample_rate * 1000
+        return length * 1000 / self.sample_rate
 
     def len_ms_to_samples(self, length):
         assert getattr(self, "sample_rate", None), "Read a audio file first"
@@ -241,9 +241,13 @@ class AudioInstance(Instance):
         return self.len_sample_to_ms(self.step)
 
     def step_to_elapsed(self, step, current_time):
-        return self.len_sample_to_ms(step) + (current_time - self.start_time) * 1000
+        return self.len_sample_to_ms(step) + (current_time - self.start_time)
 
     def sentence_level_eval(self):
-        super().sentence_level_eval()
+        self.metrics["sentence_bleu"] = sacrebleu.sentence_bleu(
+            self.prediction(), [self.reference()]
+        ).score
+        self.metrics["latency"] = eval_all_latency(
+            self.delays, self.source_length())
         self.metrics["latency_ca"] = eval_all_latency(
-            self.elapsed, self.source_length() + 1)
+            self.elapsed, self.source_length())

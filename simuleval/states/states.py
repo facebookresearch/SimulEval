@@ -74,6 +74,14 @@ class ListEntry(Entry):
     def __getitem__(self, idx):
         return self.value[idx]
 
+class SignalEntry(ListEntry):
+    def info(self):
+        return {
+            "type": str(self.new_value_type),
+            "length": self.__len__(),
+            "value": len(self.value)
+        }
+
 
 class ScalarEntry(object):
     def __init__(self, value=0):
