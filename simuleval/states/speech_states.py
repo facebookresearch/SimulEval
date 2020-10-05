@@ -11,14 +11,14 @@ class SpeechStates(BaseStates):
     def init_entries(self):
         super().init_entries()
 
-    def get_segments_from_server(self, num_segments):
+    def get_info_from_server(self, num_segments):
         info = self.client.get_source(
             self.instance_id,
             {"segment_size": num_segments * self.agent.speech_segment_size}
         )
 
         self.sample_rate = info["sample_rate"]
-        return [info["segment"]]
+        return info
 
     def num_samples(self):
         return sum(len(x) for x in self.segments.source)

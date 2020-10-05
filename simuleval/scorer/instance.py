@@ -175,14 +175,25 @@ class AudioInstance(Instance):
         if self.step == 0:
             self.start_time = time.time()
             self.load_audio_from_path(self.source)
-
         assert segment_size >= 1, "instance size has to larger than 1 ms"
 
         num_samples = math.ceil(segment_size / 1000 * self.sample_rate)
 
         if self.step < len(self.samples):
-
-            instance = self.samples[self.step: self.step + num_samples]
+            if self.step + num_samples > len(self.samples):
+                # Pad zeros if the requested number of samples
+                # are more than availible samples.
+                instance = (
+                    self.samples[self.step:]
+                    + [
+                        0 for _ in
+                        range(num_samples - len(self.samples) + self.step)
+                    ]
+                )
+                is_finished = True
+            else:
+                instance = self.samples[self.step: self.step + num_samples]
+                is_finished = False
 
             self.step = min(self.step + num_samples, len(self.samples))
 
@@ -191,6 +202,7 @@ class AudioInstance(Instance):
                 "segment": instance,
                 "sample_rate": self.audio_info.samplerate,
                 "dtype": "int16",
+                "finished": is_finished,
             }
 
         else:
@@ -200,6 +212,7 @@ class AudioInstance(Instance):
                 "segment": DEFAULT_EOS,
                 "sample_rate": self.audio_info.samplerate,
                 "dtype": "int16",
+                "finished": True,
             }
 
         return dict_to_return

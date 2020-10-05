@@ -155,27 +155,29 @@ class BaseStates(object):
                 self.status["write"] = False
                 break
 
-    def get_segments_from_server(self, num_segment):
-        return [self.client.get_source(self.instance_id)["segment"]]
+    def get_info_from_server(self, num_segment):
+        return self.client.get_source(self.instance_id)
+
 
     def update_source_segment(self, num_segment=1):
-        # Read segment from server
-        segments = self.get_segments_from_server(num_segment)
-        for segment in segments:
+        # Read a segment from server
+        info = self.get_info_from_server(num_segment)
+        segment = info["segment"]
 
-            self.segments.source.append(segment)
+        self.segments.source.append(segment)
 
-            # Receive a EOS from server
+        if info["finished"] is True:
+            self.status["read"] = False
+            # Receive an EOS from server
             if segment in [DEFAULT_EOS]:
-                self.status["read"] = False
                 return
 
-            # Preprocess a segment into units
-            units = self.segment_to_units(segment)
+        # Preprocess a segment into units
+        units = self.segment_to_units(segment)
 
-            # Update the source unit entry
-            for unit in units:
-                self.unit_queue.source.push(unit)
+        # Update the source unit entry
+        for unit in units:
+            self.unit_queue.source.push(unit)
 
     def segment_to_units(self, segment):
         # Split segment into units
