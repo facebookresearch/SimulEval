@@ -185,10 +185,6 @@ class AudioInstance(Instance):
                 # are more than availible samples.
                 instance = (
                     self.samples[self.step:]
-                    + [
-                        0 for _ in
-                        range(num_samples - len(self.samples) + self.step)
-                    ]
                 )
                 is_finished = True
             else:
