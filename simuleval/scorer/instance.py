@@ -76,7 +76,7 @@ class Instance(object):
         if self.start_time is None:
             self.start_time = time.time()
 
-        current_time = time.time() + self.step_to_delay(self.step)
+        current_time = time.time()
 
         for hypo in list_hypo:
             self.hypos.append(hypo)
@@ -237,7 +237,7 @@ class AudioInstance(Instance):
         return self.len_sample_to_ms(self.step)
 
     def step_to_elapsed(self, step, current_time):
-        return self.len_sample_to_ms(step) + (current_time - self.start_time)
+        return self.len_sample_to_ms(step) + (current_time - self.start_time) * 1000
 
     def sentence_level_eval(self):
         self.metrics["sentence_bleu"] = sacrebleu.sentence_bleu(
