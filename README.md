@@ -1,12 +1,12 @@
 # SimulEval
 [![](https://github.com/fairinternal/SimulEval/workflows/build/badge.svg)](https://github.com/fairinternal/SimulEval/actions)
 
-SimulEval is a general evaluation framework for simultanteuous translation on text and speech.
+SimulEval is a general evaluation framework for simultaneous translation on text and speech.
 
-## Installation
-(Will modify after public)
 ### Requirement
 * python >= 3.7.0
+
+## Installation
 ```
 git clone git@github.com:fairinternal/SimulEval.git
 cd SimulEval
@@ -14,7 +14,7 @@ pip install -e .
 ```
 
 ## Quick Start
-Following is the evaluation of a [dummy agent](examples/dummy/dummy_waitk_text_agent.py) which operates wait-k (k = 3) policy and generates random words until the length of the generated words is the same as the number of all the source words.
+Following is the evaluation of a [dummy agent](examples/dummy/dummy_waitk_text_agent.py) which operates wait-k (k = 3) policy and generates random words until the length of the generated words is the same as the number of all the source words. A tutorial can be found [here](docs/get_started.md).
 ```shell
 cd examples
 simuleval \
@@ -22,7 +22,6 @@ simuleval \
   --source data/src.txt \
   --target data/tgt.txt \
 ```
-(TODO) More tutorial coming.
 
 # License
 
