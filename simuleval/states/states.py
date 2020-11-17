@@ -174,7 +174,10 @@ class BaseStates(object):
 
         self.segments.source.append(segment)
 
-        if info["finished"] is True:
+        if (
+            info.get("finish", False) is True
+            or segment in [DEFAULT_EOS]
+        ):
             self.status["read"] = False
             # Receive an EOS from server
             if segment in [DEFAULT_EOS]:
