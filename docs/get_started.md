@@ -3,7 +3,7 @@
 This tutorial will go through the basic structure of SimulEval and a small example of agent implementation. SimulEval is toolkit for simultaneous translation evaluation. A simultaneous translation system is usually evaluated with two aspects, quality and latency. The latency refers to the simultaneous ability, which is how much partial source information is needed to start the translation process.
 
 In order to measure the latency, SimulEval uses a server-client structure to simulate the simultaneous translation setting, as show in the following figure, where `x` is the input sequence, `y` is the predicted sequence and `d` is the corresponding delays.
-![](architecture.png).  
+![](architecture.png).
 
 The server has two functions.
 First, it sends new input (words for text and audio samples for speech), to client, upon the request from the simultaneous translation system.
@@ -15,17 +15,17 @@ The client, on the other hand, provide a running environment for the system to b
 There is two parts in the client, states and agent.
 States store the run time information, such as current input, output etc,
 that can be reached by the system at anytime.
-Agent is where users implement their simultaneous translation systems. 
-It should have these functions:   
+Agent is where users implement their simultaneous translation systems.
+It should have these functions:
 - Predict **READ** or **WRITE** action given current context.
 - If the action is **WRITE**, generate a prediction.
 - (Optional) Pre-process and post-processing.
-  
-During the evaluation, SimulEval will handle the decoding process and evaluation as long as a user defined agent is provided. 
 
-Following is an example implementation. It runs a wait-k policy [(Ma et al, 2019)](https://www.aclweb.org/anthology/P19-1289.pdf). When the policy decides to write, it predict a dummy token (`word_i`, where `i` is the index of the target word). The decoding completes when the system predicts `DEFAULT_EOS`. 
+During the evaluation, SimulEval will handle the decoding process and evaluation as long as a user defined agent is provided.
+
+Following is an example implementation. It runs a wait-k policy [(Ma et al, 2019)](https://www.aclweb.org/anthology/P19-1289.pdf). When the policy decides to write, it predict a dummy token (`word_i`, where `i` is the index of the target word). The decoding completes when the system predicts `DEFAULT_EOS`.
 Notice that the user has to define at least two functions as we mentioned before: `policy` which returns the action and `predict` which returns the prediction.
-Both functions take `states` as an input argument, which contains the contextual information. 
+Both functions take `states` as an input argument, which contains the contextual information.
 ```
 from simuleval.agents import TextAgent
 from simuleval import READ_ACTION, WRITE_ACTION, DEFAULT_EOS
@@ -38,7 +38,7 @@ class DummyWaitkTextAgent(TextAgent):
     def __init__(self, args):
         super().__init__(args)
         self.waitk = args.waitk
-        # Initialize your agent here, 
+        # Initialize your agent here,
 		# for example load model, vocab, etc
 
     @staticmethod
@@ -50,7 +50,7 @@ class DummyWaitkTextAgent(TextAgent):
         # Make decision here
 		# A waitk policy
         if (
-			len(states.source) - len(states.target) < self.waitk 
+			len(states.source) - len(states.target) < self.waitk
 			and not states.finish_read()
 		):
             return READ_ACTION
@@ -61,11 +61,11 @@ class DummyWaitkTextAgent(TextAgent):
         # predict token here
         if states.finish_read():
             if states.target.length() == states.source.length():
-				# When DEFAULT_EOS is predicted, the decoding process finishes. 
+				# When DEFAULT_EOS is predicted, the decoding process finishes.
                 return DEFAULT_EOS
 
         return f"word_{len(states.target)}"
-``` 
+```
 
 Once we have the agent, we can run the evaluation.
 In this example the file contains the agent is [`examples/dummy/dummy_waitk_text_agent.py`](../examples/dummy/dummy_waitk_text_agent.py).
@@ -75,7 +75,7 @@ simuleval \
 	--agent examples/dummy_waitk_text_agent.py \
 	--waitk 5 \
 	--source examples/data/src.txt \
-	--target examples/data/tgt.txt 
+	--target examples/data/tgt.txt
 ```
 
 At the end of the evaluation, the results will be printed on the screen, like following.
