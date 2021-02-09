@@ -155,8 +155,18 @@ def evaluate(args, client, server_process=None):
         server_process.kill()
         logger.info("Shutdown server")
 
+def main():
+    parser = options.general_parser()
+    options.add_server_args(parser)
+    args, _ = parser.parse_known_args()
 
-def main(client_only=False):
+    if not args.server_only:
+        _main(args.client_only)
+    else:
+        server()
+
+
+def _main(client_only=False):
     parser = options.general_parser()
     options.add_server_args(parser)
 
@@ -179,11 +189,6 @@ def main(client_only=False):
 
     client = start_client(args)
     evaluate(args, client, server_process)
-
-
-def client():
-    main(client_only=True)
-
 
 def server():
     parser = argparse.ArgumentParser()

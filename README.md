@@ -18,9 +18,9 @@ Following is the evaluation of a [dummy agent](examples/dummy/dummy_waitk_text_a
 ```shell
 cd examples
 simuleval \
-  --agent dummy/dummy_waitk_agent.py \
+  --agent dummy/dummy_waitk_text_agent.py \
   --source data/src.txt \
-  --target data/tgt.txt \
+  --target data/tgt.txt
 ```
 
 # License
