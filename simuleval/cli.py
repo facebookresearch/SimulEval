@@ -75,7 +75,7 @@ class DataWriter(object):
     def kill(self):
         if self.proc is not None:
             self.proc.kill()
-            logger.info(f"Close data writer")
+            logger.info("Close data writer")
 
 
 def decode(args, client, result_queue, instance_ids):
@@ -156,7 +156,18 @@ def evaluate(args, client, server_process=None):
         logger.info("Shutdown server")
 
 
-def main(client_only=False):
+def main():
+    parser = options.general_parser()
+    options.add_server_args(parser)
+    args, _ = parser.parse_known_args()
+
+    if not args.server_only:
+        _main(args.client_only)
+    else:
+        server()
+
+
+def _main(client_only=False):
     parser = options.general_parser()
     options.add_server_args(parser)
 
@@ -179,10 +190,6 @@ def main(client_only=False):
 
     client = start_client(args)
     evaluate(args, client, server_process)
-
-
-def client():
-    main(client_only=True)
 
 
 def server():

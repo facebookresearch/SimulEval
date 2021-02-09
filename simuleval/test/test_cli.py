@@ -25,7 +25,8 @@ def test_simuleval():
 def test_simuleval_server_client():
     server_proc = subprocess.Popen(
         [
-            "simuleval-server",
+            "simuleval",
+            "--server-only",
             "--source", "examples/data/src.txt",
             "--target", "examples/data/tgt.txt",
             "--data-type", "text"
@@ -36,7 +37,8 @@ def test_simuleval_server_client():
 
     client_proc = subprocess.Popen(
         [
-            "simuleval-client",
+            "simuleval",
+            "--clienonly",
             "--agent", "examples/dummy/dummy_waitk_text_agent.py",
             "--waitk", "1",
             "--num-process", "1",

@@ -32,7 +32,16 @@ class Scorer(object):
         elif self.data_type == "speech":
             self.instance_class = AudioInstance
         else:
-            raise NotImplementedError
+            if self.data_type is None:
+                logger.error(
+                    "Please specify the data type (text or speech).\n"
+                )
+            else:
+                logger.error(
+                    f"{self.data_type} is not supported, "
+                    "please choose from text or speech.\n"
+                )
+            sys.exit(1)
 
         self.reset()
 

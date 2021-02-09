@@ -8,14 +8,12 @@ import setuptools
 
 setuptools.setup(
     python_requires='>3.7.0',
-    name="SimulEval",
-    version="0.1.0",
+    name="simuleval",
+    version="1.0.1",
     author="Xutai Ma",
     entry_points={
         'console_scripts': [
             'simuleval = simuleval.cli:main',
-            'simuleval-server = simuleval.cli:server',
-            'simuleval-client = simuleval.cli:client',
         ],
     },
     install_requires=[

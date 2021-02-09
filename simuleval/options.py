@@ -24,6 +24,10 @@ def add_server_args(parser):
                         help='Server hostname')
     parser.add_argument('--port', type=int, default=DEFAULT_PORT,
                         help='Server port number')
+    parser.add_argument('--server-only', action='store_true',
+                        help='Only start the server.')
+    parser.add_argument('--client-only', action='store_true',
+                        help='Only start the client')
 
 
 def general_parser():
