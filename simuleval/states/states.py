@@ -74,6 +74,7 @@ class ListEntry(Entry):
     def __getitem__(self, idx):
         return self.value[idx]
 
+
 class SignalEntry(ListEntry):
     def info(self):
         return {
@@ -165,7 +166,6 @@ class BaseStates(object):
 
     def get_info_from_server(self, num_segment):
         return self.client.get_source(self.instance_id)
-
 
     def update_source_segment(self, num_segment=1):
         # Read a segment from server
