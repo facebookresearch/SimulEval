@@ -18,14 +18,16 @@ from simuleval.metrics.latency import (
 )
 
 
-def eval_all_latency(delays, src_len):
+def eval_all_latency(delays, src_len, ref_len=None):
+    if ref_len is None:
+        ref_len = src_len
     results = {}
     for name, func in {
         "AL": AverageLagging,
         "AP": AverageProportion,
         "DAL": DifferentiableAverageLagging
     }.items():
-        results[name] = func(delays, src_len).item()
+        results[name] = func(delays, src_len, ref_len).item()
 
     return results
 
@@ -243,7 +245,11 @@ class AudioInstance(Instance):
         self.metrics["sentence_bleu"] = sacrebleu.sentence_bleu(
             self.prediction(), [self.reference()]
         ).score
+        # +1 on reference length because of EOS
         self.metrics["latency"] = eval_all_latency(
-            self.delays, self.source_length())
+            self.delays, self.source_length(), self.reference_length() + 1)
         self.metrics["latency_ca"] = eval_all_latency(
-            self.elapsed, self.source_length())
+            self.elapsed, self.source_length(), self.reference_length() + 1)
+
+    def reference_length(self):
+        return len(self.reference().split(" "))

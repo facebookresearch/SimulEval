@@ -41,16 +41,19 @@ def latency_metric(func):
 
         return delays, src_lens, tgt_lens, target_padding_mask
 
-    def latency_wrapper(delays, src_lens, target_padding_mask=None):
+    def latency_wrapper(
+        delays, src_lens, ref_len=None, target_padding_mask=None
+    ):
         delays, src_lens, tgt_lens, target_padding_mask = prepare_latency_metric(
             delays, src_lens, target_padding_mask)
-        return func(delays, src_lens, tgt_lens, target_padding_mask)
+        return func(delays, src_lens, tgt_lens, ref_len, target_padding_mask)
 
     return latency_wrapper
 
 
 @latency_metric
-def AverageProportion(delays, src_lens, tgt_lens, target_padding_mask=None):
+def AverageProportion(
+    delays, src_lens, tgt_lens, ref_len=None, target_padding_mask=None):
     """
     Function to calculate Average Proportion from
     Can neural machine translation do simultaneous translation?
@@ -69,7 +72,7 @@ def AverageProportion(delays, src_lens, tgt_lens, target_padding_mask=None):
 
 
 @latency_metric
-def AverageLagging(delays, src_lens, tgt_lens, target_padding_mask=None):
+def AverageLagging(delays, src_lens, tgt_lens, ref_len=None, target_padding_mask=None):
     """
     Function to calculate Average Lagging from
     STACL: Simultaneous Translation with Implicit Anticipation
@@ -83,6 +86,8 @@ def AverageLagging(delays, src_lens, tgt_lens, target_padding_mask=None):
     tau = argmin_i(delays_i = |x|)
     """
     _, tgt_len = delays.size()
+    if ref_len is None:
+        ref_len = tgt_len
 
     # tau = argmin_i(delays_i = |x|)
     # Only consider one delays that has already larger than src_lens
@@ -97,8 +102,28 @@ def AverageLagging(delays, src_lens, tgt_lens, target_padding_mask=None):
             target_padding_mask, True)
 
     # oracle delays are the delay for the oracle system which goes diagonally
-    oracle_delays = torch.arange(tgt_len).unsqueeze(
-        0).type_as(delays).expand_as(delays) * src_lens / tgt_lens
+    oracle_delays = (
+        torch.arange(1, 1 + ref_len)
+        .unsqueeze(0)
+        .type_as(delays)
+        .expand([delays.size(0), ref_len])
+    ) * src_lens / ref_len
+
+    if delays.size(1) < ref_len:
+        oracle_delays = oracle_delays[:, :delays.size(1)]
+
+    if delays.size(1) > ref_len:
+        oracle_delays = torch.cat(
+            [
+                oracle_delays,
+                oracle_delays[:,-1]
+                * oracle_delays.new_ones(
+                    [delays.size(0), delays.size(1) - ref_len]
+                )
+            ],
+            dim=1
+        )
+
     lagging = delays - oracle_delays
     lagging = lagging.masked_fill(lagging_padding_mask, 0)
 
@@ -110,7 +135,9 @@ def AverageLagging(delays, src_lens, tgt_lens, target_padding_mask=None):
 
 @latency_metric
 def DifferentiableAverageLagging(
-        delays, src_lens, tgt_lens, target_padding_mask=None):
+        delays, src_lens, tgt_lens, ref_len=None, target_padding_mask=None
+    ):
+
     _, tgt_len = delays.size()
 
     gamma = tgt_lens / src_lens
