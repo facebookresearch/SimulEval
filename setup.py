@@ -25,5 +25,6 @@ setuptools.setup(
         "soundfile",
         "requests",
         "pytest-flake8"
-    ]
+    ],
+    package=['simuleval']
 )
