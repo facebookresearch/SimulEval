@@ -9,7 +9,7 @@ import setuptools
 setuptools.setup(
     python_requires='>3.7.0',
     name="simuleval",
-    version="1.0.1",
+    version="1.0.2",
     author="Xutai Ma",
     entry_points={
         'console_scripts': [
