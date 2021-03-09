@@ -26,5 +26,12 @@ setuptools.setup(
         "requests",
         "pytest-flake8"
     ],
-    package=['simuleval']
+    package=setuptools.find_packages(
+        exclude=[
+                "examples",
+                "examples.*",
+                "docs",
+                "docs.*",
+            ]
+    )
 )
