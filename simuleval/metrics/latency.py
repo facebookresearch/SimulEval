@@ -103,7 +103,7 @@ def AverageLagging(delays, src_lens, tgt_lens, ref_len=None, target_padding_mask
 
     # oracle delays are the delay for the oracle system which goes diagonally
     oracle_delays = (
-        torch.arange(1, 1 + ref_len)
+        torch.arange(ref_len)
         .unsqueeze(0)
         .type_as(delays)
         .expand([delays.size(0), ref_len])
