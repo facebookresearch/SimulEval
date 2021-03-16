@@ -7,6 +7,7 @@
 import argparse
 import os
 from simuleval import DEFAULT_HOSTNAME, DEFAULT_PORT
+from sacrebleu import TOKENIZERS
 
 
 def add_data_args(parser):
@@ -17,6 +18,18 @@ def add_data_args(parser):
                         help='Source file')
     parser.add_argument('--target', type=str, default=os.environ.get("SIMULEVAL_SOURCE", None),
                         help='Target file')
+    parser.add_argument('--eval-latency-unit', type=str, default="word",
+                        choices=["word", "char"],
+                        help="Basice unit used for latency caculation, choose from "
+                        "words (detokenized) and characters."
+                        )
+    parser.add_argument('--sacrebleu-tokenizer', type=str, default="13a",
+                        choices=TOKENIZERS.keys(),
+                        help="Tokenizer for sacrebleu."
+                        )
+    parser.add_argument('--no-space', action="store_true",
+                        help="No space is added between received words."
+                        )
 
 
 def add_server_args(parser):

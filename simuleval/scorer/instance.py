@@ -20,7 +20,7 @@ from simuleval.metrics.latency import (
 
 def eval_all_latency(delays, src_len, ref_len=None):
     if ref_len is None:
-        ref_len = src_len
+        ref_len = len(delays)
     results = {}
     for name, func in {
         "AL": AverageLagging,
@@ -68,7 +68,11 @@ class Instance(object):
         """
         raise NotImplementedError
 
-    def recv_hypo(self, list_hypo: str):
+    def recv_hypo(
+        self,
+        list_hypo: str,
+        latency_unit: str = "word"
+    ):
         """
         Handler for receiving new predictions
         """
@@ -82,8 +86,14 @@ class Instance(object):
 
         for hypo in list_hypo:
             self.hypos.append(hypo)
-            self.elapsed.append(self.step_to_elapsed(self.step, current_time))
-            self.delays.append(self.step_to_delay(self.step))
+            if latency_unit == "word":
+                self.elapsed.append(self.step_to_elapsed(self.step, current_time))
+                self.delays.append(self.step_to_delay(self.step))
+            elif latency_unit == "char":
+                self.elapsed += [self.step_to_elapsed(self.step, current_time)] * len(hypo)
+                self.delays += [self.step_to_delay(self.step)] * len(hypo)
+            else:
+                raise NotImplementedError
             if hypo in [DEFAULT_EOS]:
                 self.finish = True
                 return
@@ -105,11 +115,12 @@ class Instance(object):
             "metric": self.metrics,
         }
 
-    def prediction(self, eos=True):
+    def prediction(self, eos=True, no_space=False):
+        join_char = "" if no_space else " "
         if eos:
-            return " ".join(self.hypos)
+            return join_char.join(self.hypos)
         else:
-            return " ".join(x for x in self.hypos if x != DEFAULT_EOS)
+            return join_char.join(x for x in self.hypos if x != DEFAULT_EOS)
 
     def source_length(self):
         raise NotImplementedError

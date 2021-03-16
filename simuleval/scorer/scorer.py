@@ -20,6 +20,19 @@ class Scorer(object):
             "tgt": self.load_text_file(args.target)
         }
         self.data_type = args.data_type
+        self.eval_latency_unit = args.eval_latency_unit
+        self.sacrebleu_tokenizer = args.sacrebleu_tokenizer
+        self.no_space = args.no_space
+
+        if (
+            self.data_type == "speech"
+            and self.eval_latency_unit == "char"
+        ):
+            logger.error(
+                "Character level latency for speech-to-text model is not supported at the moment. "
+                "We will update this feature very soon."
+            )
+            sys.exit(1)
 
         logger.info(f"Evaluating on {self.data_type}")
         logger.info(f"Source: {os.path.abspath(args.source)}")
@@ -58,7 +71,10 @@ class Scorer(object):
         return dict_to_return
 
     def recv_hyp(self, instance_id, list_of_tokens):
-        self.instances[instance_id].recv_hypo(list_of_tokens)
+        self.instances[instance_id].recv_hypo(
+            list_of_tokens,
+            self.eval_latency_unit
+        )
 
     def reset(self):
         if len(self.instances) > 0:
@@ -72,7 +88,7 @@ class Scorer(object):
         not_finish_write_id = [i for i in range(
             len(self)) if not self.instances[i].finish_hypo]
         empty_hypo_id = [i for i in range(len(self)) if len(
-            self.instances[i].prediction()) == 0]
+            self.instances[i].prediction(no_space=self.no_space)) == 0]
 
         if len(not_finish_write_id) > 0:
             print(
@@ -90,7 +106,7 @@ class Scorer(object):
             print(", ".join(empty_hypo_id), file=sys.stderr)
 
         translations = [self.instances[i].prediction(
-            eos=False) for i in range(len(self))]
+            eos=False, no_space=self.no_space) for i in range(len(self))]
 
         return translations
 
@@ -100,7 +116,10 @@ class Scorer(object):
 
         try:
             bleu_score = sacrebleu.corpus_bleu(
-                translations, [self.data["tgt"]]).score
+                translations,
+                [self.data["tgt"]],
+                tokenize=self.sacrebleu_tokenizer
+            ).score
         except Exception as e:
             print(e, file=sys.stderr)
             bleu_score = 0
