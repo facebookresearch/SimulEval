@@ -30,6 +30,9 @@ def test_client():
     args.output = None
     args.num_processes = 1
     args.waitk = 1
+    args.eval_latency_unit = "word"
+    args.sacrebleu_tokenizer = "13a"
+    args.no_space = False
     _, agent_cls = find_agent_cls(args)
     check_data_type(args, agent_cls)
 

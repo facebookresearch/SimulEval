@@ -23,6 +23,9 @@ def test_server():
     args.source = os.path.join(CURRENT_PATH, "data", "text", "src.txt")
     args.target = os.path.join(CURRENT_PATH, "data", "text", "tgt.txt")
     args.output = None
+    args.eval_latency_unit = "word"
+    args.sacrebleu_tokenizer = "13a"
+    args.no_space = False
     server_process = Process(target=start_server, args=(args, ))
     server_process.start()
     time.sleep(2)
