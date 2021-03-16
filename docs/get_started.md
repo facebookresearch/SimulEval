@@ -95,10 +95,7 @@ Right now we support BLEU (Papineni et al., 2002; [Post, 2018](https://www.aclwe
 
 This tutorial provides a minimal usage of SimulEval.
 More details can be found here.
-- Server-client interface (WIP).
-- States in client (WIP).
-- Pre & post processing (WIP).
-- Text simultaneous translation (WIP).
-- Speech simultaneous translation (WIP).
-- Visualization (WIP).
-- Customized quality and latency metrics (WIP).
+- [Server-Client interface](./server_client.md).
+- [Evaluation](./evaluation.md).
+- [RESTful API](./restful_api.md).
+- [Simultaneous Speech Translation with fairseq](https://github.com/pytorch/fairseq/blob/master/examples/speech_to_text/docs/simulst_mustc_example.md)
