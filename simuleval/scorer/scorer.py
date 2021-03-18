@@ -87,7 +87,7 @@ class Scorer(object):
     def gather_translation(self):
         not_finish_write_id = [i for i in range(
             len(self)) if not self.instances[i].finish_hypo]
-        empty_hypo_id = [i for i in range(len(self)) if len(
+        empty_hypo_id = [str(i) for i in range(len(self)) if len(
             self.instances[i].prediction(no_space=self.no_space)) == 0]
 
         if len(not_finish_write_id) > 0:
