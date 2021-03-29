@@ -13,15 +13,15 @@ simuleval --server \
     --data-type text \
     --hostname localhost \
     --port 12345 \
-	--source examples/data/src.txt \
-	--target examples/data/tgt.txt
+    --source examples/data/src.txt \
+    --target examples/data/tgt.txt
 ```
 Notice that we have to set the `--data-type` because we are not able to infer the data type (text or speech) from the agent.
 Once the server process start, we can kick off the evaluation by
 ```
 simuleval --client \
     --agent examples/dummy_waitk_text_agent.py \
-	--waitk 5 \
+    --waitk 5 \
     --hostname localhost \
     --port 12345
 ```
