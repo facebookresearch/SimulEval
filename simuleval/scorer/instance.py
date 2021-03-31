@@ -33,7 +33,13 @@ def eval_all_latency(delays, src_len, ref_len=None):
 
 
 class Instance(object):
-    def __init__(self, instance_id, source, target):
+    def __init__(
+        self,
+        instance_id,
+        source,
+        target,
+        eval_latency_unit
+    ):
         self.finish_read = False
         self.finish_hypo = False
         self.target = self.preprocess_target(target)
@@ -45,6 +51,7 @@ class Instance(object):
         self.start_time = None
         self.metrics = {}
         self.instance_id = instance_id
+        self.eval_latency_unit = eval_latency_unit
 
     @property
     def finish(self):
@@ -111,7 +118,7 @@ class Instance(object):
             "reference": self.reference(),
             "source": self.source_info(),
             "source_length": self.source_length(),
-            "reference_length": len(self.target),
+            "reference_length": self.reference_length(),
             "metric": self.metrics,
         }
 
@@ -139,13 +146,21 @@ class Instance(object):
             self.prediction(), [self.reference()]
         ).score
         self.metrics["latency"] = eval_all_latency(
-            self.delays, self.source_length() + 1)
+            self.delays, self.source_length() + 1, self.reference_length() + 1)
 
     def step_to_delay(self, step):
         return step
 
     def step_to_elapsed(self, step, current_time):
         return (current_time - self.start_time) * 1000
+
+    def reference_length(self):
+        if self.eval_latency_unit == "word":
+            return len(self.reference().split(" "))
+        elif self.eval_latency_unit == "char":
+            return len(self.reference().replace(" ", ""))
+        else:
+            raise NotImplementedError
 
 
 class TextInstance(Instance):
@@ -195,7 +210,7 @@ class AudioInstance(Instance):
         if self.step < len(self.samples):
             if self.step + num_samples > len(self.samples):
                 # Pad zeros if the requested number of samples
-                # are more than availible samples.
+                # are more than available samples.
                 instance = (
                     self.samples[self.step:]
                 )
@@ -253,14 +268,7 @@ class AudioInstance(Instance):
         return self.len_sample_to_ms(step) + (current_time - self.start_time) * 1000
 
     def sentence_level_eval(self):
-        self.metrics["sentence_bleu"] = sacrebleu.sentence_bleu(
-            self.prediction(), [self.reference()]
-        ).score
-        # +1 on reference length because of EOS
-        self.metrics["latency"] = eval_all_latency(
-            self.delays, self.source_length(), self.reference_length() + 1)
+        super().sentence_level_eval()
+        # For speech we also consider the computation-aware latency
         self.metrics["latency_ca"] = eval_all_latency(
             self.elapsed, self.source_length(), self.reference_length() + 1)
-
-    def reference_length(self):
-        return len(self.reference().split(" "))

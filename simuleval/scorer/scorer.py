@@ -82,7 +82,9 @@ class Scorer(object):
 
         for i, (src, tgt) in enumerate(
                 zip(self.data["src"], self.data["tgt"])):
-            self.instances[i] = self.instance_class(i, src, tgt)
+            self.instances[i] = self.instance_class(
+                i, src, tgt, self.eval_latency_unit
+            )
 
     def gather_translation(self):
         not_finish_write_id = [i for i in range(
