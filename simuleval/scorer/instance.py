@@ -93,7 +93,7 @@ class Instance(object):
 
         for hypo in list_hypo:
             self.hypos.append(hypo)
-            if latency_unit == "word":
+            if latency_unit == "word" or hypo in [DEFAULT_EOS]:
                 self.elapsed.append(self.step_to_elapsed(self.step, current_time))
                 self.delays.append(self.step_to_delay(self.step))
             elif latency_unit == "char":
