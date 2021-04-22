@@ -141,12 +141,15 @@ class Instance(object):
     def source_info(self):
         raise NotImplementedError
 
-    def sentence_level_eval(self):
+    def sentence_level_eval(self, src_eos=True):
         self.metrics["sentence_bleu"] = sacrebleu.sentence_bleu(
             self.prediction(), [self.reference()]
         ).score
         self.metrics["latency"] = eval_all_latency(
-            self.delays, self.source_length() + 1, self.reference_length() + 1)
+            self.delays,
+            self.source_length() + int(src_eos),
+            self.reference_length() + 1
+        )
 
     def step_to_delay(self, step):
         return step
@@ -268,7 +271,7 @@ class AudioInstance(Instance):
         return self.len_sample_to_ms(step) + (current_time - self.start_time) * 1000
 
     def sentence_level_eval(self):
-        super().sentence_level_eval()
+        super().sentence_level_eval(src_eos=False)
         # For speech we also consider the computation-aware latency
         self.metrics["latency_ca"] = eval_all_latency(
             self.elapsed, self.source_length(), self.reference_length() + 1)
