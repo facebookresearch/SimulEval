@@ -101,24 +101,25 @@ def AverageLagging(delays, src_lens, tgt_lens, ref_len=None, target_padding_mask
         lagging_padding_mask = lagging_padding_mask.masked_fill(
             target_padding_mask, True)
 
+    tau = int((1 - lagging_padding_mask.type_as(delays)).sum(dim=1).item())
     # oracle delays are the delay for the oracle system which goes diagonally
     oracle_delays = (
-        torch.arange(ref_len)
+        torch.arange(tau)
         .unsqueeze(0)
         .type_as(delays)
-        .expand([delays.size(0), ref_len])
+        .expand([delays.size(0), tau])
     ) * src_lens / ref_len
 
-    if delays.size(1) < ref_len:
+    if delays.size(1) < tau:
         oracle_delays = oracle_delays[:, :delays.size(1)]
 
-    if delays.size(1) > ref_len:
+    if delays.size(1) > tau:
         oracle_delays = torch.cat(
             [
                 oracle_delays,
                 oracle_delays[:,-1]
                 * oracle_delays.new_ones(
-                    [delays.size(0), delays.size(1) - ref_len]
+                    [delays.size(0), delays.size(1) - tau]
                 )
             ],
             dim=1
@@ -127,7 +128,6 @@ def AverageLagging(delays, src_lens, tgt_lens, ref_len=None, target_padding_mask
     lagging = delays - oracle_delays
     lagging = lagging.masked_fill(lagging_padding_mask, 0)
 
-    tau = (1 - lagging_padding_mask.type_as(lagging)).sum(dim=1)
     AL = lagging.sum(dim=1) / tau
 
     return AL
