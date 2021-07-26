@@ -228,13 +228,11 @@ class BaseStates(object):
         # If unit queue is empty, try to update a segment from server
         if self.unit_queue.source.empty():
             self.update_source_segment(num_segment)
-        # If unit queue is still empty, just return None
-        if self.unit_queue.source.empty():
-            return None
 
-        self.units.source.append(
-            self.unit_queue.source.pop()
-        )
+        if not self.unit_queue.source.empty():
+            self.units.source.append(
+                self.unit_queue.source.pop()
+            )
 
         self.agent.update_states_read(self)
 
