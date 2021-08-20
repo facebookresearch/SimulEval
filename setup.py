@@ -19,7 +19,7 @@ setuptools.setup(
     install_requires=[
         "pytest",
         "pytest-cov",
-        "sacrebleu",
+        "sacrebleu==1.5.1",
         "torch",
         "tornado",
         "soundfile",
