@@ -101,8 +101,8 @@ def AverageLagging(delays, src_lens, tgt_lens, ref_lens=None, target_padding_mas
     """
     bsz, max_tgt_len = delays.size()
     if ref_lens is not None:
-       max_tgt_len = ref_lens.max()
-       tgt_lens = ref_lens
+        max_tgt_len = ref_lens.max().long()
+        tgt_lens = ref_lens
 
     # tau = argmin_i(delays_i = |x|)
     # Only consider the delays that has already larger than src_lens
