@@ -13,11 +13,13 @@ from sacrebleu import TOKENIZERS
 def add_data_args(parser):
     parser.add_argument('--data-type', type=str, choices=["text", "speech"],
                         default=os.environ.get("SIMULEVAL_DATATYPE", None),
-                        help='Data type to evaluate')
+                        help='Data type to evaluate.')
     parser.add_argument('--source', type=str, default=os.environ.get("SIMULEVAL_SOURCE", None),
-                        help='Source file')
+                        help='Source file.')
+    parser.add_argument('--source-timestamps', type=str, default=None,
+                        help='Timesteps for generating the source words.')
     parser.add_argument('--target', type=str, default=os.environ.get("SIMULEVAL_SOURCE", None),
-                        help='Target file')
+                        help='Target file.')
     parser.add_argument('--eval-latency-unit', type=str, default="word",
                         choices=["word", "char"],
                         help="Basice unit used for latency caculation, choose from "

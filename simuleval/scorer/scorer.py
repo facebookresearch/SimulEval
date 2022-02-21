@@ -19,20 +19,15 @@ class Scorer(object):
             "src": self.load_text_file(args.source),
             "tgt": self.load_text_file(args.target)
         }
+        if args.source_timestamps is not None:
+            self.data["src_timestamps"] = self.load_timestamp_file(
+                args.source_timestamps
+            )
+
         self.data_type = args.data_type
         self.eval_latency_unit = args.eval_latency_unit
         self.sacrebleu_tokenizer = args.sacrebleu_tokenizer
         self.no_space = args.no_space
-
-        if (
-            self.data_type == "speech"
-            and self.eval_latency_unit == "char"
-        ):
-            logger.error(
-                "Character level latency for speech-to-text model is not supported at the moment. "
-                "We will update this feature very soon."
-            )
-            sys.exit(1)
 
         logger.info(f"Evaluating on {self.data_type}")
         logger.info(f"Source: {os.path.abspath(args.source)}")
@@ -80,10 +75,23 @@ class Scorer(object):
         if len(self.instances) > 0:
             logger.warning("Resetting scorer")
 
-        for i, (src, tgt) in enumerate(
-                zip(self.data["src"], self.data["tgt"])):
+        option_dict = {
+            "eval_latency_unit": self.eval_latency_unit
+        }
+
+        assert all(
+            len(x) == len(self.data["src"]) for x in self.data.values()
+        )
+
+        total_length = len(self.data["src"])
+
+        for i in range(total_length):
+            data_dict = {
+                key: self.data[key][i] for key in self.data.keys()
+            }
+
             self.instances[i] = self.instance_class(
-                i, src, tgt, self.eval_latency_unit
+                i, data_dict, option_dict
             )
 
     def gather_translation(self):
@@ -141,6 +149,12 @@ class Scorer(object):
                         for seg in self.instances.values()]
                 )
 
+            if "latency_text_w_time" in self.instances[0].metrics:
+                results[metric + " (Time in ms)"] = mean(
+                    [seg.metrics["latency_text_w_time"][metric]
+                        for seg in self.instances.values()]
+                )
+
         return results
 
     def score(self):
@@ -159,3 +173,13 @@ class Scorer(object):
 
     def __len__(self):
         return len(self.data["tgt"])
+
+    @staticmethod
+    def load_timestamp_file(timestamp_file, splitter=None):
+        with open(timestamp_file) as f:
+            return [
+                [float(x) for x in line.strip().split(splitter)]
+                for line in f
+            ]
+
+
