@@ -8,7 +8,7 @@ SimulEval is a general evaluation framework for simultaneous translation on text
 
 ## Installation
 ```
-git clone git@github.com:fairinternal/SimulEval.git
+git clone https://github.com/facebookresearch/SimulEval.git
 cd SimulEval
 pip install -e .
 ```
