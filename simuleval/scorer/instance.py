@@ -36,14 +36,13 @@ class Instance(object):
     def __init__(
         self,
         instance_id,
-        source,
-        target,
-        eval_latency_unit
+        data_dict,
+        option_dict
     ):
         self.finish_read = False
         self.finish_hypo = False
-        self.target = self.preprocess_target(target)
-        self.source = self.preprocess_source(source)
+        self.target = self.preprocess_target(data_dict["tgt"])
+        self.source = self.preprocess_source(data_dict["src"])
         self.step = 0
         self.elapsed = []
         self.hypos = []
@@ -51,7 +50,7 @@ class Instance(object):
         self.start_time = None
         self.metrics = {}
         self.instance_id = instance_id
-        self.eval_latency_unit = eval_latency_unit
+        self.eval_latency_unit = option_dict["eval_latency_unit"]
 
     @property
     def finish(self):
@@ -167,6 +166,12 @@ class Instance(object):
 
 
 class TextInstance(Instance):
+    def __init__(self, instance_id, data_dict, option_dict):
+        super().__init__(instance_id, data_dict, option_dict)
+        self.src_timestamps = data_dict.get("src_timestamps", None)
+        if self.src_timestamps is not None:
+            assert self.source_length() == len(self.src_timestamps)
+
     def preprocess_source(self, source):
         return source.strip().split()
 
@@ -191,6 +196,25 @@ class TextInstance(Instance):
 
         return dict_to_return
 
+    def sentence_level_eval(self, src_eos=True):
+        self.metrics["sentence_bleu"] = sacrebleu.sentence_bleu(
+            self.prediction(), [self.reference()]
+        ).score
+
+	    # ToDo: make this configurable, for instance
+        # latency_ref_len = self.reference_length() + 1
+        latency_ref_len = len(self.delays)
+        self.metrics["latency"] = eval_all_latency(
+            self.delays,
+            self.source_length() + 1,
+            len(self.delays),
+        )
+        if self.src_timestamps is not None:
+            self.metrics["latency_text_w_time"] = eval_all_latency(
+                [self.src_timestamps[i - 2] for i in self.delays],
+                self.src_timestamps[-1],
+                self.reference_length() + 1
+            )
 
 class AudioInstance(Instance):
     def preprocess_source(self, source):
