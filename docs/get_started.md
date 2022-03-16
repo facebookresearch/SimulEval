@@ -72,7 +72,7 @@ In this example the file contains the agent is [`examples/dummy/dummy_waitk_text
 We can run the following command to start the SimulEval to evaluate a wait-5 dummy text translation system. `--source` and `--target` are the source and reference (the data we use in this example can be found [here](../examples/data)).
 ```
 simuleval \
-	--agent examples/dummy_waitk_text_agent.py \
+	--agent examples/dummy/dummy_waitk_text_agent.py \
 	--waitk 5 \
 	--source examples/data/src.txt \
 	--target examples/data/tgt.txt
@@ -91,6 +91,34 @@ At the end of the evaluation, the results will be printed on the screen, like fo
     }
 }
 ```
+
+Furthermore, if you would like to evaluate the system with time stamps of source input from a upstream system (e.g. a streaming ASR system).
+```
+simuleval \
+	--agent examples/dummy/dummy_waitk_text_agent.py \
+	--waitk 5 \
+	--source examples/data/src.txt \
+	--target examples/data/tgt.txt \
+	--source-timestamps examples/data/src_time.txt
+```
+Where `--source-timestamps` is a file each line of which contains the time stamps for words for the corresponding source input sentence.
+The results will come with corespoding latency in time.
+```
+{
+    "Quality": {
+        "BLEU": 0.06934086086827945
+    },
+    "Latency": {
+        "AL": 5.0,
+        "AL (Time in ms)": 1656.442724609375,
+        "AP": 0.7560754895210267,
+        "AP (Time in ms)": 0.7404875814914703,
+        "DAL": 5.0,
+        "DAL (Time in ms)": 2462.1722412109375
+    }
+}
+```
+
 Right now we support BLEU (Papineni et al., 2002; [Post, 2018](https://www.aclweb.org/anthology/W18-6319/)) for quality evaluation; [Average Lagging (Ma et al., 2019)](https://www.aclweb.org/anthology/P19-1289.pdf), [Differentiable Average Lagging (Cherry and Foster, 2019)](https://arxiv.org/abs/1906.00048) and [Average Proportion (Cho and Esipova, 2016)](https://arxiv.org/abs/1606.02012) for latency evaluation.
 
 This tutorial provides a minimal usage of SimulEval.
