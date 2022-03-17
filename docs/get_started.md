@@ -126,4 +126,5 @@ More details can be found here.
 - [Server-Client interface](./server_client.md).
 - [Evaluation](./evaluation.md).
 - [RESTful API](./restful_api.md).
+- [T2T systems with source time stamps](./timestamps.md).
 - [Simultaneous Speech Translation with fairseq](https://github.com/pytorch/fairseq/blob/master/examples/speech_to_text/docs/simulst_mustc_example.md)
