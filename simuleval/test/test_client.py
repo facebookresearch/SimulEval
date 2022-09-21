@@ -13,7 +13,7 @@ import simuleval
 from simuleval.cli import evaluate
 from simuleval.online import start_server
 from simuleval.utils.functional import find_free_port
-from simuleval.utils.agent_finder import check_data_type, find_agent_cls
+from simuleval.utils.agent import check_data_type, find_agent_cls
 
 CURRENT_PATH = os.path.dirname(os.path.abspath(__file__))
 
