@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import sacrebleu
-from .instance import TextInstance, AudioInstance
+from .instance import SpeechToTextInstance, TextToTextInstance
 import os
 import sys
 import logging
@@ -17,26 +17,17 @@ logger = logging.getLogger("simuleval.sentence_level_scorer")
 
 class SentenceLevelScorer(object):
     def __init__(self, dataloader, args):
+        self.args = args
         self.eval_latency_unit = args.eval_latency_unit
         self.sacrebleu_tokenizer = args.sacrebleu_tokenizer
         self.no_space = args.no_space
         self.dataloader = dataloader
         self.instances = {}
-        if args.target_type == "text":
-            self.instance_class = TextInstance
-        elif args.target_type == "speech":
-            self.instance_class = AudioInstance
+        if args.source_type == "speech":
+            self.instance_class = SpeechToTextInstance
         else:
-            if self.data_type is None:
-                logger.error(
-                    "Please specify the data type (text or speech).\n"
-                )
-            else:
-                logger.error(
-                    f"{self.data_type} is not supported, "
-                    "please choose from text or speech.\n"
-                )
-        self.instance_class = AudioInstance
+            self.instance_class = TextToTextInstance
+
         self.reset()
 
     def __len__(self):
@@ -60,9 +51,7 @@ class SentenceLevelScorer(object):
         option_dict = {"eval_latency_unit": self.eval_latency_unit}
 
         for i in range(len(self)):
-            self.instances[i] = self.instance_class(
-                i, self.dataloader, option_dict
-            )
+            self.instances[i] = self.instance_class(i, self.dataloader, self.args)
 
     def gather_translation(self):
         not_finish_write_id = [

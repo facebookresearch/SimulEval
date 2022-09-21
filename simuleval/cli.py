@@ -17,17 +17,19 @@ import simuleval
 from simuleval import options
 from simuleval import READ_ACTION, WRITE_ACTION
 from simuleval.online import start_client, start_server
-from simuleval.utils.agent_finder import find_agent_cls
+from simuleval.scorer.scorer import SentenceLevelScorer
+from simuleval.utils.agent import find_agent_cls, infer_data_types_from_agent
 from simuleval.utils.functional import split_list_into_chunks
+from simuleval.data.dataloader import build_dataloader
 
 
 logging.basicConfig(
-    format='%(asctime)s | %(levelname)-8s | %(name)-16s | %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S',
+    format="%(asctime)s | %(levelname)-8s | %(name)-16s | %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
     level=logging.INFO,
     stream=sys.stderr,
 )
-logger = logging.getLogger('simuleval.cli')
+logger = logging.getLogger("simuleval.cli")
 
 
 class DataWriter(object):
@@ -43,9 +45,9 @@ class DataWriter(object):
         try:
             os.makedirs(self.output_dir, exist_ok=True)
         except BaseException as be:
-            logger.error(f'Failed to write results to {self.output_dir}.')
+            logger.error(f"Failed to write results to {self.output_dir}.")
             logger.error(be)
-            logger.error('Skip writing predictions')
+            logger.error("Skip writing predictions")
             self.started = False
             return
 
@@ -58,18 +60,18 @@ class DataWriter(object):
     @staticmethod
     def write_loop(path, q):
         logger.info(f"Start data writer (process id {os.getpid()})")
-        with open(path, 'w') as f:
+        with open(path, "w") as f:
             while True:
                 try:
                     m = q.get()
-                    f.write(json.dumps(m) + '\n')
+                    f.write(json.dumps(m) + "\n")
                     f.flush()
                 except EOFError:
                     break
 
     def write_scores(self, scores):
         if self.started:
-            with open(os.path.join(self.output_dir, "scores"), 'w') as f:
+            with open(os.path.join(self.output_dir, "scores"), "w") as f:
                 f.write(json.dumps(scores, indent=4))
 
     def kill(self):
@@ -92,12 +94,6 @@ def decode(args, client, result_queue, instance_ids):
 
     # Data type check
     info = client.corpus_info()
-    data_type = info['data_type']
-    if data_type != agent_cls.data_type:
-        logger.error(
-            f"Data type mismatch 'server.data_type {data_type}', '{args.agent_cls}.data_type: {args.agent_cls.data_type}'")
-        sys.exit(1)
-
     # build agents
     agent = agent_cls(args)
 
@@ -115,12 +111,14 @@ def decode(args, client, result_queue, instance_ids):
                 raise SystemExit(f"Undefined action name {action}")
         sent_info = client.get_scores(instance_id)
         result_queue.put(sent_info)
-        logger.debug(f"Instance {instance_id} finished, results:\n{json.dumps(sent_info, indent=4)}")
+        logger.debug(
+            f"Instance {instance_id} finished, results:\n{json.dumps(sent_info, indent=4)}"
+        )
 
 
 def evaluate(args, client, server_process=None):
     info = client.corpus_info()
-    num_sentences = info['num_sentences']
+    num_sentences = info["num_sentences"]
     indices = list(range(num_sentences))
     num_processes = args.num_processes
     manager = Manager()
@@ -177,12 +175,13 @@ def _main(client_only=False):
     args, _ = parser.parse_known_args()
 
     if not client_only:
-        _, agent_cls = find_agent_cls(args)
-        if args.data_type is None:
-            args.data_type = agent_cls.data_type
+        agent_name, agent_cls = find_agent_cls(args)
+        logger.info(f"Evaluating on agent {agent_name}")
+        infer_data_types_from_agent(args, agent_cls)
+        dataloader = build_dataloader(args)
+        scorer = SentenceLevelScorer(dataloader, args)
         logging.getLogger("tornado.access").setLevel(logging.WARNING)
-        server_process = Process(
-            target=start_server, args=(args, ))
+        server_process = Process(target=start_server, args=(args, scorer))
         server_process.start()
         time.sleep(3)
     else:

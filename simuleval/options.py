@@ -86,6 +86,11 @@ def add_data_args(parser):
         action="store_true",
         help="No space is added between received words.",
     )
+    parser.add_argument(
+        "--latency-unit",
+        default="word",
+        help="No space is added between received words.",
+    )
     add_fairseq_data_args(parser)
 
 
