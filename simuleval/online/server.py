@@ -9,7 +9,6 @@ import logging
 import argparse
 from tornado import web, ioloop
 import simuleval
-from simuleval.scorer import Scorer
 
 DEFAULT_HOSTNAME = 'localhost'
 DEFAULT_PORT = 12321
@@ -68,9 +67,7 @@ class HypothesisHandler(ScorerHandler):
         self.scorer.recv_hyp(instance_id, list_of_tokens)
 
 
-def start_server(args):
-    scorer = Scorer(args)
-
+def start_server(args, scorer):
     app = web.Application([
         (r'/result', ResultHandler, dict(scorer=scorer)),
         (r'/src', SourceHandler, dict(scorer=scorer)),

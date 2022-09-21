@@ -1,4 +1,5 @@
 from __future__ import annotations
+import io
 import sys
 import logging
 from argparse import Namespace
@@ -8,7 +9,7 @@ from typing import Callable, List, Union, Tuple
 import soundfile
 
 from simuleval.utils.common import load_fairseq_manifest, get_fairseq_manifest_path
-from simuleval.utils.fairseq import check_fairseq_args
+from simuleval.utils.fairseq import check_fairseq_args, get_audio_file_path
 from fairseq.data.audio.data_cfg import get_config_from_yaml
 
 logger = logging.getLogger("simuleval.fairseq_s2t_dataloader")
@@ -16,9 +17,12 @@ logger = logging.getLogger("simuleval.fairseq_s2t_dataloader")
 
 class FairseqSpeechToTextDataloader(SpeechToTextDataloader):
     def preprocess_source(self, source: Union[Path, str]) -> Tuple[List, int]:
-        samples, sample_rate = soundfile.read(source, dtype="float32")
-        samples = samples.tolist()
-        return source, sample_rate
+        return super().preprocess_source(get_audio_file_path(source.as_posix()))
+
+    def get_source_audio_info(self, index: int) -> float:
+        return soundfile.info(
+            get_audio_file_path(self.source_list[index].as_posix())
+        )
 
     @classmethod
     def from_args(cls, args: Namespace) -> FairseqSpeechToTextDataloader:

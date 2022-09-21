@@ -6,13 +6,16 @@ import soundfile
 
 
 class SpeechToTextDataloader(GenericDataloader):
-    def preprocess_source(self, source: Union[Path, str]) -> Tuple[List, int]:
-        samples, sample_rate = soundfile.read(source, dtype="float32")
+    def preprocess_source(self, source: Union[Path, str]) -> List[float]:
+        samples, _ = soundfile.read(source, dtype="float32")
         samples = samples.tolist()
-        return source, sample_rate
+        return samples
 
     def preprocess_target(self, target: str) -> List:
         return target
+
+    def get_source_audio_info(self, index: int):
+        return soundfile.info(self.source_list[index])
 
     @classmethod
     def from_files(
