@@ -96,19 +96,12 @@ def decode(args, client, result_queue, instance_ids):
     info = client.corpus_info()
     # build agents
     agent = agent_cls(args)
+    agent.set_client(client)
 
     # Decode
     for instance_id in instance_ids:
-        states = agent.build_states(args, client, instance_id)
-        while not states.finish_hypo():
-            action = agent.policy(states)
-            if action == READ_ACTION:
-                states.update_source()
-            elif action == WRITE_ACTION:
-                prediction = agent.predict(states)
-                states.update_target(prediction)
-            else:
-                raise SystemExit(f"Undefined action name {action}")
+        agent.reset()
+        agent.eval(index=instance_id)
         sent_info = client.get_scores(instance_id)
         result_queue.put(sent_info)
         logger.debug(
