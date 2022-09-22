@@ -127,3 +127,5 @@ def general_parser():
 
 def add_agent_args(parser, agent_cls):
     agent_cls.add_args(parser)
+    parser.add_argument("--max-gen-len", type=int, default=200,
+                        help="Max length of translation")

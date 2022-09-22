@@ -40,7 +40,7 @@ def eval_all_latency(delays, src_len, ref_len=None):
 
 class Instance(object):
     def __init__(self, index, dataloader, args):
-        self.instance_id = index
+        self.index = index
         self.finish_prediction = False
         self.dataloader = dataloader
         self.latency_unit = args.latency_unit
@@ -89,7 +89,7 @@ class Instance(object):
 
     def summarize(self):
         return {
-            "index": self.instance_id,
+            "index": self.index,
             "prediction": self.prediction(),
             "delays": self.delays,
             "elapsed": self.elapsed,
@@ -197,7 +197,7 @@ class TextOutputInstance(Instance):
 
 class SpeechInputInstance(Instance):
     def preprocess_source(self, source):
-        self.audio_info = self.dataloader.get_source_audio_info(self.instance_id)
+        self.audio_info = self.dataloader.get_source_audio_info(self.index)
         self.sample_rate = self.audio_info.samplerate
         self.samples = source
         return source
