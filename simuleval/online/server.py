@@ -63,8 +63,8 @@ class SourceHandler(ScorerHandler):
 class HypothesisHandler(ScorerHandler):
     def put(self):
         instance_id = int(self.get_argument("instance_id"))
-        list_of_tokens = self.request.body.decode("utf-8").strip().split()
-        self.scorer.receive_prediction(instance_id, list_of_tokens)
+        for token in self.request.body.decode("utf-8").strip().split():
+            self.scorer.instances[instance_id].receive_prediction(token)
 
 
 def start_server(args, scorer):

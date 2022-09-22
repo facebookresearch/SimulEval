@@ -38,7 +38,7 @@ class Client(object):
             r = requests.get(url, params=params)
             return r.json()
         except Exception as e:
-            logger.error(f'Failed to retreive scores: {e}')
+            logger.error(f'Failed to retrieve scores: {e}')
             return None
 
     def get_source(self, instance_id: int,

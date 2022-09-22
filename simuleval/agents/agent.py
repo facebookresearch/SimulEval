@@ -8,6 +8,7 @@ from cmath import log
 from typing import Dict, List, Union
 from simuleval.states import TextStates, SpeechStates
 from simuleval.online.client import Client
+from simuleval import DEFAULT_EOS
 
 
 class Agent(object):
@@ -32,6 +33,7 @@ class Agent(object):
         self.index = index
         while not self.is_finish_eval:
             self.policy()
+        self.write(DEFAULT_EOS)
 
     def finish_eval(self) -> None:
         self.is_finish_eval = True

@@ -43,9 +43,6 @@ class SentenceLevelScorer(object):
         dict_to_return["instance_id"] = instance_id
         return dict_to_return
 
-    def receive_prediction(self, instance_id, list_of_tokens):
-        self.instances[instance_id].receive_prediction(list_of_tokens)
-
     def reset(self):
         if len(self.instances) > 0:
             logger.warning("Resetting scorer")
