@@ -48,13 +48,13 @@ class Instance(object):
         self.load_data()
 
     def load_data(self):
-        self.target = self.preprocess_target(self.dataloader[self.index]["target"])
+        self.reference = self.preprocess_target(self.dataloader[self.index]["target"])
         self.source = self.preprocess_source(self.dataloader[self.index]["source"])
 
     def reset(self):
         self.step = 0
         self.elapsed = []
-        self.hypos = []
+        self.prediction_list = []
         self.delays = []
         self.start_time = None
         self.metrics = {}
@@ -69,12 +69,11 @@ class Instance(object):
             self.sentence_level_eval()
         self.finish_prediction = status
 
-    def preprocess_target(self, target: str):
+    def preprocess_target(self, target: str) -> str:
         """
         Preprocess the target, for example tokenization.
         """
-        return target.strip().split()
-
+        return target
     def preprocess_source(self, source: str):
         """
         Preprocess the source, for example tokenization.
@@ -87,26 +86,45 @@ class Instance(object):
     def send_source(self, *args):
         raise NotImplementedError
 
+    @property
+    def source_length(self):
+        raise NotImplementedError
+
+    @property
+    def prediction_length(self):
+        return len(self.prediction_list)
+
+    @property
+    def target_length_latency(self):
+        raise NotImplementedError
+
+    @property
+    def prediction(self):
+        raise NotImplementedError
+
+    def sentence_level_eval(self):
+        self.metrics["sentence_bleu"] = sacrebleu.sentence_bleu(
+            self.prediction, [self.reference]
+        ).score
+        self.metrics["latency"] = eval_all_latency(
+            self.delays,
+            self.source_length,
+            self.target_length_latency,
+        )
+
     def summarize(self):
         return {
             "index": self.index,
-            "prediction": self.prediction(),
+            "prediction": self.prediction,
             "delays": self.delays,
             "elapsed": self.elapsed,
-            "prediction_length": self.target_length(),
-            "reference": self.reference_info(),
-            "source": self.source_info(),
-            "source_length": self.source_length(),
-            "reference_length": self.reference_length(),
+            "prediction_length": self.prediction_length,
+            "reference": self.reference,
+            # "source": self.source_info(),
+            # "source_length": self.source_length(),
+            # "reference_length": self.reference_length(),
             "metric": self.metrics,
         }
-
-    def prediction(self, eos=True, no_space=False):
-        join_char = "" if no_space else " "
-        if eos:
-            return join_char.join(self.hypos)
-        else:
-            return join_char.join(x for x in self.hypos if x != DEFAULT_EOS)
 
 
 class TextInputInstance(Instance):
@@ -141,7 +159,13 @@ class TextOutputInstance(Instance):
         """
         Handler for receiving new predictions
         """
-        if self.finish:
+        if self.finish_prediction:
+            return
+
+        self.finish_prediction = DEFAULT_EOS == prediction
+
+        if self.finish_prediction:
+            self.sentence_level_eval()
             return
 
         if self.start_time is None:
@@ -156,27 +180,15 @@ class TextOutputInstance(Instance):
         else:
             raise NotImplementedError
 
+        self.prediction_list += prediction_list
+
         self.elapsed += [self.step_to_elapsed(self.step, current_time)] * len(
             prediction_list
         )
         self.delays += [self.step_to_delay(self.step)] * len(prediction_list)
 
-        self.finish = DEFAULT_EOS in prediction
-
-    def prediction_length(self):
-        return len(self.prediction)
-
-    def sentence_level_eval(self):
-        self.metrics["sentence_bleu"] = sacrebleu.sentence_bleu(
-            self.prediction, [self.reference]
-        ).score
-        self.metrics["latency"] = eval_all_latency(
-            self.delays,
-            self.source_length(),
-            self.latency_reference_length() + 1,
-        )
-
-    def latency_reference_length(self):
+    @property
+    def target_length_latency(self):
         if self.latency_unit == "word":
             return len(self.reference.split(" "))
         elif self.latency_unit == "char":
@@ -184,15 +196,10 @@ class TextOutputInstance(Instance):
         else:
             raise NotImplementedError
 
-    def sentence_level_eval(self):
-        self.metrics["sentence_bleu"] = sacrebleu.sentence_bleu(
-            self.prediction, self.reference()
-        ).score
-        self.metrics["latency"] = eval_all_latency(
-            self.delays,
-            self.source_length() + 1,
-            len(self.delays),
-        )
+    @property
+    def prediction(self):
+        # TODO: Make configurable
+        return " ".join([x for x in self.prediction_list if x != DEFAULT_EOS])
 
 
 class SpeechInputInstance(Instance):
@@ -242,6 +249,7 @@ class SpeechInputInstance(Instance):
 
         return dict_to_return
 
+    @property
     def source_length(self):
         # In milliseconds
         return self.len_sample_to_ms(len(self.samples))
@@ -266,8 +274,9 @@ class SpeechInputInstance(Instance):
 
 class SpeechToTextInstance(SpeechInputInstance, TextOutputInstance):
     def sentence_level_eval(self):
+        super().sentence_level_eval()
         self.metrics["latency_ca"] = eval_all_latency(
-            self.elapsed, self.source_length(), self.reference_length() + 1
+            self.elapsed, self.source_length, self.target_length_latency
         )
 
 
