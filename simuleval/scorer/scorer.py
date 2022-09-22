@@ -36,13 +36,15 @@ class SentenceLevelScorer(object):
     def get_info(self):
         return {"num_sentences": len(self)}
 
-    def send_src(self, instance_id, segment_size):
-        dict_to_return = self.instances[instance_id].send_src(segment_size=segment_size)
+    def send_source(self, instance_id, segment_size):
+        dict_to_return = self.instances[instance_id].send_source(
+            segment_size=segment_size
+        )
         dict_to_return["instance_id"] = instance_id
         return dict_to_return
 
-    def recv_hyp(self, instance_id, list_of_tokens):
-        self.instances[instance_id].recv_hypo(list_of_tokens, self.eval_latency_unit)
+    def receive_prediction(self, instance_id, list_of_tokens):
+        self.instances[instance_id].receive_prediction(list_of_tokens)
 
     def reset(self):
         if len(self.instances) > 0:

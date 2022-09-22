@@ -150,7 +150,7 @@ class TextOutputInstance(Instance):
         current_time = time.time()
 
         if self.latency_unit == "word":
-            prediction_list = prediction.split(" ")
+            prediction_list = [prediction]
         elif self.latency_unit == "char":
             prediction_list = prediction.split("")
         else:
@@ -202,7 +202,7 @@ class SpeechInputInstance(Instance):
         self.samples = source
         return source
 
-    def send_src(self, segment_size=10):
+    def send_source(self, segment_size=10):
 
         if self.step == 0:
             self.start_time = time.time()

@@ -56,7 +56,7 @@ class Agent(object):
 
     def write(self, predictions: Union[List, str]) -> None:
         predictions = self.process_write(predictions)
-        if isinstance(predictions) is str:
+        if isinstance(predictions, str):
             predictions = [predictions]
         for pred in predictions:
             self.client.send_hypo(self.index, pred)

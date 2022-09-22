@@ -9,7 +9,7 @@ from .agent import Agent
 
 class SpeechToTextAgent(Agent):
     source_type = "speech"
-    source_type = "text"
+    target_type = "text"
 
     def __init__(self, args) -> None:
         super().__init__(args)
