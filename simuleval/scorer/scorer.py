@@ -28,6 +28,8 @@ class SentenceLevelScorer(object):
         self.instances = {}
         self.start_index = args.start_index
         self.end_index = args.end_index
+        if self.end_index < 0:
+            self.end_index = len(self.dataloader)
 
         if args.source_type == "speech":
             self.instance_class = SpeechToTextInstance
@@ -69,17 +71,17 @@ class SentenceLevelScorer(object):
         ]
 
         if len(not_finish_write_id) > 0:
-            print(
+            logger.warn(
                 "Warning: these hypothesis don't have EOS in predictions",
                 file=sys.stderr,
             )
-            print(", ".join((str(x) for x in not_finish_write_id)), file=sys.stderr)
+            logger.warn(", ".join((str(x) for x in not_finish_write_id)), file=sys.stderr)
             for idx in not_finish_write_id:
                 self.instances[idx].sentence_level_eval()
 
         if len(empty_hypo_id) > 0:
-            print("Warning: these hypothesis are empty", file=sys.stderr)
-            print(", ".join(empty_hypo_id), file=sys.stderr)
+            logger.warn("Warning: these hypothesis are empty", file=sys.stderr)
+            logger.warn(", ".join(empty_hypo_id), file=sys.stderr)
 
         translations = [self.instances[i].prediction for i in self.get_indices()]
 
@@ -97,7 +99,7 @@ class SentenceLevelScorer(object):
                 tokenize=self.sacrebleu_tokenizer,
             ).score
         except Exception as e:
-            print(e, file=sys.stderr)
+            logger.error(e, file=sys.stderr)
             bleu_score = 0
 
         return {"BLEU": bleu_score}
