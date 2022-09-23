@@ -5,14 +5,17 @@
 # LICENSE file in the root directory of this source tree.
 
 import os
+import re
 import sys
 import argparse
 import time
 import logging
+import subprocess
 import json
+from functools import partial
+from pathlib import Path
 from tqdm import tqdm
 from multiprocessing import Pool, Process, Manager
-from functools import partial
 
 import simuleval
 from simuleval import options
@@ -33,6 +36,17 @@ logging.basicConfig(
 logger = logging.getLogger("simuleval.cli")
 
 
+def mkdir_output_dir(path: str) -> bool:
+    try:
+        os.makedirs(path, exist_ok=True)
+        return True
+    except BaseException as be:
+        logger.error(f"Failed to write results to {path}.")
+        logger.error(be)
+        logger.error("Skip writing predictions.")
+        return False
+
+
 class DataWriter(object):
     def __init__(self, args, q):
         self.queue = q
@@ -43,13 +57,8 @@ class DataWriter(object):
             self.proc = None
             return
 
-        try:
-            os.makedirs(self.output_dir, exist_ok=True)
-        except BaseException as be:
-            logger.error(f"Failed to write results to {self.output_dir}.")
-            logger.error(be)
-            logger.error("Skip writing predictions")
-            self.started = False
+        self.started = mkdir_output_dir(self.output_dir)
+        if not self.started:
             return
 
         logger.info(f"Output dir: {self.output_dir}")
@@ -195,3 +204,55 @@ def server():
     options.add_data_args(parser)
     args = parser.parse_args()
     simuleval.online.start_server(args)
+
+
+def submit_slurm_job(args: argparse.Namespace) -> None:
+    assert mkdir_output_dir(args.output)
+    command = " ".join(sys.argv)
+    command = re.sub(r"(--slurm\S*(\s+[^-]+)*)", "", command).strip()
+    command = command.replace("--", "\\\n\t--")
+    script = f"""#!/bin/bash
+#SBATCH --time={args.slurm_time}
+#SBATCH --partition={args.slurm_partition}
+#SBATCH --nodes=1
+#SBATCH --gpus-per-node=1
+#SBATCH --ntasks-per-node=8
+#SBATCH --output="{args.output}/slurm-%j.log"
+#SBATCH --job-name="{args.slurm_job_name}"
+
+cd {os.path.abspath(os.getcwd())}
+
+CUDA_VISIBLE_DEVICES=$SLURM_LOCALID {command}
+    """
+    script_file = os.path.join(args.output, "script.sh")
+    with open(script_file, "w") as f:
+        f.writelines(script)
+
+    process = subprocess.Popen(
+        ["sbatch", script_file],
+        stderr=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+    )
+    stdout, stderr = process.communicate()
+    logger.info("Using slurm.")
+    logger.info(f"sbatch stdout: {str(stdout).strip()}")
+    logger.info(f"sbatch stderr: {str(stderr).strip()}")
+
+
+def main():
+    args = options.get_slurm_args()
+    if args.slurm:
+        submit_slurm_job(args)
+        return
+
+    parser = options.general_parser()
+    args, _ = parser.parse_known_args()
+
+    options.add_server_args(parser)
+    args, _ = parser.parse_known_args()
+    logger.setLevel(args.log_level.upper())
+
+    if not args.server_only:
+        _main(args.client_only)
+    else:
+        server()

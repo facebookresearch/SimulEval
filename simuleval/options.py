@@ -131,13 +131,38 @@ def general_parser():
     parser.add_argument(
         "--gpu", action="store_true", default=False, help="Local evaluation"
     )
-    parser.add_argument(
-        "--slurm", action="store_true", default=False, help="Local evaluation"
-    )
     parser.add_argument("--output", type=str, default=None, help="Output directory")
-    parser.add_argument("--no-progress-bar", action="store_true", default=False, help="Do not use progress bar")
-    parser.add_argument("--log-level", type=str, default="info", choices=[x.lower() for x in logging._levelToName.values()], help="Log level.")
+    parser.add_argument(
+        "--no-progress-bar",
+        action="store_true",
+        default=False,
+        help="Do not use progress bar",
+    )
+    parser.add_argument(
+        "--log-level",
+        type=str,
+        default="info",
+        choices=[x.lower() for x in logging._levelToName.values()],
+        help="Log level.",
+    )
     return parser
+
+
+def get_slurm_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--output", type=str, default=None, help="Output directory")
+    parser.add_argument(
+        "--slurm", action="store_true", default=False, help="Use slurm."
+    )
+    parser.add_argument(
+        "--slurm-partition", default="learnaccel,ust", help="Slurm partition."
+    )
+    parser.add_argument("--slurm-job-name", default="simuleval", help="Slurm job name.")
+    parser.add_argument(
+        "--slurm-time", default="3:00:00", help="Slurm partition."
+    )
+    args, _ = parser.parse_known_args()
+    return args
 
 
 def add_agent_args(parser, agent_cls):

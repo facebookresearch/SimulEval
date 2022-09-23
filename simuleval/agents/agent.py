@@ -4,11 +4,13 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
-from cmath import log
+import torch
+import logging
 from typing import Dict, List, Union
-from simuleval.states import TextStates, SpeechStates
 from simuleval.online.client import Client
 from simuleval import DEFAULT_EOS
+
+logger = logging.getLogger("simuleval.agent")
 
 
 class Agent(object):
@@ -21,7 +23,17 @@ class Agent(object):
         self.args = args
         self.client = None
         self.source_segment_size = 1
+        self.check_device()
         self.reset()
+
+    def check_device(self):
+        self.device = self.args.device
+        try:
+            torch.FloatTensor([1.0]).to(self.device)
+            logger.info(f"Using device: {self.device}.")
+        except:
+            logger.error(f"Failed to use device: {self.device}, change to cpu.")
+            self.device = "cpu"
 
     def reset(self) -> None:
         self.index = None
