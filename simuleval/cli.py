@@ -188,7 +188,7 @@ def _main(client_only=False):
         dataloader = build_dataloader(args)
         scorer = SentenceLevelScorer(dataloader, args)
         logging.getLogger("tornado.access").setLevel(logging.WARNING)
-        server_process = Process(target=start_server, args=(args, scorer))
+        server_process = Process(target=start_server, args=(args, scorer), daemon=True)
         server_process.start()
         time.sleep(3)
     else:
@@ -208,8 +208,12 @@ def server():
 
 def submit_slurm_job(args: argparse.Namespace) -> None:
     assert mkdir_output_dir(args.output)
+    os.system(f"cp {args.agent} {args.output}/agent.py")
     command = " ".join(sys.argv)
-    command = re.sub(r"(--slurm\S*(\s+[^-]+)*)", "", command).strip()
+    command = re.sub(r"(--slurm\S*(\s+[^-]\S+)*)", "", command).strip()
+    command = re.sub(
+        r"--agent\s+\S+", f"--agent {args.output}/agent.py", command
+    ).strip()
     command = command.replace("--", "\\\n\t--")
     script = f"""#!/bin/bash
 #SBATCH --time={args.slurm_time}
@@ -235,8 +239,8 @@ CUDA_VISIBLE_DEVICES=$SLURM_LOCALID {command}
     )
     stdout, stderr = process.communicate()
     logger.info("Using slurm.")
-    logger.info(f"sbatch stdout: {str(stdout).strip()}")
-    logger.info(f"sbatch stderr: {str(stderr).strip()}")
+    logger.info(f"sbatch stdout: {stdout.decode('utf-8').strip()}")
+    logger.info(f"sbatch stderr: {stderr.decode('utf-8').strip()}")
 
 
 def main():

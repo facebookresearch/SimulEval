@@ -149,8 +149,7 @@ def general_parser():
 
 
 def get_slurm_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--output", type=str, default=None, help="Output directory")
+    parser = general_parser()
     parser.add_argument(
         "--slurm", action="store_true", default=False, help="Use slurm."
     )
