@@ -4,6 +4,7 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
+import logging
 import argparse
 import os
 from simuleval import DEFAULT_HOSTNAME, DEFAULT_PORT
@@ -134,6 +135,8 @@ def general_parser():
         "--slurm", action="store_true", default=False, help="Local evaluation"
     )
     parser.add_argument("--output", type=str, default=None, help="Output directory")
+    parser.add_argument("--no-progress-bar", action="store_true", default=False, help="Do not use progress bar")
+    parser.add_argument("--log-level", type=str, default="info", choices=[x.lower() for x in logging._levelToName.values()], help="Log level.")
     return parser
 
 

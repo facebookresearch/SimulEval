@@ -100,7 +100,8 @@ def decode(args, client, result_queue, instance_ids):
     agent.set_client(client)
 
     # Decode
-    for instance_id in tqdm(instance_ids):
+    index_generator = instance_ids if args.no_progress_bar else tqdm(instance_ids)
+    for instance_id in index_generator:
         agent.reset()
         agent.eval(index=instance_id)
         sent_info = client.get_scores(instance_id)
@@ -154,6 +155,7 @@ def main():
     parser = options.general_parser()
     options.add_server_args(parser)
     args, _ = parser.parse_known_args()
+    logger.setLevel(args.log_level.upper())
 
     if not args.server_only:
         _main(args.client_only)
