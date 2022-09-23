@@ -4,17 +4,10 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
-from doctest import Example
-from optparse import Option
 import time
-import os
 import math
 from typing import Dict, List, Optional
-import soundfile
 import sacrebleu
-import re
-import os
-import soundfile as sf
 
 from simuleval import DEFAULT_EOS
 from simuleval.metrics.latency import (
@@ -74,6 +67,7 @@ class Instance(object):
         Preprocess the target, for example tokenization.
         """
         return target
+
     def preprocess_source(self, source: str):
         """
         Preprocess the source, for example tokenization.
@@ -218,7 +212,7 @@ class SpeechInputInstance(Instance):
         num_samples = math.ceil(segment_size / 1000 * self.sample_rate)
 
         if self.step < len(self.samples):
-            if self.step + num_samples > len(self.samples):
+            if self.step + num_samples >= len(self.samples):
                 # Pad zeros if the requested number of samples
                 # are more than available samples.
                 instance = self.samples[self.step :]
@@ -240,7 +234,7 @@ class SpeechInputInstance(Instance):
         else:
             # Finish reading this audio
             dict_to_return = {
-                "segment_id": self.source_length(),
+                "segment_id": self.source_length,
                 "segment": DEFAULT_EOS,
                 "sample_rate": self.audio_info.samplerate,
                 "dtype": "int16",

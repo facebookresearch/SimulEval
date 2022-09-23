@@ -10,6 +10,7 @@ import argparse
 import time
 import logging
 import json
+from tqdm import tqdm
 from multiprocessing import Pool, Process, Manager
 from functools import partial
 
@@ -99,7 +100,7 @@ def decode(args, client, result_queue, instance_ids):
     agent.set_client(client)
 
     # Decode
-    for instance_id in instance_ids:
+    for instance_id in tqdm(instance_ids):
         agent.reset()
         agent.eval(index=instance_id)
         sent_info = client.get_scores(instance_id)
@@ -112,7 +113,9 @@ def decode(args, client, result_queue, instance_ids):
 def evaluate(args, client, server_process=None):
     info = client.corpus_info()
     num_sentences = info["num_sentences"]
-    indices = list(range(num_sentences))
+    if args.end_index < 0:
+        args.end_index = num_sentences
+    indices = list(range(num_sentences))[args.start_index : args.end_index]
     num_processes = args.num_processes
     manager = Manager()
     result_queue = manager.Queue()

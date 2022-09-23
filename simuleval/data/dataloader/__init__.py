@@ -31,3 +31,8 @@ def build_dataloader(args) -> Any:
         return DATALOADER_DICT[
             f"fairseq_{args.source_type}-{args.target_type}"
         ].from_args(args)
+
+from .dataloader import GenericDataloader
+from .s2t_dataloader import SpeechToTextDataloader
+from .t2t_dataloader import TextToTextDataloader
+from .fairseq_s2t_dataloader import FairseqSpeechToTextDataloader

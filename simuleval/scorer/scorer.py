@@ -3,6 +3,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+from argparse import Namespace
+from typing import Dict, Generator, List
 import sacrebleu
 from .instance import SpeechToTextInstance, TextToTextInstance
 import os
@@ -11,18 +13,22 @@ import logging
 from statistics import mean
 from pathlib import Path
 from simuleval.utils.common import load_fairseq_manifest, get_fairseq_manifest_path
+from simuleval.data.dataloader import GenericDataloader
 
 logger = logging.getLogger("simuleval.sentence_level_scorer")
 
 
 class SentenceLevelScorer(object):
-    def __init__(self, dataloader, args):
+    def __init__(self, dataloader: GenericDataloader, args: Namespace) -> None:
         self.args = args
         self.eval_latency_unit = args.eval_latency_unit
         self.sacrebleu_tokenizer = args.sacrebleu_tokenizer
         self.no_space = args.no_space
         self.dataloader = dataloader
         self.instances = {}
+        self.start_index = args.start_index
+        self.end_index = args.end_index
+
         if args.source_type == "speech":
             self.instance_class = SpeechToTextInstance
         else:
@@ -30,36 +36,36 @@ class SentenceLevelScorer(object):
 
         self.reset()
 
-    def __len__(self):
-        return len(self.dataloader)
+    def __len__(self) -> int:
+        return self.end_index - self.start_index
 
-    def get_info(self):
+    def get_indices(self) -> Generator:
+        for index in range(self.start_index, self.end_index):
+            yield index
+
+    def get_info(self) -> Dict[str, int]:
         return {"num_sentences": len(self)}
 
-    def send_source(self, instance_id, segment_size):
+    def send_source(self, instance_id: int, segment_size: int) -> Dict:
         dict_to_return = self.instances[instance_id].send_source(
             segment_size=segment_size
         )
         dict_to_return["instance_id"] = instance_id
         return dict_to_return
 
-    def reset(self):
+    def reset(self) -> None:
         if len(self.instances) > 0:
             logger.warning("Resetting scorer")
 
-        option_dict = {"eval_latency_unit": self.eval_latency_unit}
-
-        for i in range(len(self)):
+        for i in self.get_indices():
             self.instances[i] = self.instance_class(i, self.dataloader, self.args)
 
-    def gather_translation(self):
+    def get_translation_list(self) -> List[str]:
         not_finish_write_id = [
-            i for i in range(len(self)) if not self.instances[i].finish_hypo
+            i for i in self.get_indices() if not self.instances[i].finish_prediction
         ]
         empty_hypo_id = [
-            str(i)
-            for i in range(len(self))
-            if len(self.instances[i].prediction(no_space=self.no_space)) == 0
+            str(i) for i in self.get_indices() if len(self.instances[i].prediction) == 0
         ]
 
         if len(not_finish_write_id) > 0:
@@ -75,20 +81,20 @@ class SentenceLevelScorer(object):
             print("Warning: these hypothesis are empty", file=sys.stderr)
             print(", ".join(empty_hypo_id), file=sys.stderr)
 
-        translations = [
-            self.instances[i].prediction(eos=False, no_space=self.no_space)
-            for i in range(len(self))
-        ]
+        translations = [self.instances[i].prediction for i in self.get_indices()]
 
         return translations
 
-    def get_quality_score(self):
+    def get_reference_list(self) -> List[str]:
+        return [self.dataloader.target_list[i] for i in self.get_indices()]
 
-        translations = self.gather_translation()
+    def get_quality_score(self) -> Dict[str, float]:
 
         try:
             bleu_score = sacrebleu.corpus_bleu(
-                translations, [self.data["tgt"]], tokenize=self.sacrebleu_tokenizer
+                self.get_translation_list(),
+                [self.get_reference_list()],
+                tokenize=self.sacrebleu_tokenizer,
             ).score
         except Exception as e:
             print(e, file=sys.stderr)
@@ -96,7 +102,7 @@ class SentenceLevelScorer(object):
 
         return {"BLEU": bleu_score}
 
-    def get_latency_score(self):
+    def get_latency_score(self) -> Dict[str, Dict[str, float]]:
         results = {}
         for metric in ["AL", "AP", "DAL"]:
             results[metric] = mean(

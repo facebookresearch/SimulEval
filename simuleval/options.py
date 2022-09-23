@@ -91,6 +91,18 @@ def add_data_args(parser):
         default="word",
         help="No space is added between received words.",
     )
+    parser.add_argument(
+        "--start-index",
+        type=int,
+        default=0,
+        help="Start index for evaluation",
+    )
+    parser.add_argument(
+        "--end-index",
+        type=int,
+        default=-1,
+        help="The last index for evaluation",
+    )
     add_fairseq_data_args(parser)
 
 
@@ -127,5 +139,6 @@ def general_parser():
 
 def add_agent_args(parser, agent_cls):
     agent_cls.add_args(parser)
-    parser.add_argument("--max-gen-len", type=int, default=200,
-                        help="Max length of translation")
+    parser.add_argument(
+        "--max-gen-len", type=int, default=200, help="Max length of translation"
+    )
