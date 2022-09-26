@@ -13,17 +13,15 @@ import logging
 import subprocess
 import json
 from functools import partial
-from pathlib import Path
 from tqdm import tqdm
-from multiprocessing import Pool, Process, Manager
-
 import simuleval
+import multiprocessing
 from simuleval import options
 from simuleval import READ_ACTION, WRITE_ACTION
 from simuleval.online import start_client, start_server
 from simuleval.scorer.scorer import SentenceLevelScorer
 from simuleval.utils.agent import find_agent_cls, infer_data_types_from_agent
-from simuleval.utils.functional import split_list_into_chunks
+from simuleval.utils.functional import split_list_into_chunks, find_free_port
 from simuleval.data.dataloader import build_dataloader
 
 
@@ -63,7 +61,7 @@ class DataWriter(object):
 
         logger.info(f"Output dir: {self.output_dir}")
         path = os.path.join(self.output_dir, "instances.log")
-        self.proc = Process(target=self.write_loop, args=(path, q))
+        self.proc = multiprocessing.Process(target=self.write_loop, args=(path, q))
         self.proc.start()
         self.started = True
 
@@ -90,7 +88,7 @@ class DataWriter(object):
             logger.info("Close data writer")
 
 
-def decode(args, client, result_queue, instance_ids):
+def decode(args, client, result_queue, instance_ids, process_id=None):
     # Find agent and load related arguments
     agent_name, agent_cls = find_agent_cls(args)
     logger.info(
@@ -105,7 +103,7 @@ def decode(args, client, result_queue, instance_ids):
     # Data type check
     info = client.corpus_info()
     # build agents
-    agent = agent_cls(args)
+    agent = agent_cls(args, process_id)
     agent.set_client(client)
 
     # Decode
@@ -127,7 +125,7 @@ def evaluate(args, client, server_process=None):
         args.end_index = num_sentences
     indices = list(range(num_sentences))[args.start_index : args.end_index]
     num_processes = args.num_processes
-    manager = Manager()
+    manager = multiprocessing.Manager()
     result_queue = manager.Queue()
     data_writer = DataWriter(args, result_queue)
 
@@ -139,12 +137,28 @@ def evaluate(args, client, server_process=None):
             )
             num_processes = num_sentences
 
+        if args.torch_multiprocessing:
+            import torch.multiprocessing as mp
+        else:
+            import multiprocessing as mp
+
         # Multi process, split test set into num_processes pieces
-        with Pool(args.num_processes) as p:
-            p.map(
-                partial(decode, args, client, result_queue),
+        process_args = [
+            (x, y)
+            for x, y in zip(
                 split_list_into_chunks(indices, num_processes),
+                [d for d in range(num_processes)],
             )
+        ]
+        processes = []
+        for p_args in process_args:
+            p = mp.Process(
+                target=partial(decode, args, client, result_queue), args=p_args
+            )
+            p.start()
+            processes.append(p)
+        for p in processes:
+            p.join()
     else:
         decode(args, client, result_queue, indices)
 
@@ -181,6 +195,9 @@ def _main(client_only=False):
 
     args, _ = parser.parse_known_args()
 
+    if args.port == None:
+        args.port = find_free_port()
+
     if not client_only:
         agent_name, agent_cls = find_agent_cls(args)
         logger.info(f"Evaluating on agent {agent_name}")
@@ -188,9 +205,9 @@ def _main(client_only=False):
         dataloader = build_dataloader(args)
         scorer = SentenceLevelScorer(dataloader, args)
         logging.getLogger("tornado.access").setLevel(logging.WARNING)
-        server_process = Process(target=start_server, args=(args, scorer), daemon=True)
+        server_process = multiprocessing.Process(target=start_server, args=(args, scorer), daemon=True)
         server_process.start()
-        time.sleep(3)
+        # time.sleep(3)
     else:
         server_process = None
 

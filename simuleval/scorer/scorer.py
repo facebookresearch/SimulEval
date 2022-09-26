@@ -75,7 +75,9 @@ class SentenceLevelScorer(object):
                 "Warning: these hypothesis don't have EOS in predictions",
                 file=sys.stderr,
             )
-            logger.warn(", ".join((str(x) for x in not_finish_write_id)), file=sys.stderr)
+            logger.warn(
+                ", ".join((str(x) for x in not_finish_write_id)), file=sys.stderr
+            )
             for idx in not_finish_write_id:
                 self.instances[idx].sentence_level_eval()
 

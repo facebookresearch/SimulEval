@@ -6,7 +6,7 @@
 
 import torch
 import logging
-from typing import Dict, List, Union
+from typing import Dict, List, Optional, Union
 from simuleval.online.client import Client
 from simuleval import DEFAULT_EOS
 
@@ -17,23 +17,14 @@ class Agent(object):
     source_type = None
     target_type = None
 
-    def __init__(self, args) -> None:
+    def __init__(self, args, process_id: Optional[int] = None) -> None:
         assert self.source_type
         assert self.target_type
         self.args = args
         self.client = None
         self.source_segment_size = 1
-        self.check_device()
+        self.process_id = process_id
         self.reset()
-
-    def check_device(self):
-        self.device = self.args.device
-        try:
-            torch.FloatTensor([1.0]).to(self.device)
-            logger.info(f"Using device: {self.device}.")
-        except:
-            logger.error(f"Failed to use device: {self.device}, change to cpu.")
-            self.device = "cpu"
 
     def reset(self) -> None:
         self.index = None

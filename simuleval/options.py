@@ -111,9 +111,7 @@ def add_server_args(parser):
     parser.add_argument(
         "--hostname", type=str, default=DEFAULT_HOSTNAME, help="Server hostname"
     )
-    parser.add_argument(
-        "--port", type=int, default=DEFAULT_PORT, help="Server port number"
-    )
+    parser.add_argument("--port", type=int, default=None, help="Server port number")
     parser.add_argument(
         "--server-only", action="store_true", help="Only start the server."
     )
@@ -139,6 +137,12 @@ def general_parser():
         help="Do not use progress bar",
     )
     parser.add_argument(
+        "--torch-multiprocessing",
+        action="store_true",
+        default=False,
+        help="Using torch multiprocessing backend.",
+    )
+    parser.add_argument(
         "--log-level",
         type=str,
         default="info",
@@ -157,9 +161,7 @@ def get_slurm_args():
         "--slurm-partition", default="learnaccel,ust", help="Slurm partition."
     )
     parser.add_argument("--slurm-job-name", default="simuleval", help="Slurm job name.")
-    parser.add_argument(
-        "--slurm-time", default="3:00:00", help="Slurm partition."
-    )
+    parser.add_argument("--slurm-time", default="3:00:00", help="Slurm partition.")
     args, _ = parser.parse_known_args()
     return args
 

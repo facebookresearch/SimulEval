@@ -38,11 +38,20 @@ class Instance(object):
         self.dataloader = dataloader
         self.latency_unit = args.latency_unit
         self.reset()
-        self.load_data()
+        self.source = None
+        self.reference = None
 
-    def load_data(self):
-        self.reference = self.preprocess_target(self.dataloader[self.index]["target"])
-        self.source = self.preprocess_source(self.dataloader[self.index]["source"])
+    def get_reference(self):
+        if self.reference is None:
+            self.reference = self.preprocess_target(
+                self.dataloader[self.index]["target"]
+            )
+        return self.reference
+
+    def get_source(self):
+        if self.source is None:
+            self.source = self.preprocess_target(self.dataloader[self.index]["source"])
+        return self.source
 
     def reset(self):
         self.step = 0
@@ -98,7 +107,7 @@ class Instance(object):
 
     def sentence_level_eval(self):
         self.metrics["sentence_bleu"] = sacrebleu.sentence_bleu(
-            self.prediction, [self.reference]
+            self.prediction, [self.get_reference()]
         ).score
         self.metrics["latency"] = eval_all_latency(
             self.delays,
@@ -113,7 +122,7 @@ class Instance(object):
             "delays": self.delays,
             "elapsed": self.elapsed,
             "prediction_length": self.prediction_length,
-            "reference": self.reference,
+            "reference": self.get_reference(),
             # "source": self.source_info(),
             # "source_length": self.source_length(),
             # "reference_length": self.reference_length(),
@@ -126,10 +135,10 @@ class TextInputInstance(Instance):
         return source.strip().split()  # TODO: add configurable tokenizer
 
     def source_length(self):
-        return len(self.source)
+        return len(self.get_source())
 
     def source_info(self):
-        return " ".join(self.source)
+        return " ".join(self.get_source())
 
     def send_source(self, config_dict: Optional[Dict]):
         if self.step == 0:
@@ -184,9 +193,9 @@ class TextOutputInstance(Instance):
     @property
     def target_length_latency(self):
         if self.latency_unit == "word":
-            return len(self.reference.split(" "))
+            return len(self.get_reference().split(" "))
         elif self.latency_unit == "char":
-            return len(self.reference)
+            return len(self.get_reference())
         else:
             raise NotImplementedError
 
@@ -197,11 +206,23 @@ class TextOutputInstance(Instance):
 
 
 class SpeechInputInstance(Instance):
-    def preprocess_source(self, source):
-        self.audio_info = self.dataloader.get_source_audio_info(self.index)
-        self.sample_rate = self.audio_info.samplerate
-        self.samples = source
-        return source
+    def __init__(self, index, dataloader, args):
+        super().__init__(index, dataloader, args)
+        self.sample_rate_value = None
+        self.sample_list = None
+
+    @property
+    def sample_rate(self):
+        if self.sample_rate_value is None:
+            self.audio_info = self.dataloader.get_source_audio_info(self.index)
+            self.sample_rate_value = self.audio_info.samplerate
+        return self.sample_rate_value
+
+    @property
+    def samples(self) -> List[float]:
+        if self.sample_list is None:
+            self.sample_list = self.get_source()
+        return self.sample_list
 
     def send_source(self, segment_size=10):
 
