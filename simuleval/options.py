@@ -120,6 +120,24 @@ def add_server_args(parser):
     )
 
 
+def get_scorer_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--scorer-only",
+        action="store_true",
+        default=False,
+        help="Only score the inference file.",
+    )
+    parser.add_argument(
+        "--scorer-input",
+        default=None,
+        help="",
+    )
+    add_data_args(parser)
+    args, _ = parser.parse_known_args()
+    return args
+
+
 def general_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument("--agent", default=None, help="Agent type")

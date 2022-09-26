@@ -4,12 +4,18 @@
 # LICENSE file in the root directory of this source tree.
 
 from argparse import Namespace
-from typing import Dict, Generator, List
+from typing import Dict, Generator, List, Optional
 import sacrebleu
-from .instance import SpeechToTextInstance, TextToTextInstance
+from .instance import (
+    Instance,
+    SpeechToTextInstance,
+    TextOutputInstance,
+    TextToTextInstance,
+)
 import os
 import sys
 import logging
+import json
 from statistics import mean
 from pathlib import Path
 from simuleval.utils.common import load_fairseq_manifest, get_fairseq_manifest_path
@@ -19,24 +25,33 @@ logger = logging.getLogger("simuleval.sentence_level_scorer")
 
 
 class SentenceLevelScorer(object):
-    def __init__(self, dataloader: GenericDataloader, args: Namespace) -> None:
-        self.args = args
-        self.eval_latency_unit = args.eval_latency_unit
-        self.sacrebleu_tokenizer = args.sacrebleu_tokenizer
-        self.no_space = args.no_space
+    def __init__(
+        self,
+        dataloader: Optional[GenericDataloader],
+        args: Namespace,
+        reset: bool = True,
+    ) -> None:
         self.dataloader = dataloader
         self.instances = {}
-        self.start_index = args.start_index
-        self.end_index = args.end_index
-        if self.end_index < 0:
-            self.end_index = len(self.dataloader)
+        self.sacrebleu_tokenizer = "13a"
 
-        if args.source_type == "speech":
-            self.instance_class = SpeechToTextInstance
-        else:
-            self.instance_class = TextToTextInstance
+        if args is not None:
+            self.start_index = args.start_index
+            self.end_index = args.end_index
+            if self.end_index < 0:
+                self.end_index = len(self.dataloader)
+            self.args = args
+            self.eval_latency_unit = args.eval_latency_unit
+            self.sacrebleu_tokenizer = args.sacrebleu_tokenizer
+            self.no_space = args.no_space
 
-        self.reset()
+            if getattr(args, "source_type", None) == "speech":
+                self.instance_class = SpeechToTextInstance
+            else:
+                self.instance_class = TextToTextInstance
+
+        if reset:
+            self.reset()
 
     def __len__(self) -> int:
         return self.end_index - self.start_index
@@ -73,36 +88,29 @@ class SentenceLevelScorer(object):
         if len(not_finish_write_id) > 0:
             logger.warn(
                 "Warning: these hypothesis don't have EOS in predictions",
-                file=sys.stderr,
             )
-            logger.warn(
-                ", ".join((str(x) for x in not_finish_write_id)), file=sys.stderr
-            )
+            logger.warn(", ".join((str(x) for x in not_finish_write_id)))
             for idx in not_finish_write_id:
                 self.instances[idx].sentence_level_eval()
 
         if len(empty_hypo_id) > 0:
-            logger.warn("Warning: these hypothesis are empty", file=sys.stderr)
-            logger.warn(", ".join(empty_hypo_id), file=sys.stderr)
+            logger.warn("Warning: these hypothesis are empty")
+            logger.warn(", ".join(empty_hypo_id))
 
         translations = [self.instances[i].prediction for i in self.get_indices()]
 
         return translations
 
     def get_reference_list(self) -> List[str]:
-        return [self.dataloader.target_list[i] for i in self.get_indices()]
+        return [self.instances[i].reference for i in self.get_indices()]
 
     def get_quality_score(self) -> Dict[str, float]:
 
-        try:
-            bleu_score = sacrebleu.corpus_bleu(
-                self.get_translation_list(),
-                [self.get_reference_list()],
-                tokenize=self.sacrebleu_tokenizer,
-            ).score
-        except Exception as e:
-            logger.error(e, file=sys.stderr)
-            bleu_score = 0
+        bleu_score = sacrebleu.corpus_bleu(
+            self.get_translation_list(),
+            [self.get_reference_list()],
+            tokenize=self.sacrebleu_tokenizer,
+        ).score
 
         return {"BLEU": bleu_score}
 
@@ -135,3 +143,27 @@ class SentenceLevelScorer(object):
             "Quality": self.get_quality_score(),
             "Latency": self.get_latency_score(),
         }
+
+    @classmethod
+    def from_log(cls, log_path, target_type: str = "text"):
+        instances = {}
+
+        if target_type == "text":
+            instance_class = TextOutputInstance
+        else:
+            raise NotImplementedError
+
+        with open(log_path, "r") as f:
+            for line in f:
+                instance = instance_class.from_json(line.strip())
+                instances[instance.index] = instance
+        scorer = cls(None, None, False)
+        scorer.start_index = 0
+        scorer.end_index = len(instances.keys())
+        scorer.instances = instances
+        return scorer
+
+
+def compute_score_from_log(log_path):
+    scorer = SentenceLevelScorer.from_log(log_path)
+    print(json.dumps(scorer.score(), indent=4))

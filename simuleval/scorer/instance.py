@@ -4,6 +4,7 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
+import json
 import time
 import math
 from typing import Dict, List, Optional
@@ -36,10 +37,11 @@ class Instance(object):
         self.index = index
         self.finish_prediction = False
         self.dataloader = dataloader
-        self.latency_unit = args.latency_unit
         self.reset()
         self.source = None
         self.reference = None
+        if args is not None:
+            self.latency_unit = getattr(args, "latency_unit", "word")
 
     def get_reference(self):
         if self.reference is None:
@@ -128,6 +130,18 @@ class Instance(object):
             # "reference_length": self.reference_length(),
             "metric": self.metrics,
         }
+
+    @classmethod
+    def from_json(cls, json_string):
+        info = json.loads(json_string)
+        instance = cls(info["index"], None, None)
+        instance.prediction_list = info["prediction"].split() + [DEFAULT_EOS]
+        instance.delays = info["delays"]
+        instance.elapsed = info["elapsed"]
+        instance.reference = info["reference"]
+        instance.metrics = info["metric"]
+        instance.finish_prediction = True
+        return instance
 
 
 class TextInputInstance(Instance):
