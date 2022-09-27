@@ -96,22 +96,22 @@ def add_data_args(parser):
         "--start-index",
         type=int,
         default=0,
-        help="Start index for evaluation",
+        help="Start index for evaluation.",
     )
     parser.add_argument(
         "--end-index",
         type=int,
         default=-1,
-        help="The last index for evaluation",
+        help="The last index for evaluation.",
     )
     add_fairseq_data_args(parser)
 
 
 def add_server_args(parser):
     parser.add_argument(
-        "--hostname", type=str, default=DEFAULT_HOSTNAME, help="Server hostname"
+        "--hostname", type=str, default=DEFAULT_HOSTNAME, help="Server hostname."
     )
-    parser.add_argument("--port", type=int, default=None, help="Server port number")
+    parser.add_argument("--port", type=int, default=None, help="Server port number.")
     parser.add_argument(
         "--server-only", action="store_true", help="Only start the server."
     )

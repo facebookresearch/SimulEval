@@ -18,4 +18,4 @@ class SpeechToTextAgent(Agent):
 
 class SpeechToSpeechAgent(Agent):
     source_type = "speech"
-    speech_segment_size = 10
+    target_type = "speech"

@@ -19,7 +19,7 @@ import multiprocessing
 from simuleval import options
 from simuleval import READ_ACTION, WRITE_ACTION
 from simuleval.online import start_client, start_server
-from simuleval.scorer.scorer import SentenceLevelScorer, compute_score_from_log
+from simuleval.scorer import build_scorer, compute_score_from_log
 from simuleval.utils.agent import find_agent_cls, infer_data_types_from_agent
 from simuleval.utils.functional import split_list_into_chunks, find_free_port
 from simuleval.data.dataloader import build_dataloader
@@ -203,9 +203,11 @@ def _main(client_only=False):
         logger.info(f"Evaluating on agent {agent_name}")
         infer_data_types_from_agent(args, agent_cls)
         dataloader = build_dataloader(args)
-        scorer = SentenceLevelScorer(dataloader, args)
+        scorer = build_scorer(dataloader, args)
         logging.getLogger("tornado.access").setLevel(logging.WARNING)
-        server_process = multiprocessing.Process(target=start_server, args=(args, scorer), daemon=True)
+        server_process = multiprocessing.Process(
+            target=start_server, args=(args, scorer), daemon=True
+        )
         server_process.start()
         # time.sleep(3)
     else:

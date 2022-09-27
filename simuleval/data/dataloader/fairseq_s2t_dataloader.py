@@ -46,3 +46,7 @@ class FairseqSpeechToTextDataloader(SpeechToTextDataloader):
             [fairseq_audio_root / x["audio"] for x in datalist],
             [x["tgt_text"] for x in datalist],
         )
+
+class FairseqSpeechToSpeechDataloader(FairseqSpeechToTextDataloader):
+    # For now we still use S2T dataset for evaluation
+    pass

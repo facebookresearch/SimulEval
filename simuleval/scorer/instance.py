@@ -9,6 +9,7 @@ import time
 import math
 from typing import Dict, List, Optional
 import sacrebleu
+from pathlib import Path
 
 from simuleval import DEFAULT_EOS
 from simuleval.metrics.latency import (
@@ -16,6 +17,7 @@ from simuleval.metrics.latency import (
     AverageProportion,
     DifferentiableAverageLagging,
 )
+import soundfile
 
 
 def eval_all_latency(delays, src_len, ref_len=None):
@@ -41,6 +43,7 @@ class Instance(object):
         self.source = None
         self.reference = None
         if args is not None:
+            self.args = args
             self.latency_unit = getattr(args, "latency_unit", "word")
 
     def get_reference(self):
@@ -300,8 +303,6 @@ class SpeechInputInstance(Instance):
     def step_to_elapsed(self, step, current_time):
         return self.len_sample_to_ms(step) + (current_time - self.start_time) * 1000
 
-
-class SpeechToTextInstance(SpeechInputInstance, TextOutputInstance):
     def sentence_level_eval(self):
         super().sentence_level_eval()
         self.metrics["latency_ca"] = eval_all_latency(
@@ -309,5 +310,93 @@ class SpeechToTextInstance(SpeechInputInstance, TextOutputInstance):
         )
 
 
+class SpeechOutputInstance(Instance):
+    def __init__(self, index, dataloader, args):
+        super().__init__(index, dataloader, args)
+        self.prediction_time = 0
+        self.time_alignment = []
+        self.target_sample_rate = None
+
+    def summarize(self):
+        target_duration = 0
+        samples = []
+        for i in range(len(self.prediction_list)):
+            source_duration = self.time_alignment[i][1]
+            # print(target_duration, source_duration)
+
+            if target_duration >= source_duration:
+                # No need to wait source speech
+                samples += self.prediction_list[i]["samples"]
+            else:
+                # Wait source speech, add discontinuity
+                offset = source_duration - target_duration  # in ms
+                samples += [0.0] * int(
+                    self.target_sample_rate * offset / 1000
+                ) + self.prediction_list[i]["samples"]
+
+            target_duration = len(samples) / self.target_sample_rate * 1000
+
+        wav_path = Path(self.args.output) / "wavs" / f"{self.index}_pred.wav"
+        soundfile.write(wav_path, samples, self.target_sample_rate)
+
+        return {
+            "index": self.index,
+            "prediction": wav_path.as_posix(),
+            "delays": self.time_alignment,
+            "elapsed": [],
+            "prediction_length": target_duration / 1000,
+            "reference": self.get_reference(),
+        }
+
+    def receive_prediction(self, prediction: str):
+        """
+        Handler for receiving new predictions
+        """
+        # from fairseq import pdb;pdb.set_trace()
+        if self.finish_prediction:
+            return
+
+        info_dict = json.loads(prediction)
+
+        pred_samples = info_dict["samples"]
+        pred_duration = 1000 * len(info_dict["samples"]) / info_dict["sample_rate"]
+
+        if self.target_sample_rate is None:
+            self.target_sample_rate = info_dict["sample_rate"]
+
+        self.finish_prediction = DEFAULT_EOS == pred_samples
+
+        if self.finish_prediction:
+            self.sentence_level_eval()
+            return
+
+        if self.start_time is None:
+            self.start_time = time.time()
+
+        # current_time = time.time()
+        self.prediction_time += pred_duration
+
+        self.prediction_list.append(info_dict)
+
+        self.time_alignment.append(
+            [self.prediction_time, self.step_to_delay(self.step)]
+        )
+
+
+class SpeechToTextInstance(SpeechInputInstance, TextOutputInstance):
+    pass
+
+
 class TextToTextInstance(TextInputInstance, TextOutputInstance):
     pass
+
+
+class SpeechToSpeechInstance(SpeechInputInstance, SpeechOutputInstance):
+    pass
+
+
+INSTANCE_TYPE_DICT = {
+    "speech-text": SpeechToTextInstance,
+    "text-text": TextToTextInstance,
+    "speech-speech": SpeechToSpeechInstance,
+}
