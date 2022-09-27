@@ -5,7 +5,8 @@
 # LICENSE file in the root directory of this source tree.
 
 from .scorer import SentenceLevelTextScorer, SentenceLevelSpeechScorer
-from .scorer import compute_score_from_log
+from .scorer import compute_score
+
 
 def build_scorer(dataloader, args):
     if args.target_type == "text":

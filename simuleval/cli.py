@@ -19,7 +19,7 @@ import multiprocessing
 from simuleval import options
 from simuleval import READ_ACTION, WRITE_ACTION
 from simuleval.online import start_client, start_server
-from simuleval.scorer import build_scorer, compute_score_from_log
+from simuleval.scorer import build_scorer, compute_score
 from simuleval.utils.agent import find_agent_cls, infer_data_types_from_agent
 from simuleval.utils.functional import split_list_into_chunks, find_free_port
 from simuleval.data.dataloader import build_dataloader
@@ -265,7 +265,7 @@ CUDA_VISIBLE_DEVICES=$SLURM_LOCALID {command}
 def main():
     args = options.get_scorer_args()
     if args.scorer_only:
-        compute_score_from_log(args.scorer_input)
+        compute_score(args.scorer_input)
         return
 
     args = options.get_slurm_args()
