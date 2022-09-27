@@ -338,6 +338,8 @@ class SpeechOutputInstance(Instance):
 
         wav_path = Path(self.args.output) / "wavs" / f"{self.index}_pred.wav"
         soundfile.write(wav_path, samples, self.target_sample_rate)
+        # with open(Path(self.args.output) / "wavs" / f"{self.index}_pred.txt", "w") as f:
+        #    f.write(self.get_reference() + "\n")
 
         return {
             "index": self.index,
@@ -345,6 +347,7 @@ class SpeechOutputInstance(Instance):
             "delays": self.time_alignment,
             "elapsed": [],
             "prediction_length": target_duration / 1000,
+            "source_length": self.source_length,
             "reference": self.get_reference(),
         }
 

@@ -4,11 +4,13 @@
 # LICENSE file in the root directory of this source tree.
 
 from argparse import Namespace
-from distutils import log
-import imp
+from collections import defaultdict
+from email.policy import default
+import textgrid
+import subprocess
 from typing import Dict, Generator, List, Optional, Union
 import sacrebleu
-from .instance import INSTANCE_TYPE_DICT
+from .instance import INSTANCE_TYPE_DICT, eval_all_latency
 import os
 import sys
 import logging
@@ -31,6 +33,8 @@ class SentenceLevelScorer(object):
         self.dataloader = dataloader
         self.instances = {}
         self.sacrebleu_tokenizer = "13a"
+        self.reference_list = None
+        self.source_lengths = None
 
         if args is not None:
             self.start_index = args.start_index
@@ -81,19 +85,11 @@ class SentenceLevelScorer(object):
         return [self.instances[i].reference for i in self.get_indices()]
 
     def get_quality_score(self) -> Dict[str, float]:
-        from fairseq import pdb
-
-        pdb.set_trace()
         bleu_score = sacrebleu.corpus_bleu(
             self.get_translation_list(),
             [self.get_reference_list()],
             tokenize=self.sacrebleu_tokenizer,
         ).score
-
-        from fairseq import pdb
-
-        pdb.set_trace()
-
         return {"BLEU": bleu_score}
 
     def get_latency_score(self) -> Dict[str, Dict[str, float]]:
@@ -157,7 +153,7 @@ class SentenceLevelTextScorer(SentenceLevelScorer):
         logdir = Path(logdir)
         instances = {}
 
-        instance_class = INSTANCE_TYPE_DICT["text", "text"]
+        instance_class = INSTANCE_TYPE_DICT["text-text"]
 
         with open(logdir / "instances.log", "r") as f:
             for line in f:
@@ -190,6 +186,7 @@ class SentenceLevelSpeechScorer(SentenceLevelScorer):
             logger.warn("Please install ust_common.")
             return ["" for _ in range(len(self))]
 
+        # TODO make it configurable
         prepare_w2v_audio_finetuning_data(
             self.pre_wavs_dir, self.output / "asr_prep_data", output_subset_name="eval"
         )
@@ -206,17 +203,84 @@ class SentenceLevelSpeechScorer(SentenceLevelScorer):
         translations_w_id = sorted(
             translations_w_id, key=lambda x: int(x["id"].split("_")[-1])
         )
-        return [x["transcription"].lower() for x in translations_w_id]
+
+        translation_list = []
+        for idx, item in enumerate(translations_w_id):
+            with open(self.pre_wavs_dir / f"{idx}_pred.txt", "w") as f:
+                f.write(item["transcription"] + "\n")
+            translation_list.append(item["transcription"])
+
+        return translation_list
+    
+    def get_source_lengths(self) -> List[float]:
+        if self.source_lengths is None:
+            self.source_lengths = [seg.source_length for seg in self.instances.values()]
+        return self.source_lengths
 
     def get_reference_list(self) -> List[str]:
+        if self.reference_list is not None:
+            return self.reference_list
         if len(self.instances.keys()) > 0:
             return super().get_reference_list()
         else:
             refer_list = []
+            src_len_list = []
             with open(self.output / "instances.log", "r") as f:
                 for line in f:
                     refer_list.append(json.loads(line.strip())["reference"])
-            return refer_list
+                    src_len_list.append(json.loads(line.strip())["source_length"])
+            self.reference_list = refer_list
+            self.source_lengths = src_len_list
+            return self.reference_list
+
+    def prepare_alignment(self):
+        try:
+            subprocess.run("which mfa", shell=True, check=True)
+        except:
+            logger.error("Please make sure the mfa is correctly installed.")
+            sys.exit(1)
+        logger.info("Align target transcripts with speech.")
+
+        subprocess.run(
+            f"mfa align {self.output / 'wavs'} english_mfa english_mfa {self.output / 'align'} --clean --overwrite",
+            shell=True,
+            check=True,
+        )
+
+    def get_latency_score(self) -> Dict[str, Dict[str, float]]:
+        self.prepare_alignment()
+
+        alignment_dir = self.output / "align"
+        delays = dict()
+        for file in alignment_dir.iterdir():
+            if file.name.endswith("TextGrid"):
+                index = int(file.name.split("_")[0])
+                info = textgrid.TextGrid.fromFile(file)
+
+                delays[index] = defaultdict(list)
+                for interval in info[0]:
+                    if len(interval.mark) > 0:
+                        delays[index]["BOW"].append(interval.minTime)
+                        delays[index]["EOW"].append(interval.maxTime)
+                        delays[index]["COW"].append(
+                            0.5 * (interval.maxTime + interval.minTime)
+                        )
+
+        results = defaultdict(list)
+        for index, d in delays.items():
+            for key, value in d.items():
+                results[key].append(
+                    eval_all_latency(
+                        value, 
+                        self.get_source_lengths()[index] / 1000, 
+                        len(self.get_reference_list()[index].split())) # TODO make is configurable
+                )
+        final_results = defaultdict(dict)
+        for key, value in results.items():
+            for kk in value[0].keys():
+                final_results[key][kk] = mean([item[kk] for item in value])
+
+        return final_results
 
     @classmethod
     def from_logdir(cls, logdir: Union[Path, str], target_type: str = "text"):
