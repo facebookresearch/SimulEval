@@ -7,6 +7,9 @@
 ## Test Time Wait-K Speech-to-Text Translation
 This example illustrate how to decode an offline speech-to-text model with test time [wait-k](https://aclanthology.org/P19-1289/) policy.
 
+Dependencies required:
+- `sentencepiece`: `pip install sentencepiece`
+
 First of all, prepare an offline model with preprocessed data.
 ```bash
 checkpoint="/large_experiments/ust/xutaima/expal/509/509-fairseq_train..ngpu64/checkpoint_average.pt"
@@ -63,6 +66,18 @@ cat ${output_dir}
 ```
 
 ## Test Time Wait-K Cascaded Speech-to-Speech Translation (WIP)
+First of all, install the following dependencies:
+- `pip install huggingface_hub`
+- `pip install g2p_en`
+- `pip install git+ssh://git@github.com/fairinternal/ust_common.git`
+- Montreal Force Aligner (`mfa`). Please see [here](https://montreal-forced-aligner.readthedocs.io/en/latest/installation.html) for installation.
+Also make sure download `mfa` English dictionary and acoustic models.
+```bash
+mfa model download dictionary english_mfa
+mfa model download acoustic english_mfa
+```
+
+
 The set to the previous section except that the agent is
 ```bash
 agent="${simuleval_dir}/examples/fairseq_speech/fairseq_test_waitk_s2s_tts_agent.py"
