@@ -207,11 +207,11 @@ class SentenceLevelSpeechScorer(SentenceLevelScorer):
         translation_list = []
         for idx, item in enumerate(translations_w_id):
             with open(self.pre_wavs_dir / f"{idx}_pred.txt", "w") as f:
-                f.write(item["transcription"] + "\n")
-            translation_list.append(item["transcription"])
+                f.write(item["transcription"].lower() + "\n")
+            translation_list.append(item["transcription"].lower())
 
         return translation_list
-    
+
     def get_source_lengths(self) -> List[float]:
         if self.source_lengths is None:
             self.source_lengths = [seg.source_length for seg in self.instances.values()]
@@ -271,9 +271,10 @@ class SentenceLevelSpeechScorer(SentenceLevelScorer):
             for key, value in d.items():
                 results[key].append(
                     eval_all_latency(
-                        value, 
-                        self.get_source_lengths()[index] / 1000, 
-                        len(self.get_reference_list()[index].split())) # TODO make is configurable
+                        value,
+                        self.get_source_lengths()[index] / 1000,
+                        len(self.get_reference_list()[index].split()),
+                    )  # TODO make is configurable
                 )
         final_results = defaultdict(dict)
         for key, value in results.items():
