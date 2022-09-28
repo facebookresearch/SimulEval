@@ -18,7 +18,7 @@ logger = logging.getLogger("simuleval.util.agent_builder")
 def new_class_names(user_file):
     new_class_names = []
 
-    pattern = re.compile("^class\\s+(\\w+)[\\(\\w+\\)]*:")
+    pattern = re.compile("^class\\s+([^(]+)(\\(.*\\))*:")
     with open(user_file) as f:
         for line in f:
             result = pattern.search(line)

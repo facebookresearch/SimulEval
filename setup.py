@@ -24,7 +24,9 @@ setuptools.setup(
         "tornado",
         "soundfile",
         "requests",
-        "pytest-flake8"
+        "pytest-flake8",
+        "textgrid",
+        "tqdm"
     ],
     package=setuptools.find_packages(
         exclude=[
