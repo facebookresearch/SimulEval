@@ -1,7 +1,10 @@
+import sys
 import re
+from pathlib import Path
 from collections import OrderedDict
 from typing import Dict
 
+import fairseq
 from fairseq import checkpoint_utils
 from fairseq.models import register_model, register_model_architecture, MODEL_REGISTRY
 from fairseq.models.speech_to_text.xm_transformer import (
@@ -33,6 +36,10 @@ if TEST_WAITK_XMTF_ARCH_NAME not in MODEL_REGISTRY:
         @classmethod
         def build_decoder(cls, args, task, embed_tokens):
             tgt_dict = task.tgt_dict
+
+            # A hack to avoid conflicts with fairseq examples
+            del sys.modules["examples"]
+            sys.path = [Path(fairseq.__path__[0]).parent.as_posix()] + sys.path
 
             from examples.simultaneous_translation.models.transformer_monotonic_attention import (
                 TransformerMonotonicDecoder,
