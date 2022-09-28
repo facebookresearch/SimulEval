@@ -4,54 +4,81 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
-from simuleval.states import TextStates, SpeechStates
+import torch
+import logging
+from typing import Dict, List, Optional, Union
+from simuleval.online.client import Client
+from simuleval import DEFAULT_EOS
+
+logger = logging.getLogger("simuleval.agent")
 
 
 class Agent(object):
-    data_type = None
+    source_type = None
+    target_type = None
 
-    def __init__(self, args):
-        assert self.data_type is not None
+    def __init__(self, args, process_id: Optional[int] = None) -> None:
+        assert self.source_type
+        assert self.target_type
+        self.args = args
+        self.client = None
+        self.source_segment_size = 1
+        self.process_id = process_id
+        self.reset()
 
-    def states_type(self, args):
-        if self.data_type == "text":
-            return TextStates
-        elif self.data_type == "speech":
-            return SpeechStates
-        else:
-            raise NotImplementedError
+    def reset(self) -> None:
+        self.index = None
+        self.is_finish_eval = False
+        self.is_finish_read = False
+        self.states = {"source": [], "target": [], "actions": []}
 
-    def segment_to_units(self, segment, states):
-        return [segment]
+    def eval(self, index: int) -> None:
+        self.index = index
+        while not self.is_finish_eval:
+            self.policy()
+        self.write(DEFAULT_EOS)
 
-    def units_to_segment(self, unit_queue, states):
-        return unit_queue.pop()
+    def finish_eval(self) -> None:
+        self.is_finish_eval = True
 
-    def update_states_read(self, states):
-        pass
+    def finish_read(self) -> None:
+        self.is_finish_read = True
 
-    def update_states_write(self, states):
-        pass
+    def set_client(self, client: Client) -> None:
+        self.client = client
 
-    def build_states(self, args, client, sentence_id):
-        # Initialize states here, for example add customized entry to states
-        # This funcion will be caused at begining of every new sentence
-        states = self.states_type(args)(args, client, sentence_id, self)
-        self.initialize_states(states)
-        return states
+    def set_index(self, index: int) -> None:
+        self.index = index
 
-    def initialize_states(self, states):
-        pass
+    def read(self):
+        if self.is_finish_read:
+            return
+        info = self.client.get_source(
+            self.index, {"segment_size": self.source_segment_size}
+        )
+        self.states["source"].append(info)
+        return self.process_read(info)
+
+    def write(self, predictions: Union[List, str]) -> None:
+        predictions = self.process_write(predictions)
+        if isinstance(predictions, str):
+            predictions = [predictions]
+        for pred in predictions:
+            self.client.send_hypo(self.index, pred)
 
     @staticmethod
-    def add_args(parser):
+    def add_args(parser) -> None:
         # Add additional command line arguments here
         pass
 
-    def policy(self, states):
+    def policy(self) -> None:
         # Make decision here
         assert NotImplementedError
 
-    def predict(self, states):
-        # predict token here
-        assert NotImplementedError
+    def process_read(self, info: Dict) -> Dict:
+        # Process the read here
+        return info
+
+    def process_write(self, predictions: Union[List, str]) -> List:
+        # Process the write here
+        return predictions

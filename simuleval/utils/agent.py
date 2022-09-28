@@ -4,6 +4,7 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
+from argparse import Namespace
 import os
 import re
 import sys
@@ -11,7 +12,7 @@ import logging
 import importlib
 from simuleval.agents import Agent
 
-logger = logging.getLogger('simuleval.util.agent_builder')
+logger = logging.getLogger("simuleval.util.agent_builder")
 
 
 def new_class_names(user_file):
@@ -33,7 +34,8 @@ def find_agent_cls(args):
         agent_file = os.environ.get("SIMULEVAL_AGENT", None)
         if agent_file is None:
             logger.error(
-                "You have to specify an agent file either by --agent for set environmental variable SIMULEVAL_AGENT")
+                "You have to specify an agent file either by --agent for set environmental variable SIMULEVAL_AGENT"
+            )
             sys.exit(1)
 
     agent_file = os.path.abspath(agent_file)
@@ -52,9 +54,7 @@ def find_agent_cls(args):
         agent_name = agent_name[0]
 
         if agent_name not in new_class_names_in_file:
-            logger.error(
-                f"No definition found for class {agent_name} in {agent_file}"
-            )
+            logger.error(f"No definition found for class {agent_name} in {agent_file}")
             sys.exit(1)
 
         new_class_names_in_file = [agent_name]
@@ -78,7 +78,8 @@ def find_agent_cls(args):
     if len(agent_cls) > 1:
         if agent_name is None:
             logger.error(
-                f"Multiple 'Agent' classes found in {agent_file}. Please select one by {agent_file}:AgentClassName.\n")
+                f"Multiple 'Agent' classes found in {agent_file}. Please select one by {agent_file}:AgentClassName.\n"
+            )
             sys.exit(1)
         agent_cls = getattr(agent_modules, agent_name, None)
         if agent_cls is None:
@@ -88,7 +89,8 @@ def find_agent_cls(args):
         agent_cls = agent_cls[0]
         if agent_name is not None and agent_name != agent_cls.__name__:
             logger.error(
-                f"Failed to find {agent_name} in {agent_file}. Do you mean {agent_cls.__name__}?\n")
+                f"Failed to find {agent_name} in {agent_file}. Do you mean {agent_cls.__name__}?\n"
+            )
             sys.exit(1)
 
         agent_name = agent_cls.__name__
@@ -96,11 +98,14 @@ def find_agent_cls(args):
     return agent_name, agent_cls
 
 
-def check_data_type(args, agent_cls):
-    if args.data_type is None:
-        args.data_type = agent_cls.data_type
-    else:
-        if args.data_type != agent_cls.data_type:
-            logger.error(
-                f"Data type mismatch '--data-type {args.data_type}', '{agent_cls.__name__}.data_type: {agent_cls.data_type}'")
-            sys.exit(1)
+def infer_data_types_from_agent(args: Namespace, agent: Agent):
+    for side in ["source", "target"]:
+        if getattr(args, side + "_type") is None:
+            setattr(args, side + "_type", getattr(agent, side + "_type"))
+        else:
+            if getattr(args, side + "_type") != getattr(agent, side + "_type"):
+                logger.error(
+                    f"Data type mismatch '--{side}-type {getattr(args, side + '_type')}' "
+                    f"vs {agent.__name__}.{side}_type = {getattr(agent, side + '_type')}"
+                )
+                sys.exit(1)

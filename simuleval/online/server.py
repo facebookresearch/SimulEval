@@ -9,13 +9,12 @@ import logging
 import argparse
 from tornado import web, ioloop
 import simuleval
-from simuleval.scorer import Scorer
 
-DEFAULT_HOSTNAME = 'localhost'
+DEFAULT_HOSTNAME = "localhost"
 DEFAULT_PORT = 12321
 
 
-logger = logging.getLogger('simuleval.server')
+logger = logging.getLogger("simuleval.server")
 
 
 class ScorerHandler(web.RequestHandler):
@@ -34,7 +33,7 @@ class EvalSessionHandler(ScorerHandler):
 
 class ResultHandler(ScorerHandler):
     def get(self):
-        instance_id = self.get_argument('instance_id', None)
+        instance_id = self.get_argument("instance_id", None)
 
         if instance_id is not None:
             instance_id = int(instance_id)
@@ -49,38 +48,41 @@ class ResultHandler(ScorerHandler):
 
 class SourceHandler(ScorerHandler):
     def get(self):
-        instance_id = int(self.get_argument('instance_id'))
+        instance_id = int(self.get_argument("instance_id"))
         segment_size = None
         if "segment_size" in self.request.arguments:
-            string = self.get_argument('segment_size')
+            string = self.get_argument("segment_size")
             if len(string) > 0:
                 segment_size = int(string)
 
-        r = json.dumps(self.scorer.send_src(int(instance_id), segment_size))
+        r = json.dumps(self.scorer.send_source(int(instance_id), segment_size))
 
         self.write(r)
 
 
 class HypothesisHandler(ScorerHandler):
     def put(self):
-        instance_id = int(self.get_argument('instance_id'))
-        list_of_tokens = self.request.body.decode('utf-8').strip().split()
-        self.scorer.recv_hyp(instance_id, list_of_tokens)
+        instance_id = int(self.get_argument("instance_id"))
+        for token in self.request.body.decode("utf-8").strip().split():
+            self.scorer.instances[instance_id].receive_prediction(token)
 
 
-def start_server(args):
-    scorer = Scorer(args)
+def start_server(args, scorer):
+    app = web.Application(
+        [
+            (r"/result", ResultHandler, dict(scorer=scorer)),
+            (r"/src", SourceHandler, dict(scorer=scorer)),
+            (r"/hypo", HypothesisHandler, dict(scorer=scorer)),
+            (r"/", EvalSessionHandler, dict(scorer=scorer)),
+        ],
+        debug=False,
+    )
 
-    app = web.Application([
-        (r'/result', ResultHandler, dict(scorer=scorer)),
-        (r'/src', SourceHandler, dict(scorer=scorer)),
-        (r'/hypo', HypothesisHandler, dict(scorer=scorer)),
-        (r'/', EvalSessionHandler, dict(scorer=scorer)),
-    ], debug=False)
+    app.listen(args.port, max_buffer_size=1024**3)
 
-    app.listen(args.port, max_buffer_size=1024 ** 3)
-
-    logger.info(f"Evaluation Server Started (process id {os.getpid()}). Listening to port {args.port} ")
+    logger.info(
+        f"Evaluation Server Started (process id {os.getpid()}). Listening to port {args.port} "
+    )
     ioloop.IOLoop.current().start()
 
 
@@ -92,10 +94,11 @@ def main():
 
     if args.data_type is None:
         sys.exit(
-            "Data type is needed, set it by --data-type or env SIMULEVAL_DATA_TYPE")
+            "Data type is needed, set it by --data-type or env SIMULEVAL_DATA_TYPE"
+        )
 
     start_server(args)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

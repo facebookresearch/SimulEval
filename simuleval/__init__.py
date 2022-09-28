@@ -13,3 +13,7 @@ DEFAULT_PORT = 12321
 
 READ_ACTION = "read_action"
 WRITE_ACTION = "write_action"
+
+SUPPORTED_MEDIUM = ["text", "speech"]
+SUPPORTED_SOURCE_MEDIUM = ["text", "speech"]
+SUPPORTED_TARGET_MEDIUM = ["text", "speech"]
