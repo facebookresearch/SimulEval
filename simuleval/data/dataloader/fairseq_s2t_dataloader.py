@@ -10,42 +10,59 @@ import soundfile
 
 from simuleval.utils.common import load_fairseq_manifest, get_fairseq_manifest_path
 from simuleval.utils.fairseq import check_fairseq_args, get_audio_file_path
-from fairseq.data.audio.data_cfg import get_config_from_yaml
 
 logger = logging.getLogger("simuleval.fairseq_s2t_dataloader")
 
+try:
+    from fairseq.data.audio.speech_to_text_dataset import (
+        SpeechToTextDataset,
+    )
+    from fairseq.tasks.speech_to_text import SpeechToTextTask
+except:
+    pass
+
 
 class FairseqSpeechToTextDataloader(SpeechToTextDataloader):
-    def preprocess_source(self, source: Union[Path, str]) -> Tuple[List, int]:
-        return super().preprocess_source(get_audio_file_path(source.as_posix()))
+    def __init__(self, fairseq_s2t_dataset: SpeechToTextDataset) -> None:
+        self.fairseq_s2t_dataset = fairseq_s2t_dataset
+
+    def __len__(self):
+        return len(self.fairseq_s2t_dataset)
+
+    def get_source(self, index: int) -> List:
+        return self.fairseq_s2t_dataset[index].source.tolist()
+
+    def get_target(self, index: int) -> str:
+        return self.fairseq_s2t_dataset.txt_compressor.decompress(self.fairseq_s2t_dataset.tgt_texts[index])
 
     def get_source_audio_info(self, index: int) -> float:
-        return soundfile.info(
-            get_audio_file_path(self.source_list[index].as_posix())
-        )
+        return soundfile.info(get_audio_file_path(self.fairseq_s2t_dataset.audio_paths[index]))
 
     @classmethod
     def from_args(cls, args: Namespace) -> FairseqSpeechToTextDataloader:
         check_fairseq_args(args)
         if args.fairseq_manifest:
-            manifest_path = args.fairseq_manifest
+            manifest_path = Path(args.fairseq_manifest)
+            args.fairseq_data = manifest_path.parent.as_posix()
+            args.fairseq_gen_subset = manifest_path.name.replace(".tsv", "")
+
         else:
             manifest_path = get_fairseq_manifest_path(
                 args.fairseq_data, args.fairseq_gen_subset
             )
 
         logger.info(f"Manifest: {manifest_path.as_posix()}")
-        datalist = load_fairseq_manifest(manifest_path)
 
         logger.info(f"Config: {args.fairseq_config}")
-        config = get_config_from_yaml(Path(args.fairseq_data) / args.fairseq_config)
 
-        fairseq_audio_root = Path(config["audio_root"])
-
-        return cls(
-            [fairseq_audio_root / x["audio"] for x in datalist],
-            [x["tgt_text"] for x in datalist],
+        task_args = Namespace(
+            data=args.fairseq_data, config_yaml=args.fairseq_config, seed=1
         )
+        task = SpeechToTextTask.setup_task(task_args)
+        task.load_dataset(args.fairseq_gen_subset)
+        dataset = task.datasets[args.fairseq_gen_subset]
+        return cls(dataset)
+
 
 class FairseqSpeechToSpeechDataloader(FairseqSpeechToTextDataloader):
     # For now we still use S2T dataset for evaluation
