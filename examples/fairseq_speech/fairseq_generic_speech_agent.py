@@ -29,6 +29,11 @@ class FairseqSimulAgent(Agent):
 
         self.load_checkpoint()
 
+        if args.init_target_token:
+            self.init_target_index = self.model.decoder.dictionary.indices[args.init_target_token]
+        else:
+            self.init_target_index = self.model.decoder.dictionary.eos()
+
     def set_device(self, device: str) -> None:
         self.device = device
         try:
@@ -62,6 +67,8 @@ class FairseqSimulAgent(Agent):
                             help="Device to use")
         parser.add_argument("--source-segment-size", type=int, default=200,
                             help="Source segment size in ms")
+        parser.add_argument("--init-target-token", default=None,
+                            help="Init target token")
         # fmt: on
         return parser
 
@@ -99,7 +106,7 @@ class FairseqSimulAgent(Agent):
     def get_target_index_tensor(self) -> torch.LongTensor:
         return (
             torch.LongTensor(
-                [self.model.decoder.dictionary.eos()] + self.states["target_indices"]
+                [self.init_target_index] + self.states["target_indices"]
             )
             .to(self.device)
             .unsqueeze(0)
