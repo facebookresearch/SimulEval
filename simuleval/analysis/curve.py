@@ -1,0 +1,73 @@
+import json
+import pandas
+from pathlib import Path
+from typing import Dict, List, Union
+
+
+class SimulEvalResults:
+    def __init__(self, path: Union[Path, str]) -> None:
+        self.path = Path(path)
+        scores_path = self.path / "scores"
+        if scores_path.exists():
+            self.is_finished = True
+            with open(self.path / "scores") as f:
+                self.scores = json.load(f)
+        else:
+            self.is_finished = False
+            self.scores = {}
+
+    @property
+    def quality(self) -> float:
+        if self.is_finished:
+            return self.scores["Quality"]["BLEU"]
+        else:
+            return 0
+
+    @property
+    def bleu(self) -> float:
+        return self.quality
+
+    @property
+    def latency(self) -> Dict[str, float]:
+        if self.is_finished:
+            return self.scores["Latency"]
+        else:
+            return {}
+
+    @property
+    def average_lagging(self):
+        return self.latency.get("AL", 0)
+
+    @property
+    def name(self):
+        return self.path.name
+
+
+class QualityLatencyAnalyzer:
+    def __init__(self) -> None:
+        self.score_list: List[SimulEvalResults] = []
+
+    def add_scores_from_path(self, path: Path):
+        self.score_list.append(SimulEvalResults(path))
+
+    @classmethod
+    def from_paths(cls, path_list: List[Path]):
+        analyzer = cls()
+        for path in path_list:
+            analyzer.add_scores_from_path(path)
+        return analyzer
+
+    def summarize(self):
+        results = []
+        for score in self.score_list:
+            if score.bleu == 0:
+                continue
+            results.append(
+                [
+                    score.name,
+                    score.average_lagging / 1000,
+                    score.bleu,
+                ]
+            )
+        results.sort(key=lambda x: x[1])
+        return pandas.DataFrame(results, columns=["name", "Average Lagging (s)", "BLEU"])
