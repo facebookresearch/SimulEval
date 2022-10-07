@@ -2,6 +2,7 @@ import os
 import sys
 import json
 import torch
+import simuleval
 from typing import Optional, Dict, Tuple, List
 from argparse import Namespace
 from simuleval import DEFAULT_EOS
@@ -12,7 +13,7 @@ from fairseq.checkpoint_utils import load_model_ensemble_and_task_from_hf_hub
 from fairseq.models.text_to_speech.hub_interface import TTSHubInterface
 from g2p_en import G2p
 
-sys.path.append(os.path.dirname(__file__))
+sys.path.append(os.path.join(simuleval.__path__[0], "..", "examples", "fairseq_speech"))
 from fairseq_test_waitk_s2t_agent import FairseqTestWaitKS2TAgent
 
 
@@ -71,7 +72,8 @@ class FairseqTestWaitKS2SAgent(SpeechToSpeechAgent, FairseqTestWaitKS2TAgent):
 
         if possible_full_word is not None:
             self.states["target_word_buffer"] += " " + possible_full_word
-        if (
+
+        if not is_finished and (
             possible_full_word is None
             or self.compute_phoneme_count(self.states["target_word_buffer"])
             <= self.args.num_emit_phoneme
@@ -88,7 +90,7 @@ class FairseqTestWaitKS2SAgent(SpeechToSpeechAgent, FairseqTestWaitKS2TAgent):
         if prediction == DEFAULT_EOS:
             return []
         self.states["target"] += self.states["target_word_buffer"].split()
-        print(self.states["target_word_buffer"])
+        # print(self.states["target_word_buffer"])
         samples, fs = self.get_tts_output(self.states["target_word_buffer"])
         self.states["target_word_buffer"] = ""
         samples = samples.cpu().tolist()

@@ -1,6 +1,7 @@
 import os
 import sys
 import torch
+import simuleval
 from pathlib import Path
 from typing import Optional, Dict
 from argparse import Namespace
@@ -8,7 +9,7 @@ from simuleval.agents import SpeechToTextAgent
 from fairseq.data.encoders import build_bpe
 from fairseq.data.audio.speech_to_text_dataset import S2TDataConfig
 
-sys.path.append(os.path.dirname(__file__))
+sys.path.append(os.path.join(simuleval.__path__[0], "..", "examples", "fairseq_speech"))
 from fairseq_generic_speech_agent import FairseqTestWaitKAgent
 
 
