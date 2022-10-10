@@ -17,6 +17,7 @@ class FairseqSimulAgent(Agent):
     def __init__(self, args: Namespace, process_id: Optional[int] = None) -> None:
         super().__init__(args)
         self.source_segment_size = args.source_segment_size
+        self.max_len = args.max_len
         self.logger = logging.getLogger(f"simuleval.{type(self).__name__}")
         if process_id is None:
             process_id = 0
@@ -69,6 +70,8 @@ class FairseqSimulAgent(Agent):
                             help="Source segment size in ms")
         parser.add_argument("--init-target-token", default=None,
                             help="Init target token")
+        parser.add_argument('--max-len', type=int, default=200,
+                            help="Max length of predictions")
         # fmt: on
         return parser
 

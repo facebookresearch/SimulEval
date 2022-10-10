@@ -52,11 +52,23 @@ class FairseqTestWaitKS2TAgent(FairseqTestWaitKAgent, SpeechToTextAgent):
         self.update_target(index)
 
         # Only write full word to server
-        is_finished = index == self.model.decoder.dictionary.eos()
-        if is_finished:
-            self.finish_eval()
+        if (
+            index == self.model.decoder.dictionary.eos()
+            or len(self.states["target"]) > self.max_len
+        ):
+            is_finished = True
+        else:
+            is_finished = False
 
         possible_full_word = self.get_next_target_full_word(force_decode=is_finished)
+
+        if is_finished:
+            if self.is_finish_read or len(self.states["target"]) > self.max_len:
+                self.finish_eval()
+            else:
+                keep_index = self.index
+                self.reset()
+                self.index = keep_index
 
         if possible_full_word is None:
             # Not sure whether it's a full word now, just read more input
