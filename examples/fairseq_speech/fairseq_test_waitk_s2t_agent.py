@@ -1,3 +1,4 @@
+from gc import is_finalized
 import os
 import sys
 import torch
@@ -80,6 +81,9 @@ class FairseqTestWaitKS2TAgent(FairseqTestWaitKAgent, SpeechToTextAgent):
     def policy(self) -> None:
         # 0.0 Read at the beginning
         while self.states["encoder_states"] is None:
+            if self.is_finish_read:
+                self.finish_eval()
+                return
             self.read()
 
         # 0.1 Prepare decoder input

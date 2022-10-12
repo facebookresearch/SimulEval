@@ -31,7 +31,9 @@ class FairseqSimulAgent(Agent):
         self.load_checkpoint()
 
         if args.init_target_token:
-            self.init_target_index = self.model.decoder.dictionary.indices[args.init_target_token]
+            self.init_target_index = self.model.decoder.dictionary.indices[
+                args.init_target_token
+            ]
         else:
             self.init_target_index = self.model.decoder.dictionary.eos()
 
@@ -108,9 +110,7 @@ class FairseqSimulAgent(Agent):
 
     def get_target_index_tensor(self) -> torch.LongTensor:
         return (
-            torch.LongTensor(
-                [self.init_target_index] + self.states["target_indices"]
-            )
+            torch.LongTensor([self.init_target_index] + self.states["target_indices"])
             .to(self.device)
             .unsqueeze(0)
         )
@@ -123,17 +123,28 @@ class FairseqSimulAgent(Agent):
             "tgt": target.size(1),
         }
 
+    @property
+    def min_input_length(self):
+        conv_layers = (
+            self.model.encoder.w2v_encoder.w2v_model.feature_extractor.conv_layers
+        )
+        length = conv_layers[-1][0].kernel_size[0]
+        for conv_layer in conv_layers:
+            length *= conv_layer[0].stride[0]
+        return length
+
     def process_read(self, source_info: Dict) -> Dict:
         self.states["source"].append(source_info)
         self.states["source_samples"] += source_info["segment"]
         self.is_finish_read = source_info["finished"]
         torch.cuda.empty_cache()
-        self.states["encoder_states"] = self.model.encoder(
-            torch.FloatTensor(self.states["source_samples"])
-            .to(self.device)
-            .unsqueeze(0),
-            torch.LongTensor([len(self.states["source_samples"])]).to(self.device),
-        )
+        if len(self.states["source_samples"]) >= self.min_input_length:
+            self.states["encoder_states"] = self.model.encoder(
+                torch.FloatTensor(self.states["source_samples"])
+                .to(self.device)
+                .unsqueeze(0),
+                torch.LongTensor([len(self.states["source_samples"])]).to(self.device),
+            )
         return source_info
 
     def process_write(self, prediction: str) -> str:
