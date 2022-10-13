@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import functools
 from argparse import Namespace
 from collections import defaultdict
 from email.policy import default
@@ -93,12 +94,17 @@ class SentenceLevelScorer(object):
         return {"BLEU": bleu_score}
 
     def get_latency_score(self) -> Dict[str, Dict[str, float]]:
+        common_keys = functools.reduce(
+            lambda x, y: x.intersection(y),
+            (set(x.metrics.keys()) for x in self.instances.values()),
+        )
+
         results = {}
         for metric in ["AL", "AP", "DAL"]:
             results[metric] = mean(
                 [seg.metrics["latency"][metric] for seg in self.instances.values()]
             )
-            if "latency_ca" in self.instances[0].metrics:
+            if "latency_ca" in common_keys:
                 results[metric + "_CA"] = mean(
                     [
                         seg.metrics["latency_ca"][metric]
@@ -106,7 +112,7 @@ class SentenceLevelScorer(object):
                     ]
                 )
 
-            if "latency_text_w_time" in self.instances[0].metrics:
+            if "latency_text_w_time" in common_keys:
                 results[metric + " (Time in ms)"] = mean(
                     [
                         seg.metrics["latency_text_w_time"][metric]

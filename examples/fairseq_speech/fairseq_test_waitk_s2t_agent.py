@@ -1,6 +1,8 @@
+from gc import is_finalized
 import os
 import sys
 import torch
+import simuleval
 from pathlib import Path
 from typing import Optional, Dict
 from argparse import Namespace
@@ -8,7 +10,7 @@ from simuleval.agents import SpeechToTextAgent
 from fairseq.data.encoders import build_bpe
 from fairseq.data.audio.speech_to_text_dataset import S2TDataConfig
 
-sys.path.append(os.path.dirname(__file__))
+sys.path.append(os.path.join(simuleval.__path__[0], "..", "examples", "fairseq_speech"))
 from fairseq_generic_speech_agent import FairseqTestWaitKAgent
 
 
@@ -51,11 +53,23 @@ class FairseqTestWaitKS2TAgent(FairseqTestWaitKAgent, SpeechToTextAgent):
         self.update_target(index)
 
         # Only write full word to server
-        is_finished = index == self.model.decoder.dictionary.eos()
-        if is_finished:
-            self.finish_eval()
+        if (
+            index == self.model.decoder.dictionary.eos()
+            or len(self.states["target"]) > self.max_len
+        ):
+            is_finished = True
+        else:
+            is_finished = False
 
         possible_full_word = self.get_next_target_full_word(force_decode=is_finished)
+
+        if is_finished:
+            if self.is_finish_read or len(self.states["target"]) > self.max_len:
+                self.finish_eval()
+            else:
+                keep_index = self.index
+                self.reset()
+                self.index = keep_index
 
         if possible_full_word is None:
             # Not sure whether it's a full word now, just read more input
@@ -67,6 +81,9 @@ class FairseqTestWaitKS2TAgent(FairseqTestWaitKAgent, SpeechToTextAgent):
     def policy(self) -> None:
         # 0.0 Read at the beginning
         while self.states["encoder_states"] is None:
+            if self.is_finish_read:
+                self.finish_eval()
+                return
             self.read()
 
         # 0.1 Prepare decoder input

@@ -123,7 +123,7 @@ def evaluate(args, client, server_process=None):
     num_sentences = info["num_sentences"]
     if args.end_index < 0:
         args.end_index = num_sentences
-    indices = list(range(num_sentences))[args.start_index : args.end_index]
+    indices = list(range(args.start_index, args.end_index))
     num_processes = args.num_processes
     manager = multiprocessing.Manager()
     result_queue = manager.Queue()

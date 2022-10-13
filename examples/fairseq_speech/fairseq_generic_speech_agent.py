@@ -17,6 +17,7 @@ class FairseqSimulAgent(Agent):
     def __init__(self, args: Namespace, process_id: Optional[int] = None) -> None:
         super().__init__(args)
         self.source_segment_size = args.source_segment_size
+        self.max_len = args.max_len
         self.logger = logging.getLogger(f"simuleval.{type(self).__name__}")
         if process_id is None:
             process_id = 0
@@ -30,7 +31,9 @@ class FairseqSimulAgent(Agent):
         self.load_checkpoint()
 
         if args.init_target_token:
-            self.init_target_index = self.model.decoder.dictionary.indices[args.init_target_token]
+            self.init_target_index = self.model.decoder.dictionary.indices[
+                args.init_target_token
+            ]
         else:
             self.init_target_index = self.model.decoder.dictionary.eos()
 
@@ -69,6 +72,8 @@ class FairseqSimulAgent(Agent):
                             help="Source segment size in ms")
         parser.add_argument("--init-target-token", default=None,
                             help="Init target token")
+        parser.add_argument('--max-len', type=int, default=200,
+                            help="Max length of predictions")
         # fmt: on
         return parser
 
@@ -105,9 +110,7 @@ class FairseqSimulAgent(Agent):
 
     def get_target_index_tensor(self) -> torch.LongTensor:
         return (
-            torch.LongTensor(
-                [self.init_target_index] + self.states["target_indices"]
-            )
+            torch.LongTensor([self.init_target_index] + self.states["target_indices"])
             .to(self.device)
             .unsqueeze(0)
         )
@@ -120,17 +123,28 @@ class FairseqSimulAgent(Agent):
             "tgt": target.size(1),
         }
 
+    @property
+    def min_input_length(self):
+        conv_layers = (
+            self.model.encoder.w2v_encoder.w2v_model.feature_extractor.conv_layers
+        )
+        length = conv_layers[-1][0].kernel_size[0]
+        for conv_layer in conv_layers:
+            length *= conv_layer[0].stride[0]
+        return length
+
     def process_read(self, source_info: Dict) -> Dict:
         self.states["source"].append(source_info)
         self.states["source_samples"] += source_info["segment"]
         self.is_finish_read = source_info["finished"]
         torch.cuda.empty_cache()
-        self.states["encoder_states"] = self.model.encoder(
-            torch.FloatTensor(self.states["source_samples"])
-            .to(self.device)
-            .unsqueeze(0),
-            torch.LongTensor([len(self.states["source_samples"])]).to(self.device),
-        )
+        if len(self.states["source_samples"]) >= self.min_input_length:
+            self.states["encoder_states"] = self.model.encoder(
+                torch.FloatTensor(self.states["source_samples"])
+                .to(self.device)
+                .unsqueeze(0),
+                torch.LongTensor([len(self.states["source_samples"])]).to(self.device),
+            )
         return source_info
 
     def process_write(self, prediction: str) -> str:
