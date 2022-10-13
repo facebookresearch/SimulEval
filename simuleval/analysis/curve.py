@@ -39,6 +39,18 @@ class SimulEvalResults:
         return self.latency.get("AL", 0)
 
     @property
+    def average_lagging(self):
+        return self.latency.get("AL", 0)
+
+    @property
+    def average_lagging_ca(self):
+        return self.latency.get("AL_CA", 0)
+
+    @property
+    def average_proportion(self):
+        return self.latency.get("AP", 0)
+
+    @property
     def name(self):
         return self.path.name
 
@@ -65,9 +77,11 @@ class QualityLatencyAnalyzer:
             results.append(
                 [
                     score.name,
-                    score.average_lagging / 1000,
-                    score.bleu,
+                    round(score.average_lagging / 1000, 2),
+                    round(score.average_lagging_ca / 1000, 2),
+                    round(score.average_proportion, 2),
+                    round(score.bleu, 2),
                 ]
             )
         results.sort(key=lambda x: x[1])
-        return pandas.DataFrame(results, columns=["name", "Average Lagging (s)", "BLEU"])
+        return pandas.DataFrame(results, columns=["name", "AL", "AL(CA)", "AP", "BLEU"])
