@@ -1,7 +1,7 @@
 # Fairseq Simultaneous Speech Translation Example
 ## To-Do List
-- [ ] Debug low quality on speech-to-speech model.
-- [ ] Use Hirofumi's checkpoint of offline xm_transformer.
+- [X] Debug low quality on speech-to-speech model.
+- [X] Use Hirofumi's checkpoint of offline xm_transformer.
 - [ ] Use public version of asr-bleu from Iliad.
 
 ## Test Time Wait-K Speech-to-Text Translation
@@ -12,10 +12,10 @@ Dependencies required:
 
 First of all, prepare an offline model with preprocessed data.
 ```bash
-checkpoint="/large_experiments/ust/xutaima/expal/509/509-fairseq_train..ngpu64/checkpoint_average.pt"
-data="/large_experiments/ust/xutaima/data/2022_h2_streaming/s2t_audio"
-config="configs/all_w2v2_ccmtrx.yaml"
-subset="epst-v1.0"
+checkpoint="/private/home/hirofumii/large_experiments/checkpoints/s2ut_pt/es_en/s2t/s2t.pt_es_en.config_mbart.asr.rdrop10.0.ls0.2.maxtok2.0k.uf30.lr0.0005.wu1k.seed1.arch_xm_transformer.W2V_cfm_L.dr0.1.ld0.2.al1.dld0.2.mBART_spm.LND.ca.ngpu24/avg_best_10_checkpoint.pt"
+data="/large_experiments/ust/hirofumii/datasets/s2ut_pt/es_en/s2t"
+config="config_mbart.yaml"
+subset="dev_mtedx_filt" # or subset=dev_epst
 ```
 
 Then calling the following command.
@@ -24,9 +24,9 @@ agent="${simuleval_dir}/examples/fairseq_speech/fairseq_test_waitk_s2t_agent.py"
 
 # step size means we run the policy every this number of encoder states
 # each encoder state of the offline model we use has a span of 120ms
-# Therefore we set the segment_size to 3 * 120 = 360ms
-step=3
-segment_size=`python -c "print(int(${step} * 120))"`
+# Therefore we set the segment_size to 8 * 40 = 320ms
+step=8
+segment_size=`python -c "print(int(${step} * 40))"`
 
 # The K value in waitk policy
 waitk=4
@@ -44,6 +44,8 @@ simuleval \
     --output ${output_dir} \
     --device cuda:0 \
     --source-segment-size ${segment_size} \
+    --max-len-a 0.125 \
+    --max-len-b 10 \
     --waitk-lagging ${k} \
     --fixed-predicision-ratio ${step}
 ```
@@ -52,20 +54,20 @@ The output will be in the `${output_dir}`. There will be two files in output dir
 cat ${output_dir}
 {
     "Quality": {
-        "BLEU": 30.18841562122126
+        "BLEU": 35.08379067677246
     },
     "Latency": {
-        "AL": 3464.1245982859396,
-        "AL_CA": 4435.5774802028545,
-        "AP": 0.7880219553071673,
-        "AP_CA": 0.9807443500745414,
-        "DAL": 3791.4531129138304,
-        "DAL_CA": 5463.9417615833845
+        "AL": 1850.5411219580699,
+        "AL_CA": 2801.504919812908,
+        "AP": 0.8234371600851501,
+        "AP_CA": 1.1013422159825341,
+        "DAL": 2195.3421246717207,
+        "DAL_CA": 3330.618655136884
     }
 }
 ```
 
-## Test Time Wait-K Cascaded Speech-to-Speech Translation (WIP)
+## Test Time Wait-K Cascaded Speech-to-Speech Translation
 First of all, install the following dependencies:
 - `pip install huggingface_hub`
 - `pip install g2p_en`
@@ -77,10 +79,34 @@ mfa model download dictionary english_mfa
 mfa model download acoustic english_mfa
 ```
 
-
-The set to the previous section except that the agent is
+The inference command for s2st system is
 ```bash
+# Hyperparameters similar to the s2t inference
+step=8
+segment_size=`python -c "print(int(${step} * 40))"`
+waitk=4
+
+# Minimal number of phonemes everytime feed into the TTS module.
+# Larger than 4 gives reasonable BLEU score.
+min_ph=6
+
 agent="${simuleval_dir}/examples/fairseq_speech/fairseq_test_waitk_s2s_tts_agent.py"
+
+simuleval \
+    --agent ${agent} \
+    --fairseq-data ${data} \
+    --fairseq-config ${config} \
+    --fairseq-gen-subset ${subset}\
+    --checkpoint ${checkpoint} \
+    --output ${output} \
+    --device cuda:0 \
+    --source-segment-size ${segment_size}  \
+    --waitk-lagging ${k} \
+    --init-target-token "[en_XX]" \
+    --fixed-predicision-ratio ${step} \
+    --num-emit-phoneme ${min_ph} \
+    --max-len-a 0.125 \
+    --max-len-b 10
 ```
 The first time the agent is run, a fastspeech2 TTS system will be downloaded.
 The evaluation of speech-to-speech is more complicated than speech-to-text. Here are how things are done (The SimulEval will do everything for you)
@@ -106,27 +132,26 @@ The final scores of a speech-to-speech system looks like following. Only NCA (no
 - `EOW`: end of the word
 - `AOW`: center of the word (average of `BOW` and `EOW`)
 
-(TODO, the quality is pretty bad, debugging.)
 ```bash
 {
     "Quality": {
-        "BLEU": 4.818878403927336
+        "BLEU": 20.176040705901404
     },
     "Latency": {
         "BOW": {
-            "AL": 3.8244810299117966,
-            "AP": 0.9564174844486879,
-            "DAL": 4.206126439099265
+            "AL": 3010.4543390823624,
+            "AP": 1.2425067150323403,
+            "DAL": 3606.5989132293876
         },
         "EOW": {
-            "AL": 4.2270508638703,
-            "AP": 1.0218393994439947,
-            "DAL": 4.689659468018182
+            "AL": 3246.2921475340418,
+            "AP": 1.362453529390238,
+            "DAL": 3890.952848376258
         },
         "COW": {
-            "AL": 4.006357623799013,
-            "AP": 0.9891284302909775,
-            "DAL": 4.415219217243761
+            "AL": 3128.9276801675055,
+            "AP": 1.3024801236087993,
+            "DAL": 3734.43338009247
         }
     }
 }

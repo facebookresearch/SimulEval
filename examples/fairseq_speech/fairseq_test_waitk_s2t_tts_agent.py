@@ -1,3 +1,4 @@
+from collections import deque
 import os
 import sys
 import json
@@ -15,86 +16,26 @@ from g2p_en import G2p
 
 sys.path.append(os.path.join(simuleval.__path__[0], "..", "examples", "fairseq_speech"))
 from fairseq_test_waitk_s2t_agent import FairseqTestWaitKS2TAgent
+from simuleval.postprocessor import GenericPostProcessor, SPMPostProcessor
 
 
-class FairseqTestWaitKS2SAgent(SpeechToSpeechAgent, FairseqTestWaitKS2TAgent):
-    def __init__(self, args: Namespace, process_id: Optional[int] = None) -> None:
-        super().__init__(args, process_id)
+class Fastspeech2PostProcessor(GenericPostProcessor):
+    def __init__(
+        self,
+        spm_postprocessor: SPMPostProcessor,
+        min_phoneme: int,
+        device: torch.device = torch.device("cpu"),
+    ):
+        self.spm_postprocessor = spm_postprocessor
+        self.min_phoneme = min_phoneme
+        self.device = device
         self.load_tts()
         self.g2p = G2p()
+        self.is_finish = False
 
-    def compute_phoneme_count(self, string: str) -> int:
-        return len([x for x in self.g2p(string) if x != " "])
-
-    def get_next_target_full_word(self, force_decode: bool = False) -> Optional[str]:
-        possible_full_words = self.target_bpe.decode(
-            self.states["target_subword_buffer"]
-        )
-        if force_decode:
-            # Return decoded full word anyways
-            return possible_full_words if len(possible_full_words) > 0 else None
-
-        possible_full_words_list = possible_full_words.split()
-        if len(possible_full_words_list) > 1:
-            self.states["target_subword_buffer"] = possible_full_words_list[1]
-            return possible_full_words_list[0]
-
-        # Not ready yet
-        return None
-
-    def reset(self) -> None:
+    def reset(self):
         super().reset()
-        self.states["target_word_buffer"] = ""
-
-    @staticmethod
-    def add_args(parser):
-        FairseqTestWaitKS2TAgent.add_args(parser)
-        parser.add_argument(
-            "--num-emit-phoneme",
-            type=int,
-            default=3,
-            help="Minimal Number of the phonemes every write.",
-        )
-
-    def possible_write(self, decoder_states: torch.FloatTensor) -> None:
-        log_probs = self.model.get_normalized_probs(
-            [decoder_states[:, -1:]], log_probs=True
-        )
-        index = log_probs.argmax(dim=-1)[0, 0].item()
-        self.update_target(index)
-
-        # Only write full word to server
-        is_finished = index == self.model.decoder.dictionary.eos()
-        if is_finished:
-            self.finish_eval()
-
-        possible_full_word = self.get_next_target_full_word(force_decode=is_finished)
-
-        if possible_full_word is not None:
-            self.states["target_word_buffer"] += " " + possible_full_word
-
-        if not is_finished and (
-            possible_full_word is None
-            or self.compute_phoneme_count(self.states["target_word_buffer"])
-            <= self.args.num_emit_phoneme
-        ):
-            # Not sure whether it's a full word now, just read more input
-
-            self.read()
-        else:
-            if len(self.states["target_word_buffer"].strip()) > 0:
-                # Send the sub
-                self.write(self.states["target_word_buffer"])
-
-    def process_write(self, prediction: str) -> str:
-        if prediction == DEFAULT_EOS:
-            return []
-        self.states["target"] += self.states["target_word_buffer"].split()
-        # print(self.states["target_word_buffer"])
-        samples, fs = self.get_tts_output(self.states["target_word_buffer"])
-        self.states["target_word_buffer"] = ""
-        samples = samples.cpu().tolist()
-        return json.dumps({"samples": samples, "sample_rate": fs}).replace(" ", "")
+        self.is_finish = False
 
     def load_tts(self):
         models, cfg, task = load_model_ensemble_and_task_from_hf_hub(
@@ -106,6 +47,9 @@ class FairseqTestWaitKS2SAgent(SpeechToSpeechAgent, FairseqTestWaitKS2TAgent):
         self.tts_task = task
         self.tts_models = [model.to(self.device) for model in models]
 
+    def compute_phoneme_count(self, string: str) -> int:
+        return len([x for x in self.g2p(string) if x != " "])
+
     def get_tts_output(self, text: str) -> Tuple[List[float], int]:
         sample = TTSHubInterface.get_model_input(self.tts_task, text)
         for key in sample["net_input"].keys():
@@ -116,3 +60,39 @@ class FairseqTestWaitKS2SAgent(SpeechToSpeechAgent, FairseqTestWaitKS2TAgent):
                 self.tts_task, self.tts_models[0], self.tts_generator, sample
             )
             return wav, rate
+
+    def push(self, item):
+        # Only push full words
+        self.spm_postprocessor.push(item)
+        output = self.spm_postprocessor.pop()
+        for o in output:
+            if o is not None:
+                self.deque.append(o)
+
+    def pop(self):
+        current_phoneme_counts = self.compute_phoneme_count(" ".join(self.deque))
+        if current_phoneme_counts >= self.min_phoneme or self.is_finish:
+            samples, fs = self.get_tts_output(" ".join(self.deque))
+            samples = samples.cpu().tolist()
+            self.reset()
+            return json.dumps({"samples": samples, "sample_rate": fs}).replace(" ", "")
+
+
+class FairseqTestWaitKS2SAgent(SpeechToSpeechAgent, FairseqTestWaitKS2TAgent):
+    def __init__(self, args: Namespace, process_id: Optional[int] = None) -> None:
+        super().__init__(args, process_id)
+        self.postprocessor = Fastspeech2PostProcessor(
+            self.postprocessor,
+            self.args.num_emit_phoneme,
+            self.device
+        )
+
+    @staticmethod
+    def add_args(parser):
+        FairseqTestWaitKS2TAgent.add_args(parser)
+        parser.add_argument(
+            "--num-emit-phoneme",
+            type=int,
+            default=3,
+            help="Minimal Number of the phonemes every write.",
+        )

@@ -3,15 +3,15 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import shutil
 import functools
 from argparse import Namespace
 from collections import defaultdict
-from email.policy import default
 import textgrid
 import subprocess
 from typing import Dict, Generator, List, Optional, Union
 import sacrebleu
-from .instance import INSTANCE_TYPE_DICT, eval_all_latency
+from .instance import INSTANCE_TYPE_DICT, eval_all_latency, LogInstance
 import os
 import sys
 import logging
@@ -246,9 +246,23 @@ class SentenceLevelSpeechScorer(SentenceLevelScorer):
             logger.error("Please make sure the mfa is correctly installed.")
             sys.exit(1)
         logger.info("Align target transcripts with speech.")
+        temp_dir = Path(self.output) / "mfa"
+        shutil.rmtree(temp_dir, ignore_errors=True)
+        temp_dir.mkdir(exist_ok=True)
+        original_model_path = Path.home() / "Documents/MFA/pretrained_models"
+        acoustic_model_path = temp_dir / "acoustic.zip"
+        acoustic_model_path.symlink_to(
+            original_model_path / "acoustic" / "english_mfa.zip"
+        )
+        dictionary_path = temp_dir / "dict"
+        dictionary_path.symlink_to(
+            original_model_path / "dictionary" / "english_mfa.dict"
+        )
+        mfa_command = f"mfa align {self.output / 'wavs'} {dictionary_path.as_posix()} {acoustic_model_path.as_posix()} {self.output / 'align'} --clean --overwrite --temporary_directory  {temp_dir.as_posix()}"
+        logger.info(mfa_command)
 
         subprocess.run(
-            f"mfa align {self.output / 'wavs'} english_mfa english_mfa {self.output / 'align'} --clean --overwrite",
+            mfa_command,
             shell=True,
             check=True,
         )
@@ -261,24 +275,31 @@ class SentenceLevelSpeechScorer(SentenceLevelScorer):
         for file in alignment_dir.iterdir():
             if file.name.endswith("TextGrid"):
                 index = int(file.name.split("_")[0])
+                target_offset = self.instances[index].summarize()["delays"][0][1]
+
                 info = textgrid.TextGrid.fromFile(file)
 
                 delays[index] = defaultdict(list)
                 for interval in info[0]:
                     if len(interval.mark) > 0:
-                        delays[index]["BOW"].append(interval.minTime)
-                        delays[index]["EOW"].append(interval.maxTime)
+                        delays[index]["BOW"].append(
+                            target_offset + 1000 * interval.minTime
+                        )
+                        delays[index]["EOW"].append(
+                            target_offset + 1000 * interval.maxTime
+                        )
                         delays[index]["COW"].append(
-                            0.5 * (interval.maxTime + interval.minTime)
+                            target_offset
+                            + 0.5 * (interval.maxTime + interval.minTime) * 1000
                         )
 
         results = defaultdict(list)
-        for index, d in delays.items():
+        for index, d in sorted(delays.items()):
             for key, value in d.items():
                 results[key].append(
                     eval_all_latency(
                         value,
-                        self.get_source_lengths()[index] / 1000,
+                        self.get_source_lengths()[index],
                         len(self.get_reference_list()[index].split()),
                     )  # TODO make is configurable
                 )
@@ -293,6 +314,12 @@ class SentenceLevelSpeechScorer(SentenceLevelScorer):
     def from_logdir(cls, logdir: Union[Path, str], target_type: str = "text"):
         logdir = Path(logdir)
         instances = {}
+
+        with open(logdir / "instances.log") as f:
+            for line in f:
+                info = json.loads(line.strip())
+                instances[info["index"]] = LogInstance(info)
+
         args = Namespace(
             output=logdir,
             start_index=0,
@@ -311,5 +338,8 @@ def compute_score(logdir: Union[Path, str]):
         scorer = SentenceLevelSpeechScorer.from_logdir(logdir)
     else:
         scorer = SentenceLevelTextScorer.from_logdir(logdir)
+
+    with open(logdir / "scores", "w") as f:
+        f.writelines(json.dumps(scorer.score(), indent=4))
 
     print(json.dumps(scorer.score(), indent=4))

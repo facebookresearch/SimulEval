@@ -8,6 +8,7 @@ import torch
 import logging
 from typing import Dict, List, Optional, Union
 from simuleval.online.client import Client
+from simuleval.postprocessor import NonePostProcessor
 from simuleval import DEFAULT_EOS
 
 logger = logging.getLogger("simuleval.agent")
@@ -24,9 +25,11 @@ class Agent(object):
         self.client = None
         self.source_segment_size = 1
         self.process_id = process_id
+        self.postprocessor = NonePostProcessor()
         self.reset()
 
     def reset(self) -> None:
+        self.postprocessor.reset()
         self.index = None
         self.is_finish_eval = False
         self.is_finish_read = False
@@ -60,11 +63,20 @@ class Agent(object):
         return self.process_read(info)
 
     def write(self, predictions: Union[List, str]) -> None:
-        predictions = self.process_write(predictions)
-        if isinstance(predictions, str):
-            predictions = [predictions]
-        for pred in predictions:
-            self.client.send_hypo(self.index, pred)
+
+        self.postprocessor.push(predictions)
+
+        output = self.postprocessor.pop()
+
+        if output is None:
+            return
+
+        if isinstance(output, str):
+            output = [output]
+
+        for pred in output:
+            if pred is not None:
+                self.client.send_hypo(self.index, pred)
 
     @staticmethod
     def add_args(parser) -> None:

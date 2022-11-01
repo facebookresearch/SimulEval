@@ -4,10 +4,14 @@ import re
 import json
 import torch
 import logging
+from pathlib import Path
 from typing import Dict, Optional
 from fairseq import checkpoint_utils, tasks
 from argparse import Namespace
-from simuleval.agents import Agent
+from simuleval.agents import Agent, SpeechToTextAgent
+from simuleval.postprocessor import SPMPostProcessor
+from fairseq.data.encoders import build_bpe
+from fairseq.data.audio.speech_to_text_dataset import S2TDataConfig
 
 sys.path.append(os.path.dirname(__file__))
 from utils import rename_state_dict_test_time_waitk
@@ -17,7 +21,8 @@ class FairseqSimulAgent(Agent):
     def __init__(self, args: Namespace, process_id: Optional[int] = None) -> None:
         super().__init__(args)
         self.source_segment_size = args.source_segment_size
-        self.max_len = args.max_len
+        self.max_len_a = args.max_len_a
+        self.max_len_b = args.max_len_b
         self.logger = logging.getLogger(f"simuleval.{type(self).__name__}")
         if process_id is None:
             process_id = 0
@@ -72,8 +77,10 @@ class FairseqSimulAgent(Agent):
                             help="Source segment size in ms")
         parser.add_argument("--init-target-token", default=None,
                             help="Init target token")
-        parser.add_argument('--max-len', type=int, default=200,
-                            help="Max length of predictions")
+        parser.add_argument('--max-len-a', type=float, default=0,
+                            help="Max length of predictions, a in ax + b")
+        parser.add_argument('--max-len-b', type=float, default=200,
+                            help="Max length of predictions, b in ax + b")
         # fmt: on
         return parser
 
@@ -133,8 +140,74 @@ class FairseqSimulAgent(Agent):
             length *= conv_layer[0].stride[0]
         return length
 
+    @property
+    def source_length(self):
+        return self.states["encoder_states"]["encoder_out"][0].size(0)
+
+    @property
+    def target_length(self):
+        return len(self.states["target_indices"])
+
+    @property
+    def max_len(self):
+        return self.max_len_a * self.source_length + self.max_len_b
+
+    def process_write(self, prediction: str) -> str:
+        self.states["target"].append(prediction)
+        samples, fs = self.get_tts_output(prediction)
+        samples = samples.cpu().tolist()
+        return json.dumps({"samples": samples, "sample_rate": fs}).replace(" ", "")
+
+    def check_finish_eval(self):
+        if (
+            self.states["target_indices"][-1] == self.model.decoder.dictionary.eos()
+            or len(self.states["target"]) > self.max_len
+        ):
+            is_finished = True
+        else:
+            is_finished = False
+
+        if is_finished:
+            if self.is_finish_read or len(self.states["target"]) > self.max_len:
+                self.finish_eval()
+            else:
+                keep_index = self.index
+                self.reset()
+                self.index = keep_index
+            return True
+
+        return False
+
+    def get_token_from_states(self, decoder_states):
+        log_probs = self.model.get_normalized_probs(
+            [decoder_states[:, -1:]], log_probs=True
+        )
+        index = log_probs.argmax(dim=-1)[0, 0].item()
+
+        self.states["target_indices"].append(index)
+
+        bpe_token = self.model.decoder.dictionary.string([index])
+
+        if re.match(r"^\[.+_.+\]$", bpe_token) or len(bpe_token) == 0:
+            # Language Indicator or UNK
+            return None
+
+        return bpe_token
+
+
+class FairseqSimulS2TAgent(FairseqSimulAgent, SpeechToTextAgent):
+    def __init__(self, args: Namespace, process_id: Optional[int] = None) -> None:
+        super().__init__(args, process_id)
+        self.target_bpe = build_bpe(
+            Namespace(
+                **S2TDataConfig(
+                    Path(self.args.fairseq_data) / self.args.fairseq_config
+                ).bpe_tokenizer
+            )
+        )
+        self.postprocessor = SPMPostProcessor(self.target_bpe)
+
     def process_read(self, source_info: Dict) -> Dict:
-        self.states["source"].append(source_info)
         self.states["source_samples"] += source_info["segment"]
         self.is_finish_read = source_info["finished"]
         torch.cuda.empty_cache()
@@ -146,42 +219,3 @@ class FairseqSimulAgent(Agent):
                 torch.LongTensor([len(self.states["source_samples"])]).to(self.device),
             )
         return source_info
-
-    def process_write(self, prediction: str) -> str:
-        self.states["target"].append(prediction)
-        samples, fs = self.get_tts_output(prediction)
-        samples = samples.cpu().tolist()
-        return json.dumps({"samples": samples, "sample_rate": fs}).replace(" ", "")
-
-    def update_target(self, pred_index):
-        self.states["target_indices"].append(pred_index)
-        bpe_token = self.model.decoder.dictionary.string([pred_index])
-
-        if re.match(r"^\[.+_.+\]$", bpe_token):
-            # Language Indicator
-            return
-
-        self.states["target_subword_buffer"] += " " + bpe_token
-
-
-class FairseqTestWaitKAgent(FairseqSimulAgent):
-    def process_checkpoint_state(self, state: Dict) -> Dict:
-        return rename_state_dict_test_time_waitk(
-            state, self.args.waitk_lagging, self.args.fixed_predicision_ratio
-        )
-
-    @staticmethod
-    def add_args(parser):
-        super(FairseqTestWaitKAgent, FairseqTestWaitKAgent).add_args(parser)
-        parser.add_argument(
-            "--fixed-predicision-ratio",
-            type=int,
-            default=3,
-            help="Acoustic feature dimension.",
-        )
-        parser.add_argument(
-            "--waitk-lagging",
-            type=int,
-            required=True,
-            help="Acoustic feature dimension.",
-        )

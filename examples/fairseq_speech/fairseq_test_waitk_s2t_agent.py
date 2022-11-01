@@ -1,82 +1,51 @@
-from gc import is_finalized
 import os
 import sys
 import torch
 import simuleval
-from pathlib import Path
-from typing import Optional, Dict
-from argparse import Namespace
-from simuleval.agents import SpeechToTextAgent
-from fairseq.data.encoders import build_bpe
-from fairseq.data.audio.speech_to_text_dataset import S2TDataConfig
+from typing import Dict
 
 sys.path.append(os.path.join(simuleval.__path__[0], "..", "examples", "fairseq_speech"))
-from fairseq_generic_speech_agent import FairseqTestWaitKAgent
+
+from fairseq_generic_speech_agent import FairseqSimulS2TAgent
+from utils import rename_state_dict_test_time_waitk
 
 
-class FairseqTestWaitKS2TAgent(FairseqTestWaitKAgent, SpeechToTextAgent):
-    def __init__(self, args: Namespace, process_id: Optional[int] = None) -> None:
-        super().__init__(args, process_id)
-        self.target_bpe = build_bpe(
-            Namespace(
-                **S2TDataConfig(
-                    Path(self.args.fairseq_data) / self.args.fairseq_config
-                ).bpe_tokenizer
-            )
+class FairseqTestWaitKS2TAgent(FairseqSimulS2TAgent):
+    """
+    Test-time Wait-K agent for speech-to-text translation.
+    This agent load an offline model and run Wait-K policy
+    """
+
+    @staticmethod
+    def add_args(parser):
+        super(FairseqTestWaitKS2TAgent, FairseqTestWaitKS2TAgent).add_args(parser)
+        parser.add_argument(
+            "--fixed-predicision-ratio",
+            type=int,
+            default=3,
+            help="The ratio of decision making every number of encoder states.",
+        )
+        parser.add_argument(
+            "--waitk-lagging",
+            type=int,
+            required=True,
+            help="Wait K lagging",
+        )
+        parser.add_argument(
+            "--waitk-consecutive-writes",
+            type=int,
+            help="Wait K consecutive writes",
+            default=1,
         )
 
-    def process_write(self, prediction: str) -> str:
-        self.states["target"].append(prediction)
-        return prediction
-
-    def get_next_target_full_word(self, force_decode: bool = False) -> Optional[str]:
-        possible_full_words = self.target_bpe.decode(
-            self.states["target_subword_buffer"]
+    def process_checkpoint_state(self, state: Dict) -> Dict:
+        # Rename parameters to enable offline model in online decoding
+        return rename_state_dict_test_time_waitk(
+            state,
+            self.args.waitk_lagging,
+            self.args.fixed_predicision_ratio,
+            self.args.waitk_consecutive_writes,
         )
-        if force_decode:
-            # Return decoded full word anyways
-            return possible_full_words if len(possible_full_words) > 0 else None
-
-        possible_full_words_list = possible_full_words.split()
-        if len(possible_full_words_list) > 1:
-            self.states["target_subword_buffer"] = possible_full_words_list[1]
-            return possible_full_words_list[0]
-
-        # Not ready yet
-        return None
-
-    def possible_write(self, decoder_states: torch.FloatTensor) -> None:
-        log_probs = self.model.get_normalized_probs(
-            [decoder_states[:, -1:]], log_probs=True
-        )
-        index = log_probs.argmax(dim=-1)[0, 0].item()
-        self.update_target(index)
-
-        # Only write full word to server
-        if (
-            index == self.model.decoder.dictionary.eos()
-            or len(self.states["target"]) > self.max_len
-        ):
-            is_finished = True
-        else:
-            is_finished = False
-
-        possible_full_word = self.get_next_target_full_word(force_decode=is_finished)
-
-        if is_finished:
-            if self.is_finish_read or len(self.states["target"]) > self.max_len:
-                self.finish_eval()
-            else:
-                keep_index = self.index
-                self.reset()
-                self.index = keep_index
-
-        if possible_full_word is None:
-            # Not sure whether it's a full word now, just read more input
-            self.read()
-        else:
-            # Send the sub
-            self.write(possible_full_word)
 
     def policy(self) -> None:
         # 0.0 Read at the beginning
@@ -107,5 +76,8 @@ class FairseqTestWaitKS2TAgent(FairseqTestWaitKAgent, SpeechToTextAgent):
             # 1.2.1 Read
             self.read()
         else:
-            # 1.2.2 Write, but it's possible to skip base on current buffer
-            self.possible_write(decoder_states)
+            # 1.2.2 Predict
+            token = self.get_token_from_states(decoder_states)
+            # 1.2.2 Check if finish then write
+            if not self.check_finish_eval():
+                self.write(token)

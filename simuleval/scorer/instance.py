@@ -318,8 +318,9 @@ class SpeechOutputInstance(Instance):
         self.target_sample_rate = None
 
     def summarize(self):
-        target_duration = 0
+        target_duration = self.time_alignment[0][1]
         samples = []
+        # from fairseq import pdb;pdb.set_trace()
         for i in range(len(self.prediction_list)):
             source_duration = self.time_alignment[i][1]
             # print(target_duration, source_duration)
@@ -343,8 +344,9 @@ class SpeechOutputInstance(Instance):
 
         return {
             "index": self.index,
-            "prediction": wav_path.as_posix(),
+            "prediction": wav_path.absolute().as_posix(),
             "delays": self.time_alignment,
+            "prediction_offset": self.time_alignment[0][1],
             "elapsed": [],
             "prediction_length": target_duration / 1000,
             "source_length": self.source_length,
@@ -403,3 +405,18 @@ INSTANCE_TYPE_DICT = {
     "text-text": TextToTextInstance,
     "speech-speech": SpeechToSpeechInstance,
 }
+
+class LogInstance:
+    def __init__(self, info: Dict) -> None:
+        self.info = info
+
+    def summarize(self):
+        return self.info
+
+    @property
+    def reference(self):
+        return self.info.get("reference", "")
+
+    @property
+    def source_length(self):
+        return self.info.get("source_length", 0)

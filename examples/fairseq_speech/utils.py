@@ -61,7 +61,7 @@ if TEST_WAITK_XMTF_ARCH_NAME not in MODEL_REGISTRY:
 
 
 def rename_state_dict_test_time_waitk(
-    state: Dict, waitk_lagging, fixed_predicision_ratio
+    state: Dict, waitk_lagging, fixed_predicision_ratio, waitk_consecutive_writes
 ):
     state["cfg"]["model"].load_pretrained_encoder_from = None
     state["cfg"]["model"].load_pretrained_decoder_from = None
@@ -74,6 +74,7 @@ def rename_state_dict_test_time_waitk(
     state["cfg"]["model"].energy_bias_init = 0
     state["cfg"]["model"].energy_bias = False
     state["cfg"]["model"].waitk_lagging = waitk_lagging
+    state["cfg"]["model"].waitk_consecutive_writes = waitk_consecutive_writes
     state["cfg"]["model"].fixed_pre_decision_type = "average"
     state["cfg"]["model"].fixed_pre_decision_ratio = fixed_predicision_ratio
     state["cfg"]["model"].fixed_pre_decision_pad_threshold = 0.3
