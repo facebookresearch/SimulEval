@@ -23,6 +23,8 @@ import soundfile
 def eval_all_latency(delays, src_len, ref_len=None):
     if ref_len is None:
         ref_len = len(delays)
+    if len(delays) == 0:
+        return {"AL": None, "AP": None, "DAL": None}
     results = {}
     for name, func in {
         "AL": AverageLagging,

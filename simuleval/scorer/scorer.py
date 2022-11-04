@@ -102,13 +102,13 @@ class SentenceLevelScorer(object):
         results = {}
         for metric in ["AL", "AP", "DAL"]:
             results[metric] = mean(
-                [seg.metrics["latency"][metric] for seg in self.instances.values()]
+                [seg.metrics["latency"][metric] for seg in self.instances.values() if seg.metrics["latency"][metric] is not None]
             )
             if "latency_ca" in common_keys:
                 results[metric + "_CA"] = mean(
                     [
                         seg.metrics["latency_ca"][metric]
-                        for seg in self.instances.values()
+                        for seg in self.instances.values() if seg.metrics["latency_ca"][metric] is not None
                     ]
                 )
 

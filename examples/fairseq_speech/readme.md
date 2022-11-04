@@ -66,6 +66,50 @@ cat ${output_dir}
     }
 }
 ```
+## Test example for the transducer based speech to text translation
+```bash
+checkpoint="/private/home/yuntang/2022/streaming/tt_es_en_shared_code_fix_cfg/checkpoints/st.wal.freeze_3k.nk_1k_safe.optim_radam.lr_0.0003.cn_10.0.wu_12k.mt_10k.up_2.seed_12.arch_s2ttt_large_full.bsz_20.ngpu16/checkpoint_ave10.pt"
+data="/private/home/yuntang/2022/streaming/data/es_en/v01/s2t/"
+gcvmn="/private/home/yuntang/2022/streaming/data/es_en/v01/s2t/gcmn.npz"
+config="config_1k_simuleval.yaml"
+subset="dev_mtedx_filt"
+
+agent="${simuleval_dir}/examples/fairseq_speech/fairseq_test_transducer_s2t_agent.py"
+step=4
+segment_size=`python -c "print(int(${step} * 40))"`
+
+simuleval \
+    --fairseq-data ${data} \
+    --fairseq-config ${config} \
+    --fairseq-gen-subset ${subset}\
+    --checkpoint ${checkpoint} \
+    --agent ${agent} \
+    --output ${output_dir} \
+    --device cuda:0 \
+    --init-target-token "<s>" \
+    --user-dir "$fairseq_root/examples/transformer_transducer" \
+    --blankpen 1.6 \
+    --global-cmvn $gcvmn \
+    --source-segment-size ${segment_size}
+
+```
+
+The results are
+```bash
+{
+    "Quality": {
+        "BLEU": 23.85482604044558
+    },
+    "Latency": {
+        "AL": 1245.6334870713097,
+        "AL_CA": 1829.1715134959068,
+        "AP": 0.7137666339835813,
+        "AP_CA": 0.8493919421313545,
+        "DAL": 1644.104458716608,
+        "DAL_CA": 2216.199846153435
+    }
+}
+```
 
 ## Test Time Wait-K Cascaded Speech-to-Speech Translation
 First of all, install the following dependencies:

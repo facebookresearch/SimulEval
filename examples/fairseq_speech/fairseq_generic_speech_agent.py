@@ -12,6 +12,7 @@ from simuleval.agents import Agent, SpeechToTextAgent
 from simuleval.postprocessor import SPMPostProcessor
 from fairseq.data.encoders import build_bpe
 from fairseq.data.audio.speech_to_text_dataset import S2TDataConfig
+from fairseq.utils import import_user_module
 
 sys.path.append(os.path.dirname(__file__))
 from utils import rename_state_dict_test_time_waitk
@@ -89,11 +90,11 @@ class FairseqSimulAgent(Agent):
 
     def load_checkpoint(self):
         filename = self.args.checkpoint
+        import_user_module(self.args)
         if not os.path.exists(filename):
             raise IOError("Model file not found: {}".format(filename))
 
         state = checkpoint_utils.load_checkpoint_to_cpu(filename)
-
         task_args = state["cfg"]["task"]
 
         if self.args.fairseq_config is not None:
@@ -101,7 +102,6 @@ class FairseqSimulAgent(Agent):
 
         if self.args.fairseq_data is not None:
             task_args.data = self.args.fairseq_data
-
         task = tasks.setup_task(task_args)
 
         component_state_dict = self.process_checkpoint_state(state)

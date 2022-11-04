@@ -1,9 +1,13 @@
 import sys
 import re
+import math
 from pathlib import Path
 from collections import OrderedDict
 from typing import Dict
 
+import numpy as np
+import torch
+import torchaudio.compliance.kaldi as kaldi
 import fairseq
 from fairseq import checkpoint_utils
 from fairseq.models import register_model, register_model_architecture, MODEL_REGISTRY
@@ -90,3 +94,78 @@ def rename_state_dict_test_time_waitk(
         else:
             component_state_dict[key] = state["model"][key]
     return component_state_dict
+
+SHIFT_SIZE = 10
+WINDOW_SIZE = 25
+SAMPLE_RATE = 16000
+FEATURE_DIM = 80
+BOW_PREFIX = "\u2581"
+
+
+class OnlineFeatureExtractor:
+    """
+    Extract speech feature on the fly.
+    """
+
+    def __init__(self, args):
+        self.shift_size = args.frame_shift
+        self.window_size = args.frame_length
+        assert self.window_size >= self.shift_size
+
+        self.sample_rate = args.sample_rate
+        self.feature_dim = args.feature_dim
+        self.num_samples_per_shift = int(self.shift_size * self.sample_rate / 1000)
+        self.num_samples_per_window = int(self.window_size * self.sample_rate / 1000)
+        self.len_ms_to_samples = lambda x: x * self.sample_rate / 1000
+        self.previous_residual_samples = []
+        self.global_cmvn = None if args.global_cmvn == "" else np.load(args.global_cmvn, allow_pickle=True)
+
+    def clear_cache(self):
+        self.previous_residual_samples = []
+
+    def __call__(self, new_samples):
+        samples = self.previous_residual_samples + new_samples
+        if len(samples) < self.num_samples_per_window:
+            self.previous_residual_samples = samples
+            return
+
+        # num_frames is the number of frames from the new segment
+        num_frames = math.floor(
+            (len(samples) - self.len_ms_to_samples(self.window_size - self.shift_size))
+            / self.num_samples_per_shift
+        )
+
+        # the number of frames used for feature extraction
+        # including some part of thte previous segment
+        effective_num_samples = int(
+            num_frames * self.len_ms_to_samples(self.shift_size)
+            + self.len_ms_to_samples(self.window_size - self.shift_size)
+        )
+
+        input_samples = samples[:effective_num_samples]
+        self.previous_residual_samples = samples[
+            num_frames * self.num_samples_per_shift:
+        ]
+
+        torch.manual_seed(1)
+        output = kaldi.fbank(
+            torch.FloatTensor(input_samples).unsqueeze(0),
+            num_mel_bins=self.feature_dim,
+            frame_length=self.window_size,
+            frame_shift=self.shift_size,
+        ).numpy()
+
+        output = self.transform(output)
+
+        return torch.from_numpy(output)
+
+    def transform(self, input):
+        if self.global_cmvn is None:
+            return input
+
+        mean = self.global_cmvn["mean"]
+        std = self.global_cmvn["std"]
+
+        x = np.subtract(input, mean)
+        x = np.divide(x, std)
+        return x
