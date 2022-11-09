@@ -4,15 +4,38 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
+import torch
+
 from simuleval.metrics.latency import (
     AverageLagging,
+    LengthAdaptiveAverageLagging,
     AverageProportion,
     DifferentiableAverageLagging
 )
 
 delays = [1, 1, 2, 3, 5, 7, 7, 9]
+delays_short_hypo = [5, 7, 9]
 src_len = 9
+ref_len_short_hypo = 5
 
+def test_robust_al():
+    for de in [delays, delays_short_hypo]:
+        metrics_from_equation = 0
+        tgt_len = max(ref_len_short_hypo, len(de))
+        gamma = tgt_len / src_len
+        tau = 0
+        for t_miuns_1, d in enumerate(de):
+            if d <= src_len:
+                metrics_from_equation += d - t_miuns_1 / gamma
+                tau = t_miuns_1 + 1
+
+                if d == src_len:
+                    break
+        metrics_from_equation /= tau
+
+        al = LengthAdaptiveAverageLagging(de, src_len, ref_lens=ref_len_short_hypo)
+
+        assert torch.isclose(al, torch.Tensor([metrics_from_equation])), f"{al, metrics_from_equation}"
 
 def test_al():
     metrics_from_equation = 0

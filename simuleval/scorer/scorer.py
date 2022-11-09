@@ -138,7 +138,7 @@ class Scorer(object):
 
     def get_latency_score(self):
         results = {}
-        for metric in ["AL", "AP", "DAL"]:
+        for metric in ["LAAL", "AL", "AP", "DAL"]:
             results[metric] = mean(
                 [seg.metrics["latency"][metric]
                     for seg in self.instances.values()]
