@@ -31,6 +31,7 @@ from simuleval.agents import Agent
 
 
 TEST_WAITK_XMTF_ARCH_NAME = "simul_test_time_wait-k_xm_transformer"
+TEST_WAITK_XMTF_UNITY_ARCH_NAME = "simul_test_time_wait-k_xm_transformer_t2"
 
 if TEST_WAITK_XMTF_ARCH_NAME not in MODEL_REGISTRY:
 
@@ -57,6 +58,52 @@ if TEST_WAITK_XMTF_ARCH_NAME not in MODEL_REGISTRY:
     )
     def simul_base_architecture(args):
         base_architecture(args)
+
+
+if TEST_WAITK_XMTF_UNITY_ARCH_NAME not in MODEL_REGISTRY:
+
+    @register_model(TEST_WAITK_XMTF_UNITY_ARCH_NAME)
+    class SimulXMTransformerModelUnitY(XMTransformerModelUnitY):
+        """
+        This is a dummy class used for text-time wait-k model for offline xm_transformer
+        """
+
+        @classmethod
+        def build_decoder(cls, args, task, aug_attn=False):
+            assert not aug_attn
+            embed_tokens = build_embedding(
+                task.target_dictionary, args.decoder_embed_dim
+            )
+            decoder = TransformerMonotonicDecoder(
+                args, task.target_dictionary, embed_tokens
+            )
+            return decoder, None, args
+
+        @classmethod
+        def build_text_decoder(cls, args, tgt_dict):
+            _args = copy.deepcopy(args)
+
+            if args.adaptor_proj or args.encoder_proj:  # not V0 arch
+                _args.encoder_embed_dim = _args.decoder_embed_dim
+            _args.layerdrop = _args.decoder_layerdrop
+            _args.decoder_layers = _args.translation_decoder_layers
+
+            embed_tokens = build_embedding(tgt_dict, _args.decoder_embed_dim)
+            text_decoder_waitk_configs = eval(args.target_letter_decoder_args)
+
+            for key, value in text_decoder_waitk_configs.items():
+                setattr(_args, key, value)
+
+            decoder = TransformerMonotonicDecoder(_args, tgt_dict, embed_tokens)
+
+            return decoder
+
+    @register_model_architecture(
+        model_name=TEST_WAITK_XMTF_UNITY_ARCH_NAME,
+        arch_name=TEST_WAITK_XMTF_UNITY_ARCH_NAME,
+    )
+    def simul_base_architecture(args):
+        xm_t_base_architecture(args)
 
 
 def rename_state_dict_test_time_waitk(state: Dict, args: Namespace):

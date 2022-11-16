@@ -366,6 +366,9 @@ class SpeechOutputInstance(Instance):
         if self.start_time is None:
             self.start_time = time.time()
 
+        if self.finish_prediction:
+            return
+
         info_dict = json.loads(prediction)
 
         pred_samples = info_dict["samples"]
