@@ -181,7 +181,7 @@ class SentenceLevelSpeechScorer(SentenceLevelScorer):
     ) -> None:
         super().__init__(dataloader, args, reset)
         self.pre_wavs_dir = self.output / "wavs"
-        self.pre_wavs_dir.mkdir(exist_ok=True)
+        self.pre_wavs_dir.mkdir(parents=True, exist_ok=True)
 
     def get_translation_list(self) -> List[str]:
         logger.warn("Beta feature: Evaluating speech output")
@@ -194,7 +194,7 @@ class SentenceLevelSpeechScorer(SentenceLevelScorer):
 
         # TODO make it configurable
         prepare_w2v_audio_finetuning_data(
-            self.pre_wavs_dir, self.output / "asr_prep_data", output_subset_name="eval"
+            self.pre_wavs_dir.absolute(), self.output.absolute() / "asr_prep_data", output_subset_name="eval"
         )
         fairseq_w2v_ctc_infer(
             self.output / "asr_prep_data",

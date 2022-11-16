@@ -228,7 +228,13 @@ def server():
 def submit_slurm_job(args: argparse.Namespace) -> None:
     assert mkdir_output_dir(args.output)
     os.system(f"cp {args.agent} {args.output}/agent.py")
-    command = " ".join(sys.argv)
+    _args = [sys.argv[0]]
+    for arg in sys.argv[1:]:
+        if str(arg).isdigit() or str(arg).startswith("--"):
+            _args.append(arg)
+        else:
+            _args.append(f'"{arg}"')
+    command = " ".join(_args)
     command = re.sub(r"(--slurm\S*(\s+[^-]\S+)*)", "", command).strip()
     command = re.sub(
         r"--agent\s+\S+", f"--agent {args.output}/agent.py", command
@@ -284,3 +290,7 @@ def main():
         _main(args.client_only)
     else:
         server()
+
+
+if __name__ == "__main__":
+    main()

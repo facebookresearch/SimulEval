@@ -4,8 +4,8 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
-import torch
 import logging
+from argparse import Namespace
 from typing import Dict, List, Optional, Union
 from simuleval.online.client import Client
 from simuleval.postprocessor import NonePostProcessor
@@ -25,8 +25,11 @@ class Agent(object):
         self.client = None
         self.source_segment_size = 1
         self.process_id = process_id
-        self.postprocessor = NonePostProcessor()
+        self.postprocessor = self.build_postprocessor(args)
         self.reset()
+
+    def build_postprocessor(self, args: Namespace):
+        return NonePostProcessor()
 
     def reset(self) -> None:
         self.postprocessor.reset()

@@ -1,9 +1,10 @@
-import sys
+import copy
 import re
 import math
 from pathlib import Path
 from collections import OrderedDict
 from typing import Dict
+from argparse import Namespace
 
 import numpy as np
 import torch
@@ -16,6 +17,18 @@ from fairseq.models.speech_to_text.xm_transformer import (
     XMTransformerModel,
 )
 
+from fairseq.models.speech_to_text.xm_transformer_unity import (
+    build_embedding,
+    xm_t_base_architecture,
+    XMTransformerModelUnitY,
+)
+
+from fairseq.models.streaming.modules.monotonic_transformer_decoder import (
+    TransformerMonotonicDecoder,
+)
+
+from simuleval.agents import Agent
+
 
 TEST_WAITK_XMTF_ARCH_NAME = "simul_test_time_wait-k_xm_transformer"
 
@@ -27,27 +40,9 @@ if TEST_WAITK_XMTF_ARCH_NAME not in MODEL_REGISTRY:
         This is a dummy class used for text-time wait-k model for offline xm_transformer
         """
 
-        @staticmethod
-        def add_args(parser):
-            super(XMTransformerModel, XMTransformerModel).add_args(parser)
-            parser.add_argument(
-                "--train-monotonic-only",
-                action="store_true",
-                default=False,
-                help="Only train monotonic attention",
-            )
-
         @classmethod
         def build_decoder(cls, args, task, embed_tokens):
             tgt_dict = task.tgt_dict
-
-            # A hack to avoid conflicts with fairseq examples
-            del sys.modules["examples"]
-            sys.path = [Path(fairseq.__path__[0]).parent.as_posix()] + sys.path
-
-            from examples.simultaneous_translation.models.transformer_monotonic_attention import (
-                TransformerMonotonicDecoder,
-            )
 
             decoder = TransformerMonotonicDecoder(args, tgt_dict, embed_tokens)
 
@@ -64,24 +59,27 @@ if TEST_WAITK_XMTF_ARCH_NAME not in MODEL_REGISTRY:
         base_architecture(args)
 
 
-def rename_state_dict_test_time_waitk(
-    state: Dict, waitk_lagging, fixed_predicision_ratio, waitk_consecutive_writes
-):
+def rename_state_dict_test_time_waitk(state: Dict, args: Namespace):
     state["cfg"]["model"].load_pretrained_encoder_from = None
     state["cfg"]["model"].load_pretrained_decoder_from = None
-    state["cfg"]["model"]._name = TEST_WAITK_XMTF_ARCH_NAME
-    state["cfg"]["model"].arch = TEST_WAITK_XMTF_ARCH_NAME
-    state["cfg"]["model"].simul_type = "waitk_fixed_pre_decision"
+    state["cfg"]["model"]._name = (
+        "simul_test_time_wait-k_" + state["cfg"]["model"]._name
+    )
+    state["cfg"]["model"].arch = "simul_test_time_wait-k_" + state["cfg"]["model"].arch
+    state["cfg"]["model"].simul_type = args.simul_type
     state["cfg"]["model"].noise_type = None
     state["cfg"]["model"].noise_mean = None
     state["cfg"]["model"].noise_var = None
     state["cfg"]["model"].energy_bias_init = 0
     state["cfg"]["model"].energy_bias = False
-    state["cfg"]["model"].waitk_lagging = waitk_lagging
-    state["cfg"]["model"].waitk_consecutive_writes = waitk_consecutive_writes
+    state["cfg"]["model"].waitk_lagging = args.waitk_lagging
+    state["cfg"]["model"].waitk_consecutive_writes = args.waitk_consecutive_writes
     state["cfg"]["model"].fixed_pre_decision_type = "average"
-    state["cfg"]["model"].fixed_pre_decision_ratio = fixed_predicision_ratio
+    state["cfg"]["model"].fixed_pre_decision_ratio = args.fixed_predicision_ratio
     state["cfg"]["model"].fixed_pre_decision_pad_threshold = 0.3
+    state["cfg"]["model"].target_letter_decoder_args = getattr(
+        args, "target_letter_decoder_args", None
+    )
 
     component_state_dict = OrderedDict()
     for key in state["model"].keys():
@@ -94,6 +92,53 @@ def rename_state_dict_test_time_waitk(
         else:
             component_state_dict[key] = state["model"][key]
     return component_state_dict
+
+
+def add_waitk_args(parser):
+    parser.add_argument(
+        "--simul-type",
+        type=str,
+        default="waitk_fixed_pre_decision",
+        help="Type of wait-k",
+    )
+    parser.add_argument(
+        "--fixed-predicision-ratio",
+        type=int,
+        default=8,
+        help="The ratio of decision making every number of encoder states.",
+    )
+    parser.add_argument(
+        "--waitk-lagging",
+        type=int,
+        required=True,
+        help="Wait K lagging",
+    )
+    parser.add_argument(
+        "--waitk-consecutive-writes",
+        type=int,
+        help="Wait K consecutive writes",
+        default=1,
+    )
+
+
+def test_time_waitk_agent(agent: Agent):
+    class TestTimeWaitKAgent(agent):
+        @staticmethod
+        def add_args(parser):
+            super(agent, TestTimeWaitKAgent).add_args(parser)
+            add_waitk_args(parser)
+            try:
+                # Try to add new add_args
+                agent.add_args(parser)
+            except:
+                pass
+
+        def process_checkpoint_state(self, state: Dict) -> Dict:
+            return rename_state_dict_test_time_waitk(state, args=self.args)
+
+    TestTimeWaitKAgent.__name__ = agent.__name__
+
+    return TestTimeWaitKAgent
 
 SHIFT_SIZE = 10
 WINDOW_SIZE = 25

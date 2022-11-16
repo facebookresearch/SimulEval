@@ -1,5 +1,4 @@
 import os
-import sys
 import re
 import json
 import torch
@@ -8,14 +7,9 @@ from pathlib import Path
 from typing import Dict, Optional
 from fairseq import checkpoint_utils, tasks
 from argparse import Namespace
-from simuleval.agents import Agent, SpeechToTextAgent
+from simuleval.agents import Agent, SpeechToTextAgent, SpeechToSpeechAgent
 from simuleval.postprocessor import SPMPostProcessor
-from fairseq.data.encoders import build_bpe
-from fairseq.data.audio.speech_to_text_dataset import S2TDataConfig
 from fairseq.utils import import_user_module
-
-sys.path.append(os.path.dirname(__file__))
-from utils import rename_state_dict_test_time_waitk
 
 
 class FairseqSimulAgent(Agent):
@@ -34,7 +28,9 @@ class FairseqSimulAgent(Agent):
         else:
             self.set_device(args.device[process_id])
 
+        logging.disable(logging.CRITICAL)
         self.load_checkpoint()
+        logging.disable(logging.NOTSET)
 
         if args.init_target_token:
             self.init_target_index = self.model.decoder.dictionary.indices[
@@ -58,7 +54,7 @@ class FairseqSimulAgent(Agent):
         self.states["encoder_states"] = None
         self.states["source_samples"] = []
         self.states["target_indices"] = []
-        self.states["target_subword_buffer"] = ""
+        self.states["target_subword"] = []
         self.states["incremental_states"] = {}
 
     @staticmethod
@@ -103,8 +99,16 @@ class FairseqSimulAgent(Agent):
         if self.args.fairseq_data is not None:
             task_args.data = self.args.fairseq_data
         task = tasks.setup_task(task_args)
+        self.fairseq_task = task
 
         component_state_dict = self.process_checkpoint_state(state)
+        state["cfg"]["model"].max_positions = 1024
+        state["cfg"]["model"].max_source_positions = 1024
+        state["cfg"]["model"].max_target_positions = 1024
+        state["cfg"]["model"].load_pretrained_decoder_from = None
+        state["cfg"]["model"].w2v_path = state["cfg"]["model"].w2v_path.replace(
+            "/large_experiments/ust", "/large_experiments/seamless/ust"
+        )
         self.model = task.build_model(state["cfg"]["model"])
         self.model.load_state_dict(component_state_dict, strict=False)
         self.model.eval()
@@ -152,23 +156,17 @@ class FairseqSimulAgent(Agent):
     def max_len(self):
         return self.max_len_a * self.source_length + self.max_len_b
 
-    def process_write(self, prediction: str) -> str:
-        self.states["target"].append(prediction)
-        samples, fs = self.get_tts_output(prediction)
-        samples = samples.cpu().tolist()
-        return json.dumps({"samples": samples, "sample_rate": fs}).replace(" ", "")
-
     def check_finish_eval(self):
         if (
             self.states["target_indices"][-1] == self.model.decoder.dictionary.eos()
-            or len(self.states["target"]) > self.max_len
+            or self.target_length > self.max_len
         ):
             is_finished = True
         else:
             is_finished = False
 
         if is_finished:
-            if self.is_finish_read or len(self.states["target"]) > self.max_len:
+            if self.is_finish_read or self.target_length > self.max_len:
                 self.finish_eval()
             else:
                 keep_index = self.index
@@ -184,7 +182,8 @@ class FairseqSimulAgent(Agent):
         )
         index = log_probs.argmax(dim=-1)[0, 0].item()
 
-        self.states["target_indices"].append(index)
+        if index != self.init_target_index:
+            self.states["target_indices"].append(index)
 
         bpe_token = self.model.decoder.dictionary.string([index])
 
@@ -194,18 +193,48 @@ class FairseqSimulAgent(Agent):
 
         return bpe_token
 
+    def policy(self) -> None:
+        # 0.0 Read at the beginning
+        while self.states["encoder_states"] is None:
+            if self.is_finish_read:
+                self.finish_eval()
+                return
+            self.read()
 
-class FairseqSimulS2TAgent(FairseqSimulAgent, SpeechToTextAgent):
-    def __init__(self, args: Namespace, process_id: Optional[int] = None) -> None:
-        super().__init__(args, process_id)
-        self.target_bpe = build_bpe(
-            Namespace(
-                **S2TDataConfig(
-                    Path(self.args.fairseq_data) / self.args.fairseq_config
-                ).bpe_tokenizer
-            )
+        # 0.1 Prepare decoder input
+        tgt_indices = self.get_target_index_tensor()
+        self.states["incremental_states"]["steps"] = self.get_current_steps(
+            self.states["encoder_states"]["encoder_out"][0], tgt_indices
         )
-        self.postprocessor = SPMPostProcessor(self.target_bpe)
+        self.states["incremental_states"]["online"] = {
+            "only": torch.tensor(not self.is_finish_read)
+        }
+
+        # 1.1 Run decoder
+        decoder_states, outputs = self.model.decoder.forward(
+            prev_output_tokens=tgt_indices,
+            encoder_out=self.states["encoder_states"],
+            incremental_state=self.states["incremental_states"],
+        )
+
+        # 1.2. Make decision on model output
+        if outputs.action == 0 and not self.is_finish_read:
+            # 1.2.1 Read
+            self.read()
+        else:
+            # 1.2.2 Predict
+            token = self.get_token_from_states(decoder_states)
+            self.states["target_subword"].append(token)
+            # 1.2.2 Check if finish then write
+            if not self.check_finish_eval():
+                self.write(token)
+
+
+class FairseqSimulSpeechInputAgent(FairseqSimulAgent):
+    def build_postprocessor(self, args: Namespace):
+        return SPMPostProcessor.from_fairseq_s2t_config(
+            Path(args.fairseq_data) / args.fairseq_config
+        )
 
     def process_read(self, source_info: Dict) -> Dict:
         self.states["source_samples"] += source_info["segment"]
@@ -218,4 +247,10 @@ class FairseqSimulS2TAgent(FairseqSimulAgent, SpeechToTextAgent):
                 .unsqueeze(0),
                 torch.LongTensor([len(self.states["source_samples"])]).to(self.device),
             )
-        return source_info
+
+
+class FairseqSimulS2SAgent(FairseqSimulSpeechInputAgent, SpeechToSpeechAgent):
+    pass
+
+class FairseqSimulS2TAgent(FairseqSimulSpeechInputAgent, SpeechToTextAgent):
+    pass

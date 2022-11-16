@@ -1,3 +1,6 @@
+from typing import Union
+from pathlib import Path
+from argparse import Namespace
 from .generic_postprocessor import GenericPostProcessor
 from simuleval import DEFAULT_EOS
 
@@ -7,6 +10,14 @@ try:
     IS_SPM_INSTALL = True
 except:
     IS_SPM_INSTALL = False
+
+try:
+    from fairseq.data.encoders import build_bpe
+    from fairseq.data.audio.speech_to_text_dataset import S2TDataConfig
+
+    IS_FAIRSEQ_INSTALL = True
+except:
+    IS_FAIRSEQ_INSTALL = False
 
 
 class SPMPostProcessor(GenericPostProcessor):
@@ -40,3 +51,15 @@ class SPMPostProcessor(GenericPostProcessor):
             return possible_full_words_list + [DEFAULT_EOS]
         else:
             return [full_word]
+
+    @classmethod
+    def from_fairseq_s2t_config(
+        cls, config_path: Union[str, Path]
+    ):
+        assert IS_FAIRSEQ_INSTALL
+        spm_processor = build_bpe(
+            Namespace(
+                **S2TDataConfig(config_path).bpe_tokenizer
+            )
+        )
+        return cls(spm_processor)

@@ -32,7 +32,7 @@ class Client(object):
             logger.error(
                 f"Try to connect to server at http://{self.hostname}:{self.port} but timeout ({self.timeout}s)"
             )
-        raise SystemExit(e)
+            raise SystemExit(e)
 
     def get_scores(self, instance_id=None):
         # end eval session

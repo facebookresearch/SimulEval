@@ -17,6 +17,8 @@ from simuleval.metrics.latency import (
     AverageProportion,
     DifferentiableAverageLagging,
 )
+from simuleval.data.dataloader import GenericDataloader
+from argparse import Namespace
 import soundfile
 
 
@@ -37,7 +39,7 @@ def eval_all_latency(delays, src_len, ref_len=None):
 
 
 class Instance(object):
-    def __init__(self, index, dataloader, args):
+    def __init__(self, index, dataloader: GenericDataloader, args: Namespace):
         self.index = index
         self.finish_prediction = False
         self.dataloader = dataloader
@@ -359,7 +361,6 @@ class SpeechOutputInstance(Instance):
         """
         Handler for receiving new predictions
         """
-        # from fairseq import pdb;pdb.set_trace()
         if self.finish_prediction:
             return
 

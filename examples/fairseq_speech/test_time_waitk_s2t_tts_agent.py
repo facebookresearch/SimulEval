@@ -1,21 +1,18 @@
-from collections import deque
 import os
 import sys
 import json
 import torch
 import simuleval
-from typing import Optional, Dict, Tuple, List
+from typing import Optional, Tuple, List
 from argparse import Namespace
-from simuleval import DEFAULT_EOS
 from simuleval.agents import SpeechToSpeechAgent
-from fairseq.data.encoders import build_bpe
-from fairseq.data.audio.speech_to_text_dataset import S2TDataConfig
 from fairseq.checkpoint_utils import load_model_ensemble_and_task_from_hf_hub
 from fairseq.models.text_to_speech.hub_interface import TTSHubInterface
 from g2p_en import G2p
 
-sys.path.append(os.path.join(simuleval.__path__[0], "..", "examples", "fairseq_speech"))
-from fairseq_test_waitk_s2t_agent import FairseqTestWaitKS2TAgent
+sys.path.append(os.path.join(simuleval.__path__[0], "..", "examples"))
+from fairseq_speech.generic_agent import FairseqSimulS2SAgent
+from fairseq_speech.utils import test_time_waitk_agent
 from simuleval.postprocessor import GenericPostProcessor, SPMPostProcessor
 
 
@@ -28,7 +25,7 @@ class Fastspeech2PostProcessor(GenericPostProcessor):
     ):
         self.spm_postprocessor = spm_postprocessor
         self.min_phoneme = min_phoneme
-        self.device = device
+        self.device = torch.device(device)
         self.load_tts()
         self.g2p = G2p()
         self.is_finish = False
@@ -78,18 +75,16 @@ class Fastspeech2PostProcessor(GenericPostProcessor):
             return json.dumps({"samples": samples, "sample_rate": fs}).replace(" ", "")
 
 
-class FairseqTestWaitKS2SAgent(SpeechToSpeechAgent, FairseqTestWaitKS2TAgent):
-    def __init__(self, args: Namespace, process_id: Optional[int] = None) -> None:
-        super().__init__(args, process_id)
-        self.postprocessor = Fastspeech2PostProcessor(
-            self.postprocessor,
-            self.args.num_emit_phoneme,
-            self.device
+@test_time_waitk_agent
+class FairseqTestWaitKS2SAgent(FairseqSimulS2SAgent):
+    def build_postprocessor(self, args: Namespace) -> GenericPostProcessor:
+        spm_postprocessor = super().build_postprocessor(args)
+        return Fastspeech2PostProcessor(
+            spm_postprocessor, args.num_emit_phoneme, args.device[0]
         )
 
     @staticmethod
     def add_args(parser):
-        FairseqTestWaitKS2TAgent.add_args(parser)
         parser.add_argument(
             "--num-emit-phoneme",
             type=int,

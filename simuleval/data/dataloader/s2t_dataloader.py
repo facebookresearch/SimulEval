@@ -14,8 +14,11 @@ class SpeechToTextDataloader(GenericDataloader):
     def preprocess_target(self, target: str) -> List:
         return target
 
-    def get_source_audio_info(self, index: int):
-        return soundfile.info(self.source_list[index])
+    def get_source_audio_info(self, index: int) -> float:
+        return soundfile.info(self.get_source_audio_path(index))
+
+    def get_source_audio_path(self, index: int):
+        return self.source_list[index]
 
     @classmethod
     def from_files(

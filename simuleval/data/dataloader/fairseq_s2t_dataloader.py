@@ -33,10 +33,15 @@ class FairseqSpeechToTextDataloader(SpeechToTextDataloader):
         return self.fairseq_s2t_dataset[index].source.tolist()
 
     def get_target(self, index: int) -> str:
-        return self.fairseq_s2t_dataset.txt_compressor.decompress(self.fairseq_s2t_dataset.tgt_texts[index])
+        return self.fairseq_s2t_dataset.txt_compressor.decompress(
+            self.fairseq_s2t_dataset.tgt_texts[index]
+        )
 
     def get_source_audio_info(self, index: int) -> float:
-        return soundfile.info(get_audio_file_path(self.fairseq_s2t_dataset.audio_paths[index]))
+        return soundfile.info(get_audio_file_path(self.get_source_audio_path(index)))
+
+    def get_source_audio_path(self, index: int) -> float:
+        return self.fairseq_s2t_dataset.audio_paths[index]
 
     @classmethod
     def from_args(cls, args: Namespace) -> FairseqSpeechToTextDataloader:
