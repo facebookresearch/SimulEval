@@ -9,6 +9,7 @@ from simuleval.agents import SpeechToSpeechAgent
 from fairseq.checkpoint_utils import load_model_ensemble_and_task_from_hf_hub
 from fairseq.models.text_to_speech.hub_interface import TTSHubInterface
 from g2p_en import G2p
+from simuleval import DEFAULT_EOS
 
 sys.path.append(os.path.join(simuleval.__path__[0], "..", "examples"))
 from fairseq_speech.generic_agent import FairseqSimulS2SAgent
@@ -34,6 +35,9 @@ class Fastspeech2PostProcessor(GenericPostProcessor):
         super().reset()
         self.is_finish = False
 
+    def finish_eval(self):
+        self.is_finish = True
+
     def load_tts(self):
         models, cfg, task = load_model_ensemble_and_task_from_hf_hub(
             "facebook/fastspeech2-en-ljspeech",
@@ -49,6 +53,8 @@ class Fastspeech2PostProcessor(GenericPostProcessor):
 
     def get_tts_output(self, text: str) -> Tuple[List[float], int]:
         sample = TTSHubInterface.get_model_input(self.tts_task, text)
+        if sample["net_input"]["src_lengths"][0] == 0:
+            return [], 0
         for key in sample["net_input"].keys():
             if sample["net_input"][key] is not None:
                 sample["net_input"][key] = sample["net_input"][key].to(self.device)
@@ -59,20 +65,30 @@ class Fastspeech2PostProcessor(GenericPostProcessor):
             return wav, rate
 
     def push(self, item):
+
+        if item == DEFAULT_EOS:
+            self.finish_eval()
+
         # Only push full words
         self.spm_postprocessor.push(item)
         output = self.spm_postprocessor.pop()
+
         for o in output:
-            if o is not None:
+            if (
+                o is not None
+                and o != DEFAULT_EOS
+                and len(self.tts_task.src_dict.encode_line(o)) > 1
+            ):
                 self.deque.append(o)
 
     def pop(self):
         current_phoneme_counts = self.compute_phoneme_count(" ".join(self.deque))
         if current_phoneme_counts >= self.min_phoneme or self.is_finish:
             samples, fs = self.get_tts_output(" ".join(self.deque))
-            samples = samples.cpu().tolist()
-            self.reset()
-            return json.dumps({"samples": samples, "sample_rate": fs}).replace(" ", "")
+            if len(samples) > 0:
+                samples = samples.cpu().tolist()
+                self.reset()
+                return json.dumps({"samples": samples, "sample_rate": fs}).replace(" ", "")
 
 
 @test_time_waitk_agent
@@ -82,6 +98,20 @@ class FairseqTestWaitKS2SAgent(FairseqSimulS2SAgent):
         return Fastspeech2PostProcessor(
             spm_postprocessor, args.num_emit_phoneme, args.device[0]
         )
+
+    def finish_eval(self) -> None:
+        import codecs
+
+        mode = "w" if self.index == 0 else "a"
+
+        with codecs.open(
+            os.path.join(self.args.output, "debug.log"), mode, "utf-8"
+        ) as f:
+
+            info = {"text": self.states["target_subword"]}
+            f.write(json.dumps(info, ensure_ascii=False) + "\n")
+
+        return super().finish_eval()
 
     @staticmethod
     def add_args(parser):

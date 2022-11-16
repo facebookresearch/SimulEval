@@ -102,13 +102,18 @@ class SentenceLevelScorer(object):
         results = {}
         for metric in ["AL", "AP", "DAL"]:
             results[metric] = mean(
-                [seg.metrics["latency"][metric] for seg in self.instances.values() if seg.metrics["latency"][metric] is not None]
+                [
+                    seg.metrics["latency"][metric]
+                    for seg in self.instances.values()
+                    if seg.metrics["latency"][metric] is not None
+                ]
             )
             if "latency_ca" in common_keys:
                 results[metric + "_CA"] = mean(
                     [
                         seg.metrics["latency_ca"][metric]
-                        for seg in self.instances.values() if seg.metrics["latency_ca"][metric] is not None
+                        for seg in self.instances.values()
+                        if seg.metrics["latency_ca"][metric] is not None
                     ]
                 )
 
@@ -194,7 +199,9 @@ class SentenceLevelSpeechScorer(SentenceLevelScorer):
 
         # TODO make it configurable
         prepare_w2v_audio_finetuning_data(
-            self.pre_wavs_dir.absolute(), self.output.absolute() / "asr_prep_data", output_subset_name="eval"
+            self.pre_wavs_dir.absolute(),
+            self.output.absolute() / "asr_prep_data",
+            output_subset_name="eval",
         )
         fairseq_w2v_ctc_infer(
             self.output / "asr_prep_data",
@@ -275,7 +282,7 @@ class SentenceLevelSpeechScorer(SentenceLevelScorer):
         for file in alignment_dir.iterdir():
             if file.name.endswith("TextGrid"):
                 index = int(file.name.split("_")[0])
-                target_offset = self.instances[index].summarize()["delays"][0][1]
+                target_offset = self.instances[index].summarize()["delays"][0]
 
                 info = textgrid.TextGrid.fromFile(file)
 
@@ -307,6 +314,16 @@ class SentenceLevelSpeechScorer(SentenceLevelScorer):
         for key, value in results.items():
             for kk in value[0].keys():
                 final_results[key][kk] = mean([item[kk] for item in value])
+
+        with open(self.output / "latency.log", "w") as f:
+            for index in sorted(delays.keys()):
+                info = {"index": index}
+                info["length"] = self.get_source_lengths()[index]
+                for key in results.keys():
+                    info[key] = results[key][index]
+                info["delay"] = delays[index]
+
+                f.write(json.dumps(info) + "\n")
 
         return final_results
 

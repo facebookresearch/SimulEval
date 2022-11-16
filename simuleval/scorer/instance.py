@@ -318,51 +318,53 @@ class SpeechOutputInstance(Instance):
     def __init__(self, index, dataloader, args):
         super().__init__(index, dataloader, args)
         self.prediction_time = 0
-        self.time_alignment = []
+        self.durations = []
         self.target_sample_rate = None
 
     def summarize(self):
-        target_duration = self.time_alignment[0][1]
         samples = []
-        # from fairseq import pdb;pdb.set_trace()
-        for i in range(len(self.prediction_list)):
-            source_duration = self.time_alignment[i][1]
-            # print(target_duration, source_duration)
+        # start from the first segment offset
+        start = prev_end = self.delays[0]
+        intervals = []
 
-            if target_duration >= source_duration:
-                # No need to wait source speech
-                samples += self.prediction_list[i]["samples"]
-            else:
-                # Wait source speech, add discontinuity
-                offset = source_duration - target_duration  # in ms
+        for i, delay in enumerate(self.delays):
+
+            start = max(prev_end, delay)
+
+            if start > prev_end:
+                # Wait source speech, add discontinuity with silence
                 samples += [0.0] * int(
-                    self.target_sample_rate * offset / 1000
-                ) + self.prediction_list[i]["samples"]
+                    self.target_sample_rate * (start - prev_end) / 1000
+                )
+            samples += self.prediction_list[i]["samples"]
 
-            target_duration = len(samples) / self.target_sample_rate * 1000
+            duration = self.durations[i]
+            prev_end = start + duration
+            intervals.append([start, duration])
 
         wav_path = Path(self.args.output) / "wavs" / f"{self.index}_pred.wav"
         soundfile.write(wav_path, samples, self.target_sample_rate)
-        # with open(Path(self.args.output) / "wavs" / f"{self.index}_pred.txt", "w") as f:
-        #    f.write(self.get_reference() + "\n")
 
         return {
             "index": self.index,
             "prediction": wav_path.absolute().as_posix(),
-            "delays": self.time_alignment,
-            "prediction_offset": self.time_alignment[0][1],
+            "delays": self.delays,
+            "durations": self.durations,
+            "prediction_offset": self.delays[0],
             "elapsed": [],
-            "prediction_length": target_duration / 1000,
+            "intervals": intervals,
+            "prediction_length": len(samples) / self.target_sample_rate,
             "source_length": self.source_length,
             "reference": self.get_reference(),
+            "source": self.dataloader.get_source_audio_path(self.index),
         }
 
     def receive_prediction(self, prediction: str):
         """
         Handler for receiving new predictions
         """
-        if self.finish_prediction:
-            return
+        if self.start_time is None:
+            self.start_time = time.time()
 
         info_dict = json.loads(prediction)
 
@@ -372,23 +374,15 @@ class SpeechOutputInstance(Instance):
         if self.target_sample_rate is None:
             self.target_sample_rate = info_dict["sample_rate"]
 
+        self.durations.append(pred_duration)
+        self.prediction_list.append(info_dict)
+        self.delays.append(self.step_to_delay(self.step))
+
         self.finish_prediction = DEFAULT_EOS == pred_samples
 
         if self.finish_prediction:
             self.sentence_level_eval()
             return
-
-        if self.start_time is None:
-            self.start_time = time.time()
-
-        # current_time = time.time()
-        self.prediction_time += pred_duration
-
-        self.prediction_list.append(info_dict)
-
-        self.time_alignment.append(
-            [self.prediction_time, self.step_to_delay(self.step)]
-        )
 
 
 class SpeechToTextInstance(SpeechInputInstance, TextOutputInstance):
@@ -408,6 +402,7 @@ INSTANCE_TYPE_DICT = {
     "text-text": TextToTextInstance,
     "speech-speech": SpeechToSpeechInstance,
 }
+
 
 class LogInstance:
     def __init__(self, info: Dict) -> None:
