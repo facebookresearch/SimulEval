@@ -132,7 +132,7 @@ class Instance(object):
             "elapsed": self.elapsed,
             "prediction_length": self.prediction_length,
             "reference": self.get_reference(),
-            # "source": self.source_info(),
+            "source": self.dataloader.get_source_audio_path(self.index),
             # "source_length": self.source_length(),
             # "reference_length": self.reference_length(),
             "metric": self.metrics,

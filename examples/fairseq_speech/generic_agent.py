@@ -252,5 +252,6 @@ class FairseqSimulSpeechInputAgent(FairseqSimulAgent):
 class FairseqSimulS2SAgent(FairseqSimulSpeechInputAgent, SpeechToSpeechAgent):
     pass
 
+
 class FairseqSimulS2TAgent(FairseqSimulSpeechInputAgent, SpeechToTextAgent):
     pass
