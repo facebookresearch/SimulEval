@@ -1,7 +1,7 @@
 # SimulEval
 [![](https://github.com/facebookresearch/SimulEval/workflows/build/badge.svg)](https://github.com/facebookresearch/SimulEval/actions)
 
-SimulEval is a general evaluation framework for simultaneous translation on text and speech.
+SimulEval is a general evaluation framework for simultaneous translation on text and speech. Full documentation can be found [here](https://simuleval.readthedocs.io/en/v1.1.0/).
 
 ## Installation
 ```
