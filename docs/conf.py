@@ -9,7 +9,7 @@
 project = "SimulEval"
 copyright = "Facebook AI Research (FAIR)"
 author = "Facebook AI Research (FAIR)"
-release = "2.0"
+release = "1.1.0"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
