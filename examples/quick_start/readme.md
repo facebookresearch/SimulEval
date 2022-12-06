@@ -19,4 +19,4 @@ More examples:
 - `dummy_waitk_text_agent_v2.py`: customized agent argument
 - `dummy_waitk_text_agent_v3.py`: agent pipeline
 
-More details:
+More details can be found [here](https://simuleval.readthedocs.io/en/v1.1.0/quick_start.html)
