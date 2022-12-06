@@ -3,9 +3,6 @@
 
 SimulEval is a general evaluation framework for simultaneous translation on text and speech.
 
-### Requirement
-* python >= 3.7.0
-
 ## Installation
 ```
 git clone https://github.com/facebookresearch/SimulEval.git
@@ -14,13 +11,10 @@ pip install -e .
 ```
 
 ## Quick Start
-Following is the evaluation of a [dummy agent](examples/dummy/dummy_waitk_text_agent.py) which operates wait-k (k = 3) policy and generates random words until the length of the generated words is the same as the number of all the source words. A tutorial can be found [here](docs/get_started.md).
+Following is the evaluation of a [dummy agent](examples/quick_start) which operates wait-k (k = 3) policy and generates random words until the length of the generated words is the same as the number of all the source words.
 ```shell
-cd examples
-simuleval \
-  --agent dummy/dummy_waitk_text_agent.py \
-  --source data/src.txt \
-  --target data/tgt.txt
+cd examples/quick_start
+simuleval --source source.txt --target target.txt --agent dummy_waitk_text_agent_v1.py  
 ```
 
 # License
