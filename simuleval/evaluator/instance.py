@@ -16,7 +16,11 @@ from simuleval.data.segments import TextSegment, SpeechSegment
 
 from simuleval.data.dataloader import GenericDataloader
 from argparse import Namespace
-import soundfile
+try:
+    import soundfile
+    IS_IMPORT_SOUNDFILE = True
+except:
+    IS_IMPORT_SOUNDFILE = False
 
 
 class Instance(object):
@@ -273,6 +277,7 @@ class SpeechOutputInstance(Instance):
         self.prediction_time = 0
         self.durations = []
         self.target_sample_rate = None
+        assert IS_IMPORT_SOUNDFILE, "Please make sure soundfile is properly installed."
 
     @property
     def wav_path(self):

@@ -1,12 +1,17 @@
 from __future__ import annotations
-import io
-import sys
 import logging
 from argparse import Namespace
 from .s2t_dataloader import SpeechToTextDataloader
 from pathlib import Path
-from typing import Callable, List, Union, Tuple
-import soundfile
+from typing import List
+
+try:
+    import soundfile
+
+    IS_IMPORT_SOUNDFILE = True
+except:
+    IS_IMPORT_SOUNDFILE = False
+
 
 from simuleval.utils.fairseq import get_audio_file_path, get_fairseq_manifest_path
 
@@ -36,6 +41,7 @@ class FairseqSpeechToTextDataloader(SpeechToTextDataloader):
     """
 
     def __init__(self, fairseq_s2t_dataset: SpeechToTextDataset) -> None:
+        assert IS_IMPORT_SOUNDFILE, "Please make sure soundfile is properly installed."
         self.fairseq_s2t_dataset = fairseq_s2t_dataset
 
     def __len__(self):

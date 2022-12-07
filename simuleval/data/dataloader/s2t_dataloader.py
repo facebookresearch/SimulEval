@@ -2,11 +2,17 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Callable, List, Union, Tuple
 from .dataloader import GenericDataloader
-import soundfile
+try:
+    import soundfile
+    IS_IMPORT_SOUNDFILE = True
+except:
+    IS_IMPORT_SOUNDFILE = False
+
 
 
 class SpeechToTextDataloader(GenericDataloader):
     def preprocess_source(self, source: Union[Path, str]) -> List[float]:
+        assert IS_IMPORT_SOUNDFILE, "Please make sure soundfile is properly installed."
         samples, _ = soundfile.read(source, dtype="float32")
         samples = samples.tolist()
         return samples
