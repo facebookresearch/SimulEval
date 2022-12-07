@@ -27,6 +27,7 @@ setuptools.setup(
         "pytest-flake8",
         "textgrid",
         "tqdm",
+        "pyyaml",
         "bitarray==2.6.0",
     ],
     package=setuptools.find_packages(

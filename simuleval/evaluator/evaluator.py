@@ -3,20 +3,15 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import shutil
 import pandas
 import numbers
 from argparse import Namespace
-from collections import defaultdict
-from typing import Dict, Generator, List, Optional, Union
-from .instance import Instance
+from typing import Dict, Generator, List
 from .scorers import get_scorer_class
 from .scorers.latency_scorer import LatencyScorer
 from .scorers.quality_scorer import QualityScorer
 
 from .instance import INSTANCE_TYPE_DICT, LogInstance
-import os
-import sys
 import yaml
 import logging
 import json
