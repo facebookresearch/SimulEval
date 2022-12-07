@@ -23,6 +23,7 @@ setuptools.setup(
         "sacrebleu==1.5.1",
         "tornado",
         "soundfile",
+        "pandas",
         "requests",
         "pytest-flake8",
         "textgrid",
