@@ -4,7 +4,10 @@ from simuleval import SUPPORTED_SOURCE_MEDIUM, SUPPORTED_TARGET_MEDIUM
 from simuleval.utils.fairseq import use_fairseq
 from .t2t_dataloader import TextToTextDataloader
 from .s2t_dataloader import SpeechToTextDataloader
-from .fairseq_s2t_dataloader import FairseqSpeechToTextDataloader, FairseqSpeechToSpeechDataloader
+from .fairseq_s2t_dataloader import (
+    FairseqSpeechToTextDataloader,
+    FairseqSpeechToSpeechDataloader,
+)
 
 DATALOADER_DICT = {
     "text-text": TextToTextDataloader,
@@ -17,11 +20,10 @@ logger = logging.getLogger("simuleval.dataloader")
 
 
 def build_dataloader(args) -> Any:
-    assert args.target_type in SUPPORTED_TARGET_MEDIUM
     assert args.source_type in SUPPORTED_SOURCE_MEDIUM
+    assert args.target_type in SUPPORTED_TARGET_MEDIUM
     logger.info(f"Evaluating from {args.source_type} to {args.target_type}.")
     if not use_fairseq(args):
-        assert args.target
         assert args.source
         return DATALOADER_DICT[f"{args.source_type}-{args.target_type}"].from_files(
             args.source, args.target

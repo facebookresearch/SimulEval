@@ -8,21 +8,15 @@ import os
 import re
 import sys
 import argparse
-import time
 import logging
 import subprocess
 import json
-from functools import partial
-from tqdm import tqdm
-import simuleval
 import multiprocessing
 from simuleval import options
-from simuleval import READ_ACTION, WRITE_ACTION
-from simuleval.online import start_client, start_server
-from simuleval.scorer import build_scorer, compute_score
-from simuleval.utils.agent import find_agent_cls, infer_data_types_from_agent
-from simuleval.utils.functional import split_list_into_chunks, find_free_port
-from simuleval.data.dataloader import build_dataloader
+from simuleval import options, EVALUATION_SYSTEM_LIST
+from simuleval.utils.agent import import_file
+from simuleval.evaluator import build_evaluator, SentenceLevelEvaluator
+from simuleval.backend.service import start_service
 
 
 logging.basicConfig(
@@ -45,187 +39,8 @@ def mkdir_output_dir(path: str) -> bool:
         return False
 
 
-class DataWriter(object):
-    def __init__(self, args, q):
-        self.queue = q
-        self.output_dir = args.output
-        if self.output_dir is None:
-            logger.warning("No output directory")
-            self.started = False
-            self.proc = None
-            return
-
-        self.started = mkdir_output_dir(self.output_dir)
-        if not self.started:
-            return
-
-        logger.info(f"Output dir: {self.output_dir}")
-        path = os.path.join(self.output_dir, "instances.log")
-        self.proc = multiprocessing.Process(target=self.write_loop, args=(path, q))
-        self.proc.start()
-        self.started = True
-
-    @staticmethod
-    def write_loop(path, q):
-        logger.info(f"Start data writer (process id {os.getpid()})")
-        with open(path, "w") as f:
-            while True:
-                try:
-                    m = q.get()
-                    f.write(json.dumps(m) + "\n")
-                    f.flush()
-                except EOFError:
-                    break
-
-    def write_scores(self, scores):
-        if self.started:
-            with open(os.path.join(self.output_dir, "scores"), "w") as f:
-                f.write(json.dumps(scores, indent=4))
-
-    def kill(self):
-        if self.proc is not None:
-            self.proc.kill()
-            logger.info("Close data writer")
-
-
-def decode(args, client, result_queue, instance_ids, process_id=None):
-    # Find agent and load related arguments
-    agent_name, agent_cls = find_agent_cls(args)
-    logger.info(
-        f"Evaluating {agent_name} (process id {os.getpid()}) "
-        f"on instances from {instance_ids[0]} to {instance_ids[-1]}"
-    )
-
-    parser = options.general_parser()
-    options.add_agent_args(parser, agent_cls)
-    args, _ = parser.parse_known_args()
-
-    # Data type check
-    info = client.corpus_info()
-    # build agents
-    agent = agent_cls(args, process_id)
-    agent.set_client(client)
-
-    # Decode
-    index_generator = instance_ids if args.no_progress_bar else tqdm(instance_ids)
-    for instance_id in index_generator:
-        agent.reset()
-        agent.eval(index=instance_id)
-        sent_info = client.get_scores(instance_id)
-        result_queue.put(sent_info)
-        logger.debug(
-            f"Instance {instance_id} finished, results:\n{json.dumps(sent_info, indent=4)}"
-        )
-
-
-def evaluate(args, client, server_process=None):
-    info = client.corpus_info()
-    num_sentences = info["num_sentences"]
-    if args.end_index < 0:
-        args.end_index = args.start_index + num_sentences
-    indices = list(range(args.start_index, args.end_index))
-    num_processes = args.num_processes
-    manager = multiprocessing.Manager()
-    result_queue = manager.Queue()
-    data_writer = DataWriter(args, result_queue)
-
-    if num_processes > 1:
-        if num_processes > num_sentences:
-            logger.warn(
-                f"Number of processes is larger than number sentences ({num_processes}, {num_sentences})."
-                f"Will only use {num_sentences} processes"
-            )
-            num_processes = num_sentences
-
-        if args.torch_multiprocessing:
-            import torch.multiprocessing as mp
-        else:
-            import multiprocessing as mp
-
-        # Multi process, split test set into num_processes pieces
-        process_args = [
-            (x, y)
-            for x, y in zip(
-                split_list_into_chunks(indices, num_processes),
-                [d for d in range(num_processes)],
-            )
-        ]
-        processes = []
-        for p_args in process_args:
-            p = mp.Process(
-                target=partial(decode, args, client, result_queue), args=p_args
-            )
-            p.start()
-            processes.append(p)
-        for p in processes:
-            p.join()
-    else:
-        decode(args, client, result_queue, indices)
-
-    scores = client.get_scores()
-    logger.info("Evaluation results:\n" + json.dumps(scores, indent=4))
-    logger.info("Evaluation finished")
-
-    data_writer.write_scores(scores)
-    data_writer.kill()
-
-    if server_process is not None:
-        server_process.kill()
-        logger.info("Shutdown server")
-
-
-def main():
-    parser = options.general_parser()
-    options.add_server_args(parser)
-    args, _ = parser.parse_known_args()
-    logger.setLevel(args.log_level.upper())
-
-    if not args.server_only:
-        _main(args.client_only)
-    else:
-        server()
-
-
-def _main(client_only=False):
-    parser = options.general_parser()
-    options.add_server_args(parser)
-
-    if not client_only:
-        options.add_data_args(parser)
-
-    args, _ = parser.parse_known_args()
-
-    if args.port == None:
-        args.port = find_free_port()
-
-    if not client_only:
-        agent_name, agent_cls = find_agent_cls(args)
-        logger.info(f"Evaluating on agent {agent_name}")
-        infer_data_types_from_agent(args, agent_cls)
-        dataloader = build_dataloader(args)
-        scorer = build_scorer(dataloader, args)
-        logging.getLogger("tornado.access").setLevel(logging.WARNING)
-        server_process = multiprocessing.Process(
-            target=start_server, args=(args, scorer), daemon=True
-        )
-        server_process.start()
-        # time.sleep(3)
-    else:
-        server_process = None
-
-    client = start_client(args)
-    evaluate(args, client, server_process)
-
-
-def server():
-    parser = argparse.ArgumentParser()
-    options.add_server_args(parser)
-    options.add_data_args(parser)
-    args = parser.parse_args()
-    simuleval.online.start_server(args)
-
-
-def submit_slurm_job(args: argparse.Namespace) -> None:
+def submit_slurm_job() -> None:
+    args = options.get_slurm_args()
     assert mkdir_output_dir(args.output)
     os.system(f"cp {args.agent} {args.output}/agent.py")
     _args = [sys.argv[0]]
@@ -265,31 +80,108 @@ CUDA_VISIBLE_DEVICES=$SLURM_LOCALID {command}
     stdout, stderr = process.communicate()
     logger.info("Using slurm.")
     logger.info(f"sbatch stdout: {stdout.decode('utf-8').strip()}")
-    logger.info(f"sbatch stderr: {stderr.decode('utf-8').strip()}")
+    stderr = stderr.decode("utf-8").strip()
+    if len(stderr) > 0:
+        logger.info(f"sbatch stderr: {stderr.decode('utf-8').strip()}")
+
+
+def check_evaluation_system_list():
+    if len(EVALUATION_SYSTEM_LIST) == 0:
+        logger.error(
+            "Please use @simuleval decorator to indicate the system you want to evaluate."
+        )
+    elif len(EVALUATION_SYSTEM_LIST) > 1:
+        logger.error("More than on system is not supported right now.")
+    else:
+        logger.info(f"Evaluate system: {EVALUATION_SYSTEM_LIST[0].__name__}")
+
+
+def check_argument(name):
+    parser = options.general_parser()
+    args, _ = parser.parse_known_args()
+    return getattr(args, name)
+
+
+def import_user_system():
+    import_file(check_argument("agent"))
 
 
 def main():
-    args = options.get_scorer_args()
-    if args.scorer_only:
-        compute_score(args.scorer_input)
+    if check_argument("remote_eval"):
+        remote_evaluate()
         return
 
-    args = options.get_slurm_args()
-    if args.slurm:
-        submit_slurm_job(args)
+    if check_argument("score_only"):
+        scoring()
         return
+
+    if check_argument("slurm"):
+        submit_slurm_job()
+        return
+
+    system = build_system()
+
+    if check_argument("standalone"):
+        start_service(system)
+    else:
+        evaluate(system)
+
+
+def build_system():
+
+    import_user_system()
+
+    check_evaluation_system_list()
+    system_class = EVALUATION_SYSTEM_LIST[0]
+
+    # General Options
+    parser = options.general_parser()
+    options.add_data_args(parser)
+    options.add_evaluator_args(parser)
+
+    # System Options
+    system_class.add_args(parser)
+
+    args = parser.parse_args()
+
+    # build system
+    system = system_class.from_args(args)
+    return system
+
+
+def evaluate(system):
 
     parser = options.general_parser()
-    args, _ = parser.parse_known_args()
+    options.add_data_args(parser)
+    options.add_evaluator_args(parser)
+    system.add_args(parser)
 
-    options.add_server_args(parser)
-    args, _ = parser.parse_known_args()
-    logger.setLevel(args.log_level.upper())
+    args = parser.parse_args()
+    args.source_type = system.source_type
+    args.target_type = system.target_type
 
-    if not args.server_only:
-        _main(args.client_only)
-    else:
-        server()
+    # build evaluator
+    evaluator = build_evaluator(args)
+
+    # evaluate system
+    evaluator(system)
+
+
+def scoring():
+    args = options.get_evaluator_args()
+    evaluator = SentenceLevelEvaluator.from_args(args)
+    print(json.dumps(evaluator.results, indent=4))
+
+
+def remote_evaluate():
+    # build evaluator
+    args = options.get_evaluator_args()
+    evaluator = build_evaluator(args)
+    evaluator.reset()
+
+    # evaluate system
+    evaluator.evaluate()
+    logger.info(f"results: {evaluator.results()}")
 
 
 if __name__ == "__main__":

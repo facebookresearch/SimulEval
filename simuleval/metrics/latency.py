@@ -53,11 +53,14 @@ def latency_metric(func):
 
         return delays, src_lens, tgt_lens, ref_lens, target_padding_mask
 
-    def latency_wrapper(
-        delays, src_lens, ref_lens=None, target_padding_mask=None
-    ):
-        delays, src_lens, tgt_lens, ref_lens, target_padding_mask = prepare_latency_metric(
-            delays, src_lens, ref_lens, target_padding_mask)
+    def latency_wrapper(delays, src_lens, ref_lens=None, target_padding_mask=None):
+        (
+            delays,
+            src_lens,
+            tgt_lens,
+            ref_lens,
+            target_padding_mask,
+        ) = prepare_latency_metric(delays, src_lens, ref_lens, target_padding_mask)
         return func(delays, src_lens, tgt_lens, ref_lens, target_padding_mask)
 
     return latency_wrapper
@@ -65,7 +68,8 @@ def latency_metric(func):
 
 @latency_metric
 def AverageProportion(
-    delays, src_lens, tgt_lens, ref_lens=None, target_padding_mask=None):
+    delays, src_lens, tgt_lens, ref_lens=None, target_padding_mask=None
+):
     """
     Function to calculate Average Proportion from
     Can neural machine translation do simultaneous translation?
@@ -109,34 +113,38 @@ def AverageLagging(delays, src_lens, tgt_lens, ref_lens=None, target_padding_mas
     lagging_padding_mask = delays >= src_lens
     # Padding one token at beginning to consider at least one delays that
     # larget than src_lens
-    lagging_padding_mask = torch.nn.functional.pad(
-        lagging_padding_mask, (1, 0))[:, :-1]
+    lagging_padding_mask = torch.nn.functional.pad(lagging_padding_mask, (1, 0))[:, :-1]
 
     if target_padding_mask is not None:
         lagging_padding_mask = lagging_padding_mask.masked_fill(
-            target_padding_mask, True)
+            target_padding_mask, True
+        )
 
     # oracle delays are the delay for the oracle system which goes diagonally
     oracle_delays = (
-        torch.arange(max_tgt_len)
-        .unsqueeze(0)
-        .type_as(delays)
-        .expand([bsz, max_tgt_len])
-    ) * src_lens / tgt_lens
+        (
+            torch.arange(max_tgt_len)
+            .unsqueeze(0)
+            .type_as(delays)
+            .expand([bsz, max_tgt_len])
+        )
+        * src_lens
+        / tgt_lens
+    )
 
     if delays.size(1) < max_tgt_len:
-        oracle_delays = oracle_delays[:, :delays.size(1)]
+        oracle_delays = oracle_delays[:, : delays.size(1)]
 
     if delays.size(1) > max_tgt_len:
         oracle_delays = torch.cat(
             [
                 oracle_delays,
-                oracle_delays[:,-1]
+                oracle_delays[:, -1]
                 * oracle_delays.new_ones(
                     [delays.size(0), delays.size(1) - max_tgt_len]
-                )
+                ),
             ],
-            dim=1
+            dim=1,
         )
 
     lagging = delays - oracle_delays
@@ -168,18 +176,22 @@ def DifferentiableAverageLagging(
         if i == 0:
             new_delays[:, i] = delays[:, i]
         else:
-            new_delays[:, i] = torch.cat(
-                [
-                    new_delays[:, i - 1].unsqueeze(1) + 1 / gamma,
-                    delays[:, i].unsqueeze(1)
-                ],
-                dim=1
-            ).max(dim=1).values
+            new_delays[:, i] = (
+                torch.cat(
+                    [
+                        new_delays[:, i - 1].unsqueeze(1) + 1 / gamma,
+                        delays[:, i].unsqueeze(1),
+                    ],
+                    dim=1,
+                )
+                .max(dim=1)
+                .values
+            )
 
     DAL = (
-        new_delays -
-        torch.arange(max_tgt_len).unsqueeze(0).type_as(
-            delays).expand_as(delays) / gamma
+        new_delays
+        - torch.arange(max_tgt_len).unsqueeze(0).type_as(delays).expand_as(delays)
+        / gamma
     )
     if target_padding_mask is not None:
         DAL = DAL.masked_fill(target_padding_mask, 0)

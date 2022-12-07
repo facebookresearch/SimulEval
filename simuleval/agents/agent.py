@@ -4,96 +4,163 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
-import logging
-from argparse import Namespace
-from typing import Dict, List, Optional, Union
-from simuleval.online.client import Client
-from simuleval.postprocessor import NonePostProcessor
-from simuleval import DEFAULT_EOS
-
-logger = logging.getLogger("simuleval.agent")
+from typing import List
+from argparse import Namespace, ArgumentParser
+from simuleval.data.segments import Segment, TextSegment, SpeechSegment, EmptySegment
+from .states import AgentStates
+from .actions import Action
 
 
-class Agent(object):
+SEGMENT_TYPE_DICT = {"text": TextSegment, "speech": SpeechSegment}
+
+
+class GenericAgent:
+    """
+    Generic Agent class.
+    """
+
     source_type = None
     target_type = None
 
-    def __init__(self, args, process_id: Optional[int] = None) -> None:
+    def __init__(self, args: Namespace) -> None:
+        self.args = args
         assert self.source_type
         assert self.target_type
-        self.args = args
-        self.client = None
-        self.source_segment_size = 1
-        self.process_id = process_id
-        self.postprocessor = self.build_postprocessor(args)
+
+        self.states = self.build_states()
         self.reset()
 
-    def build_postprocessor(self, args: Namespace):
-        return NonePostProcessor()
+    def build_states(self) -> AgentStates:
+        """
+        Build states instance for agent
+
+        Returns:
+            AgentStates: agent states
+        """
+        return AgentStates()
 
     def reset(self) -> None:
-        self.postprocessor.reset()
-        self.index = None
-        self.is_finish_eval = False
-        self.is_finish_read = False
-        self.states = {"source": [], "target": [], "actions": []}
+        """
+        Reset agent, called every time when a new sentence coming in.
+        """
+        self.states.reset()
 
-    def eval(self, index: int) -> None:
-        self.index = index
-        while not self.is_finish_eval:
-            self.policy()
-        self.write(DEFAULT_EOS)
+    def policy(self) -> Action:
+        """
+        The policy to make decision every time
+        when the system has new input.
+        The function has to return an Action instance
 
-    def finish_eval(self) -> None:
-        self.is_finish_eval = True
+        Returns:
+            Action: The actions to make at certain point.
 
-    def finish_read(self) -> None:
-        self.is_finish_read = True
+        .. note:
 
-    def set_client(self, client: Client) -> None:
-        self.client = client
-
-    def set_index(self, index: int) -> None:
-        self.index = index
-
-    def read(self):
-        if self.is_finish_read:
-            return
-        info = self.client.get_source(
-            self.index, {"segment_size": self.source_segment_size}
-        )
-        self.states["source"].append(info)
-        return self.process_read(info)
-
-    def write(self, predictions: Union[List, str]) -> None:
-
-        self.postprocessor.push(predictions)
-
-        output = self.postprocessor.pop()
-
-        if output is None:
-            return
-
-        if isinstance(output, str):
-            output = [output]
-
-        for pred in output:
-            if pred is not None:
-                self.client.send_hypo(self.index, pred)
-
-    @staticmethod
-    def add_args(parser) -> None:
-        # Add additional command line arguments here
-        pass
-
-    def policy(self) -> None:
-        # Make decision here
+            WriteAction means that the system has a prediction.
+            ReadAction means that the system needs more source.
+        """
         assert NotImplementedError
 
-    def process_read(self, info: Dict) -> Dict:
-        # Process the read here
-        return info
+    def push(self, source_segment: Segment) -> None:
+        """
+        The function to process the incoming information.
 
-    def process_write(self, predictions: Union[List, str]) -> List:
-        # Process the write here
-        return predictions
+        Args:
+            source_info (dict): incoming information dictionary
+        """
+        self.states.update_source(source_segment)
+
+    def pop(self) -> Segment:
+        """
+        The function to generate system output.
+        By default, it first runs policy,
+        and than returns the output segment.
+        If the policy decide to read,
+        it will return an empty segment.
+
+
+        Returns:
+            Segment: segment to return.
+        """
+
+        action = self.policy()
+        if not isinstance(action, Action):
+            raise RuntimeError(
+                f"The return value of {self.policy.__qualname__} is not a {Action.__qualname__} instance"
+            )
+        if action.is_read():
+            return EmptySegment()
+        else:
+            segment = SEGMENT_TYPE_DICT[self.target_type](
+                index=0, content=action.content, finished=action.finished
+            )
+            self.states.update_target(segment)
+            return segment
+
+    def pushpop(self, segment: Segment) -> Segment:
+        """
+        Operate pop immediately after push.
+
+        Args:
+            segment (Segment): input segment
+
+        Returns:
+            Segment: output segment
+        """
+        self.push(segment)
+        return self.pop()
+
+    @staticmethod
+    def add_args(parser: ArgumentParser):
+        """
+        Add agent arguments to parser.
+        Has to be a static method.
+
+        Args:
+            parser (ArgumentParser): cli argument parser
+        """
+        pass
+
+    @classmethod
+    def from_args(cls, args):
+        return cls(args)
+
+
+class SpeechToTextAgent(GenericAgent):
+    """
+    Same as generic agent, but with explicit types
+    speech -> text
+    """
+
+    source_type: str = "speech"
+    target_type: str = "text"
+
+
+class SpeechToSpeechAgent(GenericAgent):
+    """
+    Same as generic agent, but with explicit types
+    speech -> speech
+    """
+
+    source_type: str = "speech"
+    target_type: str = "speech"
+
+
+class TextToSpeechAgent(GenericAgent):
+    """
+    Same as generic agent, but with explicit types
+    text -> speech
+    """
+
+    source_type: str = "text"
+    target_type: str = "speech"
+
+
+class TextToTextAgent(GenericAgent):
+    """
+    Same as generic agent, but with explicit types
+    text -> text
+    """
+
+    source_type: str = "text"
+    target_type: str = "text"

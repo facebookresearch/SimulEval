@@ -4,6 +4,14 @@ from typing import Any, Dict, List, Tuple, Union
 
 
 class GenericDataloader:
+    """
+    Load source and target data
+
+    .. argparse::
+        :ref: simuleval.options.get_data_parser
+        :prog:
+
+    """
     def __init__(self, source_list: Union[path, str], target_list: List[str]) -> None:
         self.source_list = source_list
         self.target_list = target_list

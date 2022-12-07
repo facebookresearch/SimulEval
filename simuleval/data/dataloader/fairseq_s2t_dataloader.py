@@ -8,8 +8,7 @@ from pathlib import Path
 from typing import Callable, List, Union, Tuple
 import soundfile
 
-from simuleval.utils.common import load_fairseq_manifest, get_fairseq_manifest_path
-from simuleval.utils.fairseq import check_fairseq_args, get_audio_file_path
+from simuleval.utils.fairseq import get_audio_file_path, get_fairseq_manifest_path
 
 logger = logging.getLogger("simuleval.fairseq_s2t_dataloader")
 
@@ -23,6 +22,19 @@ except:
 
 
 class FairseqSpeechToTextDataloader(SpeechToTextDataloader):
+    """
+    Load speech-to-text data in fairseq-s2t format.
+
+    .. argparse::
+        :ref: simuleval.options.add_fairseq_data_args
+        :passparser:
+        :prog:
+
+    .. note::
+        fairseq has to be installed to use this feature.
+
+    """
+
     def __init__(self, fairseq_s2t_dataset: SpeechToTextDataset) -> None:
         self.fairseq_s2t_dataset = fairseq_s2t_dataset
 
@@ -45,7 +57,7 @@ class FairseqSpeechToTextDataloader(SpeechToTextDataloader):
 
     @classmethod
     def from_args(cls, args: Namespace) -> FairseqSpeechToTextDataloader:
-        check_fairseq_args(args)
+        # check_fairseq_args(args)
         if args.fairseq_manifest:
             manifest_path = Path(args.fairseq_manifest)
             args.fairseq_data = manifest_path.parent.as_posix()

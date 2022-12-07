@@ -10,7 +10,7 @@ import re
 import sys
 import logging
 import importlib
-from simuleval.agents import Agent
+from simuleval.agents import GenericAgent
 
 logger = logging.getLogger("simuleval.util.agent_builder")
 
@@ -26,6 +26,11 @@ def new_class_names(user_file):
                 new_class_names.append(result.group(1))
 
     return new_class_names
+
+def import_file(file_path):
+    spec = importlib.util.spec_from_file_location("agents", file_path)
+    agent_modules = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(agent_modules)
 
 
 def find_agent_cls(args):
@@ -43,21 +48,6 @@ def find_agent_cls(args):
     new_class_names_in_file = new_class_names(agent_file)
 
     agent_name = None
-    if ":" in agent_file:
-        agent_name = agent_file.split(":")[1:]
-        agent_file = os.path.abspath(agent_file.split(":")[0])
-        if len(agent_name) > 1:
-            logger.error(
-                f"Only one agent name at one time, {len(agent_name)} are provided. {' '.join(agent_name)}"
-            )
-        sys.exit(1)
-        agent_name = agent_name[0]
-
-        if agent_name not in new_class_names_in_file:
-            logger.error(f"No definition found for class {agent_name} in {agent_file}")
-            sys.exit(1)
-
-        new_class_names_in_file = [agent_name]
 
     spec = importlib.util.spec_from_file_location("agents", agent_file)
     agent_modules = importlib.util.module_from_spec(spec)
@@ -68,17 +58,17 @@ def find_agent_cls(args):
     for cls_name in new_class_names_in_file:
         kls = getattr(agent_modules, cls_name)
 
-        if isinstance(kls, type) and issubclass(kls, Agent):
+        if isinstance(kls, type) and issubclass(kls, GenericGenericAgent):
             agent_cls.append(kls)
 
     if len(agent_cls) == 0:
-        logger.error(f"No 'Agent' class found in {agent_file}\n")
+        logger.error(f"No 'GenericAgent' class found in {agent_file}\n")
         sys.exit(1)
 
     if len(agent_cls) > 1:
         if agent_name is None:
             logger.error(
-                f"Multiple 'Agent' classes found in {agent_file}. Please select one by {agent_file}:AgentClassName.\n"
+                f"Multiple 'GenericAgent' classes found in {agent_file}. Please select one by {agent_file}:GenericAgentClassName.\n"
             )
             sys.exit(1)
         agent_cls = getattr(agent_modules, agent_name, None)
@@ -98,7 +88,7 @@ def find_agent_cls(args):
     return agent_name, agent_cls
 
 
-def infer_data_types_from_agent(args: Namespace, agent: Agent):
+def infer_data_types_from_agent(args: Namespace, agent: GenericAgent):
     for side in ["source", "target"]:
         if getattr(args, side + "_type") is None:
             setattr(args, side + "_type", getattr(agent, side + "_type"))

@@ -14,6 +14,7 @@ setuptools.setup(
     entry_points={
         'console_scripts': [
             'simuleval = simuleval.cli:main',
+            'simuleval-scorer = simuleval.cli:score',
         ],
     },
     install_requires=[
@@ -26,7 +27,8 @@ setuptools.setup(
         "requests",
         "pytest-flake8",
         "textgrid",
-        "tqdm"
+        "tqdm",
+        "bitarray==2.6.0",
     ],
     package=setuptools.find_packages(
         exclude=[

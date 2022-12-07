@@ -4,8 +4,7 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
-from .agent import Agent
-from .text_agent import TextAgent
-from .speech_agent import SpeechToTextAgent, SpeechToSpeechAgent
-
-BUILDIN_AGENTS = [Agent, TextAgent, SpeechToTextAgent, SpeechToSpeechAgent]
+from .agent import *
+from .states import *
+from .actions import *
+from .pipeline import *

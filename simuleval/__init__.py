@@ -6,14 +6,15 @@
 
 import os
 
-DEFAULT_EOS = '</s>'
-DEFAULT_SERVER_PATH = os.path.join(os.getenv("HOME"), ".simuleval")
-DEFAULT_HOSTNAME = 'localhost'
-DEFAULT_PORT = 12321
-
-READ_ACTION = "read_action"
-WRITE_ACTION = "write_action"
+DEFAULT_EOS = "</s>"
 
 SUPPORTED_MEDIUM = ["text", "speech"]
 SUPPORTED_SOURCE_MEDIUM = ["text", "speech"]
 SUPPORTED_TARGET_MEDIUM = ["text", "speech"]
+
+EVALUATION_SYSTEM_LIST = []
+
+
+def entrypoint(klass):
+    EVALUATION_SYSTEM_LIST.append(klass)
+    return klass
