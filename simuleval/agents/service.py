@@ -3,14 +3,13 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 import os
-import sys
 import json
 import logging
-import argparse
 from tornado import web, ioloop
-import simuleval
+from simuleval.data.segments import segment_from_json_string
+from simuleval import options
 
-logger = logging.getLogger("simuleval.server")
+logger = logging.getLogger("simuleval.agent_server")
 
 
 class SystemHandler(web.RequestHandler):
@@ -28,20 +27,20 @@ class ResetHandle(SystemHandler):
 
 class OutputHandler(SystemHandler):
     def get(self):
-        output = self.system.pop()
-        if output is None:
-            output = []
-        r = json.dumps({"output": output})
-        self.write(r)
+        output_segment = self.system.pop()
+        self.write(output_segment.json())
 
 
 class InputHandler(SystemHandler):
     def put(self):
-        segment_info = json.loads(self.request.body)
-        self.system.push(segment_info)
+        segment = segment_from_json_string(self.request.body)
+        self.system.push(segment)
 
 
-def start_service(system):
+def start_agent_service(system):
+    parser = options.general_parser()
+    options.add_evaluator_args(parser)
+    args, _ = parser.parse_known_args()
     app = web.Application(
         [
             (r"/reset", ResetHandle, dict(system=system)),
@@ -52,9 +51,9 @@ def start_service(system):
         debug=False,
     )
 
-    app.listen(12321, max_buffer_size=1024**3)
+    app.listen(args.remote_port, max_buffer_size=1024**3)
 
     logger.info(
-        f"Evaluation Server Started (process id {os.getpid()}). Listening to port {12321} "
+        f"Simultaneous Translation Server Started (process id {os.getpid()}). Listening to port {args.remote_port} "
     )
     ioloop.IOLoop.current().start()

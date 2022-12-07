@@ -15,8 +15,12 @@ import multiprocessing
 from simuleval import options
 from simuleval import options, EVALUATION_SYSTEM_LIST
 from simuleval.utils.agent import import_file
-from simuleval.evaluator import build_evaluator, SentenceLevelEvaluator
-from simuleval.backend.service import start_service
+from simuleval.evaluator import (
+    build_evaluator,
+    build_remote_evaluator,
+    SentenceLevelEvaluator,
+)
+from simuleval.agents.service import start_agent_service
 
 
 logging.basicConfig(
@@ -122,7 +126,7 @@ def main():
     system = build_system()
 
     if check_argument("standalone"):
-        start_service(system)
+        start_agent_service(system)
     else:
         evaluate(system)
 
@@ -175,13 +179,14 @@ def scoring():
 
 def remote_evaluate():
     # build evaluator
-    args = options.get_evaluator_args()
-    evaluator = build_evaluator(args)
-    evaluator.reset()
+    parser = options.general_parser()
+    options.add_data_args(parser)
+    options.add_evaluator_args(parser)
+    args = parser.parse_args()
+    evaluator = build_remote_evaluator(args)
 
     # evaluate system
-    evaluator.evaluate()
-    logger.info(f"results: {evaluator.results()}")
+    evaluator.remote_eval()
 
 
 if __name__ == "__main__":

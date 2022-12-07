@@ -9,6 +9,7 @@ import numbers
 from argparse import Namespace
 from collections import defaultdict
 from typing import Dict, Generator, List, Optional, Union
+from .instance import Instance
 from .scorers import get_scorer_class
 from .scorers.latency_scorer import LatencyScorer
 from .scorers.quality_scorer import QualityScorer
