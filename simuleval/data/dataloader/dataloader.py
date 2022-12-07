@@ -8,7 +8,8 @@ class GenericDataloader:
     Load source and target data
 
     .. argparse::
-        :ref: simuleval.options.get_data_parser
+        :ref: simuleval.options.add_data_args
+        :passparser:
         :prog:
 
     """
