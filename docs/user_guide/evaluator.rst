@@ -18,8 +18,13 @@ Latency Scorers
 ---------------
 
 .. autoclass:: simuleval.evaluator.scorers.latency_scorer.ALScorer
+   :members:
+
 .. autoclass:: simuleval.evaluator.scorers.latency_scorer.APScorer
+   :members:
+
 .. autoclass:: simuleval.evaluator.scorers.latency_scorer.DALScorer
+   :members:
 
 Customized Scorers
 ------------------

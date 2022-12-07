@@ -50,22 +50,26 @@ class LatencyScorer:
 
 @register_latency_scorer("AL")
 class ALScorer(LatencyScorer):
-    """
-    Average Lagging from
-    STACL: Simultaneous Translation with Implicit Anticipation
-    and Controllable Latency using Prefix-to-Prefix Framework
-    (https://arxiv.org/abs/1810.08398)
-    Delays are monotonic steps, range from 1 to source_length.
-    Give src x tgt y, AP is calculated as:
-    AL = 1 / tau sum_i^tau delays_i - (i - 1) / gamma
-    Where
-    gamma = |y| / |x|
-    tau = argmin_i(delays_i = |x|)
+    r"""
+    Average Lagging (AL) from
+    `STACL: Simultaneous Translation with Implicit Anticipation and Controllable Latency using Prefix-to-Prefix Framework <https://arxiv.org/abs/1810.08398>`_
 
-    When reference was given, |y| would be the reference length
+    Give source :math:`X`, target :math:`Y`, delays :math:`D`,
+
+    .. math::
+
+        AL = \frac{1}{\tau} \sum_i^\tau D_i - (i - 1) \frac{|X|}{|Y|}
+
+    Where
+
+    .. math::
+
+        \tau = argmin_i(D_i = |X|)
+
+    When reference was given, :math:`|Y|` would be the reference length
 
     Usage:
-        --latency-metrics AL
+        ----latency-metrics AL
     """
 
     def compute(
@@ -74,6 +78,17 @@ class ALScorer(LatencyScorer):
         source_length: Union[float, int],
         target_length: Union[float, int],
     ):
+        """
+        Function to compute latency on one sentence (instance).
+
+        Args:
+            delays (List[Union[float, int]]): Sequence of delays.
+            source_length (Union[float, int]): Length of source sequence.
+            target_length (Union[float, int]): Length of target sequence.
+
+        Returns:
+            float: the latency score on one sentence.
+        """
         AL = 0
         target_length
         gamma = target_length / source_length
@@ -91,16 +106,19 @@ class ALScorer(LatencyScorer):
 
 @register_latency_scorer("AP")
 class APScorer(LatencyScorer):
-    """
-    Average Proportion from
-    Can neural machine translation do simultaneous translation?
-    (https://arxiv.org/abs/1606.02012)
-    Delays are monotonic steps, range from 1 to source_length.
-    Give src x tgt y, AP is calculated as:
-    AP = 1 / (|x||y]) sum_i^|Y| delays_i
+    r"""
+    Average Proportion (AP) from
+    `Can neural machine translation do simultaneous translation? <https://arxiv.org/abs/1606.02012>`_
+
+    Give source :math:`X`, target :math:`Y`, delays :math:`D`,
+    the AP is calculated as:
+
+    .. math::
+
+        AP = \frac{1}{|X||Y]} \sum_i^{|Y|} D_i
 
     Usage:
-        --latency-metrics AP
+        ----latency-metrics AP
     """
 
     def compute(
@@ -108,19 +126,30 @@ class APScorer(LatencyScorer):
         delays: List[Union[float, int]],
         source_length: Union[float, int],
         target_length: Union[float, int],
-    ):
+    ) -> float:
+        """
+        Function to compute latency on one sentence (instance).
+
+        Args:
+            delays (List[Union[float, int]]): Sequence of delays.
+            source_length (Union[float, int]): Length of source sequence.
+            target_length (Union[float, int]): Length of target sequence.
+
+        Returns:
+            float: the latency score on one sentence.
+        """
         return sum(delays) / (source_length * target_length)
 
 
 @register_latency_scorer("DAL")
 class DALScorer(LatencyScorer):
-    """
-    Differentiable Average Lagging from
+    r"""
+    Differentiable Average Lagging (DAL) from
     Monotonic Infinite Lookback Attention for Simultaneous Machine Translation
     (https://arxiv.org/abs/1906.05218)
 
     Usage:
-        --latency-metrics DAL
+        ----latency-metrics DAL
     """
 
     def compute(
@@ -129,6 +158,17 @@ class DALScorer(LatencyScorer):
         source_length: Union[float, int],
         target_length: Union[float, int],
     ):
+        """
+        Function to compute latency on one sentence (instance).
+
+        Args:
+            delays (List[Union[float, int]]): Sequence of delays.
+            source_length (Union[float, int]): Length of source sequence.
+            target_length (Union[float, int]): Length of target sequence.
+
+        Returns:
+            float: the latency score on one sentence.
+        """
         DAL = 0
         target_length = len(delays)
         gamma = target_length / source_length
