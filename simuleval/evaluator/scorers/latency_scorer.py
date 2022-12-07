@@ -1,8 +1,3 @@
-from simuleval.metrics.latency import (
-    AverageLagging,
-    AverageProportion,
-    DifferentiableAverageLagging,
-)
 from statistics import mean
 from pathlib import Path
 import subprocess
@@ -10,6 +5,7 @@ import logging
 import textgrid
 import sys
 import shutil
+from typing import List, Union
 
 logger = logging.getLogger("simuleval.latency_scorer")
 
@@ -27,76 +23,127 @@ def register_latency_scorer(name):
 class LatencyScorer:
     metric = None
 
-    def __init__(self) -> None:
-        pass
+    def __init__(
+        self, computation_aware: bool = False, use_ref_len: bool = True
+    ) -> None:
+        super().__init__()
+        self.use_ref_len = use_ref_len
+        self.computation_aware = computation_aware
+
+    @property
+    def timestamp_type(self):
+        return "delays" if not self.computation_aware else "elapsed"
 
     def __call__(self, instances) -> float:
-        raise NotImplementedError
+        scores = []
+        for ins in instances.values():
+            delays = getattr(ins, self.timestamp_type)
+            if self.use_ref_len or ins.reference is None:
+                tgt_len = ins.prediction_length
+            else:
+                tgt_len = len(ins.reference.split())
+            src_len = ins.source_length
+            scores.append(self.compute(delays, src_len, tgt_len))
 
-
-def simul_trans_latency_scorer(metric):
-    def create_class(klass):
-        class Klass(klass):
-            def __init__(
-                self, computation_aware: bool = False, use_ref_len: bool = True
-            ) -> None:
-                super().__init__()
-                self.use_ref_len = use_ref_len
-                self.computation_aware = computation_aware
-
-            @property
-            def timestamp_type(self):
-                return "delays" if not self.computation_aware else "elapsed"
-
-            def __call__(self, instances) -> float:
-                scores = []
-                for ins in instances.values():
-                    delays = getattr(ins, self.timestamp_type)
-                    if self.use_ref_len or ins.reference is None:
-                        tgt_len = ins.prediction_length
-                    else:
-                        tgt_len = len(ins.reference.split())
-                    src_len = ins.source_length
-                    scores.append(metric(delays, src_len, tgt_len).item())
-
-                return mean(scores)
-
-        return Klass
-
-    return create_class
+        return mean(scores)
 
 
 @register_latency_scorer("AL")
-@simul_trans_latency_scorer(AverageLagging)
 class ALScorer(LatencyScorer):
-    """Average Lagging scorers
+    """
+    Average Lagging from
+    STACL: Simultaneous Translation with Implicit Anticipation
+    and Controllable Latency using Prefix-to-Prefix Framework
+    (https://arxiv.org/abs/1810.08398)
+    Delays are monotonic steps, range from 1 to source_length.
+    Give src x tgt y, AP is calculated as:
+    AL = 1 / tau sum_i^tau delays_i - (i - 1) / gamma
+    Where
+    gamma = |y| / |x|
+    tau = argmin_i(delays_i = |x|)
+
+    When reference was given, |y| would be the reference length
 
     Usage:
         --latency-metrics AL
     """
-    pass
+
+    def compute(
+        self,
+        delays: List[Union[float, int]],
+        source_length: Union[float, int],
+        target_length: Union[float, int],
+    ):
+        AL = 0
+        target_length
+        gamma = target_length / source_length
+        tau = 0
+        for t_miuns_1, d in enumerate(delays):
+            if d <= source_length:
+                AL += d - t_miuns_1 / gamma
+                tau = t_miuns_1 + 1
+
+                if d == source_length:
+                    break
+        AL /= tau
+        return AL
 
 
 @register_latency_scorer("AP")
-@simul_trans_latency_scorer(AverageProportion)
 class APScorer(LatencyScorer):
-    """Average Proportion scorers
+    """
+    Average Proportion from
+    Can neural machine translation do simultaneous translation?
+    (https://arxiv.org/abs/1606.02012)
+    Delays are monotonic steps, range from 1 to source_length.
+    Give src x tgt y, AP is calculated as:
+    AP = 1 / (|x||y]) sum_i^|Y| delays_i
 
     Usage:
         --latency-metrics AP
     """
-    pass
+
+    def compute(
+        self,
+        delays: List[Union[float, int]],
+        source_length: Union[float, int],
+        target_length: Union[float, int],
+    ):
+        return sum(delays) / (source_length * target_length)
 
 
 @register_latency_scorer("DAL")
-@simul_trans_latency_scorer(DifferentiableAverageLagging)
 class DALScorer(LatencyScorer):
-    """Differentiable Average Lagging scorers
+    """
+    Differentiable Average Lagging from
+    Monotonic Infinite Lookback Attention for Simultaneous Machine Translation
+    (https://arxiv.org/abs/1906.05218)
 
     Usage:
         --latency-metrics DAL
     """
-    pass
+
+    def compute(
+        self,
+        delays: List[Union[float, int]],
+        source_length: Union[float, int],
+        target_length: Union[float, int],
+    ):
+        DAL = 0
+        target_length = len(delays)
+        gamma = target_length / source_length
+        g_prime_last = 0
+        for i_miuns_1, g in enumerate(delays):
+            if i_miuns_1 + 1 == 1:
+                g_prime = g
+            else:
+                g_prime = max([g, g_prime_last + 1 / gamma])
+
+            DAL += g_prime - i_miuns_1 / gamma
+            g_prime_last = g_prime
+
+        DAL /= target_length
+        return DAL
 
 
 def speechoutput_aligment_latency_scorer(scorer_class):
