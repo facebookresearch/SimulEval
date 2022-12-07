@@ -14,7 +14,6 @@ setuptools.setup(
     entry_points={
         "console_scripts": [
             "simuleval = simuleval.cli:main",
-            "simuleval-scorer = simuleval.cli:score",
         ],
     },
     install_requires=[

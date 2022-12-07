@@ -4,19 +4,16 @@ Installation
 From pip
 --------
 
-ToDo
+.. code-block:: bash
 
-- Update SimulEval to pip
+    pip install simuleval
 
 
 From source
 -----------
 
-ToDo
+.. code-block:: bash
 
-- Update SimulEval to open source branch
-
-Install the SimulEval from source::
     git clone https://github.com/facebookresearch/SimulEval.git
     cd SimulEval
     pip install -e .
