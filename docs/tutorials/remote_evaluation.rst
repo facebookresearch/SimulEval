@@ -39,8 +39,6 @@ We can start a remote evaluator as follow. For simplicity we assume they are on 
 
 .. code-block:: bash
 
-    simuleval --remote-eval \
-        --source source.txt \
-        --target target.txt \
-        --source-type text \
-        --target-type text
+    simuleval --remote-eval --remote-port 8888 \
+        --source source.txt --target target.txt \
+        --source-type text --target-type text
