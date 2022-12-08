@@ -36,10 +36,13 @@ class LatencyScorer:
 
     def __call__(self, instances) -> float:
         scores = []
-        for ins in instances.values():
-            delays = getattr(ins, self.timestamp_type)
+        for index, ins in instances.items():
+            delays = getattr(ins, self.timestamp_type, None)
+            if delays is None:
+                logger.warn(f"{index} instance has no delay information. Skipped")
+                continue
             if self.use_ref_len or ins.reference is None:
-                tgt_len = ins.prediction_length
+                tgt_len = len(delays)
             else:
                 tgt_len = len(ins.reference.split())
             src_len = ins.source_length
@@ -89,8 +92,11 @@ class ALScorer(LatencyScorer):
         Returns:
             float: the latency score on one sentence.
         """
+
+        if delays[0] > source_length:
+            return delays[0]
+
         AL = 0
-        target_length
         gamma = target_length / source_length
         tau = 0
         for t_miuns_1, d in enumerate(delays):
@@ -186,6 +192,60 @@ class DALScorer(LatencyScorer):
         return DAL
 
 
+@register_latency_scorer("StartOffset")
+class StartOffsetScorer(LatencyScorer):
+    """Starting offset of the translation
+
+    Usage:
+        ----latency-metrics StartOffset
+
+    """
+
+    def compute(
+        self,
+        delays: List[Union[float, int]],
+        source_length: Union[float, int],
+        target_length: Union[float, int],
+    ):
+        return delays[0]
+
+
+@register_latency_scorer("EndOffset")
+class EndOffsetScorer(LatencyScorer):
+    """Ending offset of the translation
+
+    Usage:
+        ----latency-metrics EndOffset
+
+    """
+
+    def compute(
+        self,
+        delays: List[Union[float, int]],
+        source_length: Union[float, int],
+        target_length: Union[float, int],
+    ):
+        return delays[-1] - source_length
+
+
+@register_latency_scorer("RTF")
+class RTFScorer(LatencyScorer):
+    """Compute Real Time Factor (RTF)
+
+    Usage:
+        ----latency-metrics (RTF)
+
+    """
+
+    def compute(
+        self,
+        delays: List[Union[float, int]],
+        source_length: Union[float, int],
+        target_length: Union[float, int],
+    ):
+        return delays[-1] / source_length
+
+
 def speechoutput_aligment_latency_scorer(scorer_class):
     class Klass(scorer_class):
         def __init__(self) -> None:
@@ -214,7 +274,7 @@ def speechoutput_aligment_latency_scorer(scorer_class):
 
             output_dir = Path(instances[0].prediction).absolute().parent.parent
             align_dir = output_dir / "align"
-            if True:  # not align_dir.exists():
+            if not align_dir.exists():
                 logger.info("Align target transcripts with speech.")
                 temp_dir = Path(output_dir) / "mfa"
                 shutil.rmtree(temp_dir, ignore_errors=True)
@@ -231,9 +291,6 @@ def speechoutput_aligment_latency_scorer(scorer_class):
                 mfa_command = f"mfa align {output_dir  / 'wavs'} {dictionary_path.as_posix()} {acoustic_model_path.as_posix()} {align_dir.as_posix()} --clean --overwrite --temporary_directory  {temp_dir.as_posix()}"
                 logger.info(mfa_command)
 
-                import pdb
-
-                pdb.set_trace()
                 subprocess.run(
                     mfa_command,
                     shell=True,
@@ -265,10 +322,15 @@ def speechoutput_aligment_latency_scorer(scorer_class):
 
 
 for boundary_type in ["BOW", "COW", "EOW"]:
-    for metric in ["AL", "AP", "DAL"]:
+    for metric in ["AL", "AP", "DAL", "StartOffset", "EndOffset"]:
 
         @register_latency_scorer(f"{metric}_SpeechAlign_{boundary_type}")
         @speechoutput_aligment_latency_scorer
         class SpeechAlignScorer(LATENCY_SCORERS_DICT[metric]):
+            f"""Compute {metric} based on alignment ({boundary_type})
+
+            Usage:
+                ----latency-metrics {metric}_SpeechAlign_{boundary_type}
+            """
             boundary_type = boundary_type
             __name__ = f"{metric}SpeechAlign{boundary_type}Scorer"
