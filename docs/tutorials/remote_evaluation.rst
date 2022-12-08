@@ -6,7 +6,7 @@ Stand Alone Agent
 The agent can run in stand alone mode,
 by using :code:`--standalone` option.
 The SimulEval will kickoff a server that host the agent.
-For instance, with the agent in :ref:`first_agent`,
+For instance, with the agent in :ref:`first-agent`,
 
 .. code-block:: bash
 
@@ -27,6 +27,7 @@ An minimal example of :code:`Dockerfile` is
 Build and run the docker image:
 
 .. code-block:: bash
+
     cd examples/quick_start && docker build -t simuleval_agent .
     docker run -p 8888:8888 simuleval_agent:latest
 
