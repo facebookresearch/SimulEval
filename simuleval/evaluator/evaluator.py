@@ -82,8 +82,8 @@ class SentenceLevelEvaluator(object):
         self.instance_class = INSTANCE_TYPE_DICT[
             f"{self.source_type}-{self.target_type}"
         ]
-        self.start_index = args.start_index
-        self.end_index = args.end_index
+        self.start_index = getattr(args, "start_index", 0)
+        self.end_index = getattr(args, "end_index", -1)
 
         if not self.score_only:
             if self.output:
