@@ -172,9 +172,11 @@ def evaluate(system):
 
 
 def scoring():
-    args = options.get_evaluator_args()
+    parser = options.general_parser()
+    options.add_evaluator_args(parser)
+    args = parser.parse_args()
     evaluator = SentenceLevelEvaluator.from_args(args)
-    print(json.dumps(evaluator.results, indent=4))
+    print(evaluator.results)
 
 
 def remote_evaluate():
