@@ -1,9 +1,11 @@
 # Quick Start
+Following are some minimal examples to use SimulEval. More details can be found [here](https://simuleval.readthedocs.io/en/v1.1.0/quick_start.html).
 
-To evaluate a text-to-text wait-3 system with random output
+## First Agent
+To evaluate a text-to-text wait-3 system with random output:
 
 ```
-> simuleval --source source.txt --reference target.txt --agent dummy_waitk_text_agent_v1.py
+> simuleval --source source.txt --reference target.txt --agent first_agent.py.py
 
 2022-12-05 13:43:58 | INFO | simuleval.cli | Evaluate system: DummyWaitkTextAgent
 2022-12-05 13:43:58 | INFO | simuleval.dataloader | Evaluating from text to text.
@@ -13,10 +15,35 @@ BLEU  AL    AP  DAL
 
 ```
 
+## Agent with Command Line Arguments
+```
+simuleval --source source.txt --reference target.txt --agent agent_with_configs.py.py --waitk 3 --vocab dict.txt
+```
+
+## Agent Pipeline
+```
+simuleval --source source.txt --reference target.txt --agent agent_pipeline.py
+```
+
+## Agent with New Metrics
+```
+simuleval --source source.txt --reference target.txt --agent agent_with_new_metrics.py
+```
+
+## Standalone Agent & Remote Evaluation
+Start an agent server:
+```
+simuleval --standalone --remote-port 8888 --agent agent_with_new_metrics.py
+```
+Or with docker
+```
+docker build -t simuleval_agent .
+docker run -p 8888:8888 simuleval_agent:latest
+```
+
+Start a remote evaluator:
+```
+simuleval --source source.txt --reference target.txt --remote-port 8888
+```
 
 
-More examples:
-- `dummy_waitk_text_agent_v2.py`: customized agent argument
-- `dummy_waitk_text_agent_v3.py`: agent pipeline
-
-More details can be found [here](https://simuleval.readthedocs.io/en/v1.1.0/quick_start.html)

@@ -7,4 +7,4 @@ RUN git clone https://github.com/facebookresearch/SimulEval.git
 WORKDIR SimulEval
 RUN git checkout v1.1.0
 RUN pip install -e .
-CMD ["simuleval", "--standalone", "--remote-port", "8888", "--agent", "examples/quick_start/dummy_waitk_text_agent_v1.py"]
+CMD ["simuleval", "--standalone", "--remote-port", "8888", "--agent", "examples/quick_start/first_agent.py.py"]

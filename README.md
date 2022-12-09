@@ -14,7 +14,7 @@ pip install -e .
 Following is the evaluation of a [dummy agent](examples/quick_start) which operates wait-k (k = 3) policy and generates random words until the length of the generated words is the same as the number of all the source words.
 ```shell
 cd examples/quick_start
-simuleval --source source.txt --target target.txt --agent dummy_waitk_text_agent_v1.py  
+simuleval --source source.txt --target target.txt --agent first_agent.py.py
 ```
 
 # License
