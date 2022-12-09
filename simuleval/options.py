@@ -9,32 +9,6 @@ import argparse
 import os
 from sacrebleu import TOKENIZERS
 
-
-def add_fairseq_data_args(parser):
-    """
-    Fairseq related data options.
-    Useful if you use fairseq based models.
-    """
-    parser.add_argument(
-        "--fairseq-data", type=str, default=None, help="Set fairseq data root."
-    )
-    parser.add_argument(
-        "--fairseq-config", type=str, default=None, help="Set fairseq data root."
-    )
-    parser.add_argument(
-        "--fairseq-gen-subset",
-        type=str,
-        default=None,
-        help="Subset to evaluate. Assume there is a gen_subset.tsv file in fairseq_root",
-    )
-    parser.add_argument(
-        "--fairseq-manifest",
-        type=str,
-        default=None,
-        help="Use fairseq manifest (tsv) format input",
-    )
-
-
 def add_data_args(parser):
     parser.add_argument(
         "--source",
@@ -78,7 +52,6 @@ def add_data_args(parser):
         default=-1,
         help="The last index for evaluation.",
     )
-    add_fairseq_data_args(parser)
     return parser
 
 

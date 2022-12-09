@@ -1,6 +1,19 @@
-from simuleval import SUPPORTED_TARGET_MEDIUM, SUPPORTED_SOURCE_MEDIUM
 from importlib.resources import path
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, List, Union
+
+
+DATALOADER_DICT = {}
+
+
+def register_dataloader(name):
+    def register(cls):
+        DATALOADER_DICT[name] = cls
+        return cls
+
+    return register
+
+def register_dataloader_class(name, cls):
+    DATALOADER_DICT[name] = cls
 
 
 class GenericDataloader:

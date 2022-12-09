@@ -2,8 +2,10 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Callable, List, Union, Optional
 from .dataloader import GenericDataloader
+from simuleval.data.dataloader import register_dataloader
 
 
+@register_dataloader("text-to-text")
 class TextToTextDataloader(GenericDataloader):
     def __init__(
         self, source_list: List[str], target_list: List[Optional[str]]

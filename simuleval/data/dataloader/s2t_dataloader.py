@@ -1,15 +1,15 @@
 from __future__ import annotations
 from pathlib import Path
-from typing import Callable, List, Union, Tuple
+from typing import  List, Union
 from .dataloader import GenericDataloader
+from simuleval.data.dataloader import register_dataloader
 try:
     import soundfile
     IS_IMPORT_SOUNDFILE = True
 except:
     IS_IMPORT_SOUNDFILE = False
 
-
-
+@register_dataloader("speech-to-text")
 class SpeechToTextDataloader(GenericDataloader):
     def preprocess_source(self, source: Union[Path, str]) -> List[float]:
         assert IS_IMPORT_SOUNDFILE, "Please make sure soundfile is properly installed."
