@@ -38,10 +38,4 @@ class RemoteEvaluator:
                 if not output_segment.is_empty:
                     instance.receive_prediction(output_segment)
 
-        results = self.evaluator.results
-        if self.evaluator.output:
-            with open(self.evaluator.output / "scores", "w") as f:
-                f.write(results)
-
-        logger.info(f"Results:")
-        print(results.to_string(index=False))
+        self.evaluator.dump_results()

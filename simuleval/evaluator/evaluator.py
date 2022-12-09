@@ -155,6 +155,14 @@ class SentenceLevelEvaluator(object):
         df = pandas.DataFrame(new_scores)
         return df
 
+    def dump_results(self) -> None:
+        results = self.results
+        if self.output:
+            results.to_csv(self.output / "scores.tsv", sep="\t", index=False)
+
+        logger.info(f"Results:")
+        print(results.to_string(index=False))
+
     def __call__(self, system):
         with logging_redirect_tqdm(loggers=[logger]):
             for instance in self.maybe_tqdm(self.instances.values()):
@@ -166,12 +174,8 @@ class SentenceLevelEvaluator(object):
                 if self.output:
                     self.write_log(instance)
 
-        results = self.results
-        if self.output:
-            results.to_csv(self.output / "scores.tsv", sep="\t", index=False)
+        self.dump_results()
 
-        logger.info(f"Results:")
-        print(results.to_string(index=False))
 
     @classmethod
     def from_args(cls, args):
