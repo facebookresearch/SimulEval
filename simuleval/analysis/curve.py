@@ -56,17 +56,19 @@ class SimulEvalResults:
     def name(self):
         return self.path.name
 
+
 class S2SSimulEvalResults(SimulEvalResults):
     @property
     def bow_average_lagging(self):
         return self.latency.get("BOW", {}).get("AL", 0)
+
     @property
     def cow_average_lagging(self):
         return self.latency.get("COW", {}).get("AL", 0)
+
     @property
     def eow_average_lagging(self):
         return self.latency.get("EOW", {}).get("AL", 0)
-
 
 
 class QualityLatencyAnalyzer:
@@ -100,9 +102,11 @@ class QualityLatencyAnalyzer:
         results.sort(key=lambda x: x[1])
         return pandas.DataFrame(results, columns=["name", "AL", "AL(CA)", "AP", "BLEU"])
 
+
 class S2SQualityLatencyAnalyzer(QualityLatencyAnalyzer):
     def add_scores_from_path(self, path: Path):
         self.score_list.append(S2SSimulEvalResults(path))
+
     def summarize(self):
         results = []
         for score in self.score_list:
@@ -118,4 +122,6 @@ class S2SQualityLatencyAnalyzer(QualityLatencyAnalyzer):
                 ]
             )
         results.sort(key=lambda x: x[1])
-        return pandas.DataFrame(results, columns=["name", "BOW_AL", "COW_AL", "EOW_AL", "BLEU"])
+        return pandas.DataFrame(
+            results, columns=["name", "BOW_AL", "COW_AL", "EOW_AL", "BLEU"]
+        )

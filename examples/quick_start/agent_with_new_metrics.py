@@ -22,6 +22,7 @@ class RTFScorer(LatencyScorer):
     Usage:
         --latency-metrics RTF
     """
+
     def __call__(self, instances) -> float:
         scores = []
         for ins in instances.values():

@@ -11,5 +11,6 @@ from .remote import RemoteEvaluator
 def build_evaluator(args):
     return SentenceLevelEvaluator.from_args(args)
 
+
 def build_remote_evaluator(args):
     return RemoteEvaluator(build_evaluator(args))

@@ -9,6 +9,7 @@ import argparse
 from simuleval import SUPPORTED_SOURCE_MEDIUM, SUPPORTED_TARGET_MEDIUM
 from sacrebleu import TOKENIZERS
 
+
 def add_data_args(parser):
     parser.add_argument(
         "--source",
@@ -102,6 +103,7 @@ def add_evaluator_args(parser):
         help="Do not use progress bar",
     )
     parser.add_argument("--output", type=str, default=None, help="Output directory")
+
 
 def general_parser():
     parser = argparse.ArgumentParser()

@@ -15,12 +15,12 @@ def test_remote_eval():
     p_1 = subprocess.Popen(
         [
             "simuleval",
-                "--standalone",
-                "--remote-port",
-                str(port),
-                "--agent",
-                "examples/quick_start/first_agent.py",
-            ]
+            "--standalone",
+            "--remote-port",
+            str(port),
+            "--agent",
+            "examples/quick_start/first_agent.py",
+        ]
     )
     time.sleep(5)
 
@@ -31,11 +31,16 @@ def test_remote_eval():
             [
                 "simuleval",
                 "--remote-eval",
-                "--remote-port", str(port),
-                "--source", "examples/quick_start/source.txt",
-                "--target", "examples/quick_start/target.txt",
-                "--dataloader", "text-to-text",
-                "--output", tmpdirname
+                "--remote-port",
+                str(port),
+                "--source",
+                "examples/quick_start/source.txt",
+                "--target",
+                "examples/quick_start/target.txt",
+                "--dataloader",
+                "text-to-text",
+                "--output",
+                tmpdirname,
             ]
         )
     _ = p_2.communicate()[0]

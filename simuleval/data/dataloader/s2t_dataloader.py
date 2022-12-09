@@ -1,14 +1,17 @@
 from __future__ import annotations
 from pathlib import Path
-from typing import  List, Union
+from typing import List, Union
 from .dataloader import GenericDataloader
 from simuleval.data.dataloader import register_dataloader
 from argparse import Namespace
+
 try:
     import soundfile
+
     IS_IMPORT_SOUNDFILE = True
 except:
     IS_IMPORT_SOUNDFILE = False
+
 
 @register_dataloader("speech-to-text")
 class SpeechToTextDataloader(GenericDataloader):

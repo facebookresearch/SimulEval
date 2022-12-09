@@ -13,11 +13,15 @@ def test_cmd():
         result = subprocess.Popen(
             [
                 "simuleval",
-                "--agent", "examples/quick_start/first_agent.py",
-                "--source", "examples/quick_start/source.txt",
-                "--target", "examples/quick_start/target.txt",
-                "--output", tmpdirname
-                ]
+                "--agent",
+                "examples/quick_start/first_agent.py",
+                "--source",
+                "examples/quick_start/source.txt",
+                "--target",
+                "examples/quick_start/target.txt",
+                "--output",
+                tmpdirname,
+            ]
         )
     _ = result.communicate()[0]
     returncode = result.returncode

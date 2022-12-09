@@ -13,6 +13,7 @@ def register_dataloader(name):
 
     return register
 
+
 def register_dataloader_class(name, cls):
     DATALOADER_DICT[name] = cls
 
@@ -27,6 +28,7 @@ class GenericDataloader:
         :prog:
 
     """
+
     def __init__(self, source_list: Union[path, str], target_list: List[str]) -> None:
         self.source_list = source_list
         self.target_list = target_list

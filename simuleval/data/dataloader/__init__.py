@@ -5,7 +5,7 @@ from .dataloader import (
     GenericDataloader,
     register_dataloader,
     register_dataloader_class,
-    DATALOADER_DICT
+    DATALOADER_DICT,
 )
 from .t2t_dataloader import TextToTextDataloader
 from .s2t_dataloader import SpeechToTextDataloader

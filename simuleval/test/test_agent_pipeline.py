@@ -5,21 +5,25 @@ from simuleval.agents import AgentPipeline
 from simuleval.agents.actions import ReadAction, WriteAction
 from simuleval.data.segments import TextSegment
 
+
 def test_pipeline_cmd():
     result = subprocess.Popen(
         [
             "simuleval",
-            "--agent", "examples/quick_start/agent_pipeline.py",
-            "--source", "examples/quick_start/source.txt",
-            "--target", "examples/quick_start/target.txt",
-            ]
+            "--agent",
+            "examples/quick_start/agent_pipeline.py",
+            "--source",
+            "examples/quick_start/source.txt",
+            "--target",
+            "examples/quick_start/target.txt",
+        ]
     )
     _ = result.communicate()[0]
     returncode = result.returncode
     assert returncode == 0
 
-def test_pipeline():
 
+def test_pipeline():
     class DummyWaitkTextAgent(TextToTextAgent):
         waitk = 0
         vocab = [chr(i) for i in range(ord("A"), ord("Z") + 1)]
@@ -34,14 +38,11 @@ def test_pipeline():
             else:
                 return ReadAction()
 
-
     class DummyWait2TextAgent(DummyWaitkTextAgent):
         waitk = 2
 
-
     class DummyWait4TextAgent(DummyWaitkTextAgent):
         waitk = 4
-
 
     class DummyPipeline(AgentPipeline):
         pipeline = [DummyWait2TextAgent, DummyWait4TextAgent]
@@ -55,5 +56,3 @@ def test_pipeline():
         agent_2.push(segment)
         output_2 = agent_2.pop()
         assert output_1.content == output_2.content
-
-

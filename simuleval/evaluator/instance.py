@@ -16,8 +16,10 @@ from simuleval.data.segments import TextSegment, SpeechSegment
 
 from simuleval.data.dataloader import GenericDataloader
 from argparse import Namespace
+
 try:
     import soundfile
+
     IS_IMPORT_SOUNDFILE = True
 except:
     IS_IMPORT_SOUNDFILE = False

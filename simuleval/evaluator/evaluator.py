@@ -89,7 +89,7 @@ class SentenceLevelEvaluator(object):
                 yaml.dump(
                     {"source_type": self.source_type, "target_type": self.source_type},
                     f,
-                    default_flow_style=False
+                    default_flow_style=False,
                 )
 
         self.instance_class = INSTANCE_TYPE_DICT[
@@ -188,7 +188,6 @@ class SentenceLevelEvaluator(object):
                     self.write_log(instance)
 
         self.dump_results()
-
 
     @classmethod
     def from_args(cls, args):

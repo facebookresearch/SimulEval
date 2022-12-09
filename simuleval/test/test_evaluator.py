@@ -12,12 +12,12 @@ import tempfile
 def test_score_only():
     with tempfile.TemporaryDirectory() as tmpdirname:
         p = subprocess.run(
-                "simuleval"
-                " --agent examples/quick_start/first_agent.py"
-                " --source examples/quick_start/source.txt"
-                " --target examples/quick_start/target.txt"
-                f" --output {tmpdirname} && simuleval --score-only --output {tmpdirname}",
-                shell=True
+            "simuleval"
+            " --agent examples/quick_start/first_agent.py"
+            " --source examples/quick_start/source.txt"
+            " --target examples/quick_start/target.txt"
+            f" --output {tmpdirname} && simuleval --score-only --output {tmpdirname}",
+            shell=True,
         )
     returncode = p.returncode
     assert returncode == 0

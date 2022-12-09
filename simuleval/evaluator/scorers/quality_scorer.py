@@ -27,7 +27,9 @@ class QualityScorer:
 
 
 def add_sacrebleu_args(parser):
-    parser.add_argument("--sacrebleu-tokenizer", type=str, default="13a", help="Tokenizer in sacrebleu")
+    parser.add_argument(
+        "--sacrebleu-tokenizer", type=str, default="13a", help="Tokenizer in sacrebleu"
+    )
 
 
 @register_quality_scorer("BLEU")

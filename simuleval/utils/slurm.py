@@ -7,6 +7,7 @@ from simuleval import options
 
 logger = logging.getLogger("simuleval.slurm")
 
+
 def mkdir_output_dir(path: str) -> bool:
     try:
         os.makedirs(path, exist_ok=True)
