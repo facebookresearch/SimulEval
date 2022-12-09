@@ -26,9 +26,6 @@ class RemoteEvaluator:
     def system_reset(self):
         requests.post(f"{self.base_url}/reset")
 
-    def reset(self):
-        self.evaluator.reset()
-
     def results(self):
         return self.evaluator.results()
 

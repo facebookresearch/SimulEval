@@ -129,11 +129,6 @@ class SentenceLevelEvaluator(object):
         for index in range(self.start_index, self.end_index):
             yield index
 
-    def reset(self) -> None:
-        if len(self.instances) > 0:
-            logger.warning("Resetting scorer")
-        self.build_instances()
-
     @property
     def quality(self) -> Dict[str, float]:
         return {
