@@ -44,4 +44,4 @@ class TextToTextDataloader(GenericDataloader):
     def from_args(cls, args: Namespace):
         args.source_type = "text"
         args.target_type = "text"
-        return super().from_args(args)
+        return cls.from_files(args.source, args.target)
