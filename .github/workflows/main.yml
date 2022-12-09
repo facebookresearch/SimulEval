@@ -5,9 +5,9 @@ name: build
 
 on:
   push:
-    branches: [ master ]
+    branches:
+      - main
   pull_request:
-    branches: [ master ]
 
 jobs:
   build:
@@ -19,7 +19,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: Set up Python ${{ matrix.python-version }}
+    - name: Set up Python ${{ matrix.python-version}}
       uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
@@ -27,9 +27,11 @@ jobs:
       run: |
         sudo apt-get install libsndfile1
         python -m pip install --upgrade pip
-        pip install flake8 pytest
+        pip install flake8 pytest black
         pip install -e .
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    - name: Lint with black
+      run: black --check --diff .
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
