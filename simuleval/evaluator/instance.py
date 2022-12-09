@@ -95,6 +95,7 @@ class Instance(object):
             "prediction_length": self.prediction_length,
             "reference": self.reference,
             "source": self.source,
+            "source_length": self.source_length,
             "metric": self.metrics,
         }
 

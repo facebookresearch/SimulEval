@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import pandas
+import os
 import numbers
 from argparse import Namespace
 from typing import Dict, Generator, List
@@ -78,6 +79,18 @@ class SentenceLevelEvaluator(object):
                 configs = yaml.safe_load(f)
                 self.source_type = configs["source_type"]
                 self.target_type = configs["target_type"]
+
+        assert self.source_type
+        assert self.target_type
+
+        if self.output is not None:
+            os.makedirs(self.output, exist_ok=True)
+            with open(self.output / "config.yaml", "w") as f:
+                yaml.dump(
+                    {"source_type": self.source_type, "target_type": self.source_type},
+                    f,
+                    default_flow_style=False
+                )
 
         self.instance_class = INSTANCE_TYPE_DICT[
             f"{self.source_type}-{self.target_type}"
