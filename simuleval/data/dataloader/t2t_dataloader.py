@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Callable, List, Union, Optional
 from .dataloader import GenericDataloader
 from simuleval.data.dataloader import register_dataloader
+from argparse import Namespace
 
 
 @register_dataloader("text-to-text")
@@ -38,3 +39,9 @@ class TextToTextDataloader(GenericDataloader):
             target_list = [None for _ in source_list]
         dataloader = cls(source_list, target_list)
         return dataloader
+
+    @classmethod
+    def from_args(cls, args: Namespace):
+        args.source_type = "text"
+        args.target_type = "text"
+        return super().from_args(args)

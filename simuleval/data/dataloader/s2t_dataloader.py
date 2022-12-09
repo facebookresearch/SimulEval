@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import  List, Union
 from .dataloader import GenericDataloader
 from simuleval.data.dataloader import register_dataloader
+from argparse import Namespace
 try:
     import soundfile
     IS_IMPORT_SOUNDFILE = True
@@ -36,3 +37,9 @@ class SpeechToTextDataloader(GenericDataloader):
             target_list = f.readlines()
         dataloader = cls(source_list, target_list)
         return dataloader
+
+    @classmethod
+    def from_args(cls, args: Namespace):
+        args.source_type = "text"
+        args.target_type = "text"
+        return super().from_args(args)

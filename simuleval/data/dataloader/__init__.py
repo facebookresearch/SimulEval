@@ -25,6 +25,4 @@ def build_dataloader(args) -> Any:
     assert args.target_type in SUPPORTED_TARGET_MEDIUM
 
     logger.info(f"Evaluating from {args.source_type} to {args.target_type}.")
-    return DATALOADER_DICT[f"{args.source_type}-to-{args.target_type}"].from_files(
-        args.source, args.target
-    )
+    return DATALOADER_DICT[f"{args.source_type}-to-{args.target_type}"].from_args(args)

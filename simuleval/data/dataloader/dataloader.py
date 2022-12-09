@@ -1,5 +1,6 @@
 from importlib.resources import path
 from typing import Any, Dict, List, Union
+from argparse import Namespace
 
 
 DATALOADER_DICT = {}
@@ -48,3 +49,7 @@ class GenericDataloader:
 
     def preprocess_target(self, target: str) -> Any:
         raise NotImplementedError
+
+    @classmethod
+    def from_args(cls, args: Namespace):
+        return cls(args.source, args.target)

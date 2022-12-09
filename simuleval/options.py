@@ -6,32 +6,35 @@
 
 import logging
 import argparse
-import os
+from simuleval import SUPPORTED_SOURCE_MEDIUM, SUPPORTED_TARGET_MEDIUM
 from sacrebleu import TOKENIZERS
 
 def add_data_args(parser):
     parser.add_argument(
         "--source",
         type=str,
-        default=os.environ.get("SIMULEVAL_SOURCE", None),
         help="Source file.",
     )
     parser.add_argument(
         "--target",
         type=str,
-        default=os.environ.get("SIMULEVAL_SOURCE", None),
+        help="Target file.",
+    )
+    parser.add_argument(
+        "--dataloader",
+        type=str,
         help="Target file.",
     )
     parser.add_argument(
         "--source-type",
         type=str,
-        choices=["text", "speech"],
+        choices=SUPPORTED_SOURCE_MEDIUM,
         help="Source Data type to evaluate.",
     )
     parser.add_argument(
         "--target-type",
         type=str,
-        choices=["text", "speech"],
+        choices=SUPPORTED_TARGET_MEDIUM,
         help="Data type to evaluate.",
     )
     parser.add_argument(
