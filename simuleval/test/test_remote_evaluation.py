@@ -5,10 +5,9 @@
 # LICENSE file in the root directory of this source tree.
 
 import subprocess
-import requests
+import tempfile
 import time
 from simuleval.utils.functional import find_free_port
-from requests.exceptions import ConnectionError
 
 
 def test_remote_eval():
@@ -24,17 +23,21 @@ def test_remote_eval():
             ]
     )
     time.sleep(5)
-    p_2 = subprocess.Popen(
-        [
-            "simuleval",
-            "--remote-eval",
-            "--remote-port", str(port),
-            "--source", "examples/quick_start/source.txt",
-            "--target", "examples/quick_start/target.txt",
-            "--source-type", "text",
-            "--target-type", "text",
-        ]
-    )
+
+    assert p_1.returncode != 1
+
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        p_2 = subprocess.Popen(
+            [
+                "simuleval",
+                "--remote-eval",
+                "--remote-port", str(port),
+                "--source", "examples/quick_start/source.txt",
+                "--target", "examples/quick_start/target.txt",
+                "--dataloader", "text-to-text",
+                "--output", tmpdirname
+            ]
+        )
     _ = p_2.communicate()[0]
 
     assert p_2.returncode == 0
