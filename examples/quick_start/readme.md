@@ -5,7 +5,7 @@ Following are some minimal examples to use SimulEval. More details can be found 
 To evaluate a text-to-text wait-3 system with random output:
 
 ```
-> simuleval --source source.txt --reference target.txt --agent first_agent.py.py
+> simuleval --source source.txt --target target.txt --agent first_agent.py.py
 
 2022-12-05 13:43:58 | INFO | simuleval.cli | Evaluate system: DummyWaitkTextAgent
 2022-12-05 13:43:58 | INFO | simuleval.dataloader | Evaluating from text to text.
@@ -17,17 +17,17 @@ BLEU  AL    AP  DAL
 
 ## Agent with Command Line Arguments
 ```
-simuleval --source source.txt --reference target.txt --agent agent_with_configs.py.py --waitk 3 --vocab dict.txt
+simuleval --source source.txt --target target.txt --agent agent_with_configs.py.py --waitk 3 --vocab dict.txt
 ```
 
 ## Agent Pipeline
 ```
-simuleval --source source.txt --reference target.txt --agent agent_pipeline.py
+simuleval --source source.txt --target target.txt --agent agent_pipeline.py
 ```
 
 ## Agent with New Metrics
 ```
-simuleval --source source.txt --reference target.txt --agent agent_with_new_metrics.py
+simuleval --source source.txt --target target.txt --agent agent_with_new_metrics.py
 ```
 
 ## Standalone Agent & Remote Evaluation
@@ -43,7 +43,7 @@ docker run -p 8888:8888 simuleval_agent:latest
 
 Start a remote evaluator:
 ```
-simuleval --source source.txt --reference target.txt --remote-port 8888
+simuleval --source source.txt --target target.txt --source-type text --target-type text --remote-port 8888
 ```
 
 

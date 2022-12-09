@@ -5,10 +5,12 @@
 # LICENSE file in the root directory of this source tree.
 
 import subprocess
+import requests
 import time
+from simuleval.utils.functional import find_free_port
 
 
-def test_simuleval():
+def test_cmd():
     result = subprocess.Popen(
         [
             "simuleval",

@@ -26,7 +26,7 @@ setuptools.setup(
         "requests",
         "pytest-flake8",
         "textgrid",
-        "tqdm",
+        "tqdm==4.64.1",
         "pyyaml",
         "bitarray==2.6.0",
     ],

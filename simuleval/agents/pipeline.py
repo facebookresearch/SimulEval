@@ -37,7 +37,7 @@ class AgentPipeline(GenericAgent):
                 return
         self.module_list[-1].push(segment)
 
-    def pop(self) -> None:
+    def pop(self) -> Segment:
         return self.module_list[-1].pop()
 
     def pushpop(self, segment: Segment) -> Segment:
