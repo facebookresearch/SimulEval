@@ -173,8 +173,7 @@ class SentenceLevelEvaluator(object):
 
         results = self.results
         if self.output:
-            with open(self.output / "scores", "w") as f:
-                f.write(results)
+            results.to_csv(self.output / "scores.tsv", sep="\t", index=False)
 
         logger.info(f"Results:")
         print(results.to_string(index=False))
