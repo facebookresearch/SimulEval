@@ -4,17 +4,12 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
-import os
-import re
 import sys
-import argparse
 import logging
-import subprocess
-import json
-import multiprocessing
 from simuleval import options
 from simuleval import options, EVALUATION_SYSTEM_LIST
 from simuleval.utils.agent import import_file
+from simuleval.utils.slurm import submit_slurm_job
 from simuleval.evaluator import (
     build_evaluator,
     build_remote_evaluator,
@@ -37,10 +32,10 @@ logger = logging.getLogger("simuleval.cli")
 def check_evaluation_system_list():
     if len(EVALUATION_SYSTEM_LIST) == 0:
         logger.error(
-            "Please use @simuleval decorator to indicate the system you want to evaluate."
+            "Please use @entrypoint decorator to indicate the system you want to evaluate."
         )
     elif len(EVALUATION_SYSTEM_LIST) > 1:
-        logger.error("More than on system is not supported right now.")
+        logger.error("More than one system is not supported right now.")
     else:
         logger.info(f"Evaluate system: {EVALUATION_SYSTEM_LIST[0].__name__}")
 
