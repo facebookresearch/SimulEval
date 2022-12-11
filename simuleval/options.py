@@ -108,12 +108,10 @@ def general_parser():
     return parser
 
 
-def get_slurm_args():
-    parser = general_parser()
+def add_slurm_args(parser):
     parser.add_argument(
         "--slurm-partition", default="learnaccel,ust", help="Slurm partition."
     )
     parser.add_argument("--slurm-job-name", default="simuleval", help="Slurm job name.")
     parser.add_argument("--slurm-time", default="10:00:00", help="Slurm partition.")
     args, _ = parser.parse_known_args()
-    return args

@@ -20,7 +20,11 @@ def mkdir_output_dir(path: str) -> bool:
 
 
 def submit_slurm_job() -> None:
-    args = options.get_slurm_args()
+    parser = options.general_parser()
+    options.add_evaluator_args(parser)
+    options.add_slurm_args(parser)
+    args, _ = parser.parse_known_args()
+
     assert mkdir_output_dir(args.output)
     os.system(f"cp {args.agent} {args.output}/agent.py")
     _args = [sys.argv[0]]
