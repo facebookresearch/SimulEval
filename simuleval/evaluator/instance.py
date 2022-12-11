@@ -87,6 +87,10 @@ class Instance(object):
     def prediction(self):
         raise NotImplementedError
 
+    @property
+    def source_info(self):
+        return self.source
+
     def summarize(self):
         return {
             "index": self.index,
@@ -95,7 +99,7 @@ class Instance(object):
             "elapsed": self.elapsed,
             "prediction_length": self.prediction_length,
             "reference": self.reference,
-            "source": self.source,
+            "source": self.source_info,
             "source_length": self.source_length,
             "metric": self.metrics,
         }
@@ -251,6 +255,7 @@ class SpeechInputInstance(Instance):
         # In milliseconds
         return self.len_sample_to_ms(len(self.samples))
 
+    @property
     def source_info(self):
         return str(self.audio_info).split("\n")
 
