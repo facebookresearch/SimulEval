@@ -11,7 +11,6 @@ from typing import Dict, List, Optional
 import sacrebleu
 from pathlib import Path
 
-from simuleval import DEFAULT_EOS
 from simuleval.data.segments import TextSegment, SpeechSegment
 
 from simuleval.data.dataloader import GenericDataloader
@@ -105,7 +104,7 @@ class Instance(object):
     def from_json(cls, json_string):
         info = json.loads(json_string)
         instance = cls(info["index"], None, None)
-        instance.prediction_list = info["prediction"].split() + [DEFAULT_EOS]
+        instance.prediction_list = info["prediction"].split()
         instance.delays = info["delays"]
         instance.elapsed = info["elapsed"]
         instance.reference = info["reference"]
@@ -183,7 +182,7 @@ class TextOutputInstance(Instance):
     @property
     def prediction(self):
         # TODO: Make configurable
-        return " ".join([x for x in self.prediction_list if x != DEFAULT_EOS])
+        return " ".join([x for x in self.prediction_list])
 
 
 class SpeechInputInstance(Instance):
@@ -221,33 +220,31 @@ class SpeechInputInstance(Instance):
             if self.step + num_samples >= len(self.samples):
                 # Pad zeros if the requested number of samples
                 # are more than available samples.
-                instance = self.samples[self.step :]
+                samples = self.samples[self.step :]
                 is_finished = True
             else:
-                instance = self.samples[self.step : self.step + num_samples]
+                samples = self.samples[self.step : self.step + num_samples]
                 is_finished = False
 
             self.step = min(self.step + num_samples, len(self.samples))
 
-            dict_to_return = {
-                "segment_id": self.len_sample_to_ms(self.step),
-                "segment": instance,
-                "sample_rate": self.audio_info.samplerate,
-                "dtype": "int16",
-                "finished": is_finished,
-            }
+            segment = SpeechSegment(
+                index=self.len_sample_to_ms(self.step),
+                content=samples,
+                sample_rate=self.audio_info.samplerate,
+                finished=is_finished,
+            )
 
         else:
             # Finish reading this audio
-            dict_to_return = {
-                "segment_id": self.source_length,
-                "segment": [],
-                "sample_rate": self.audio_info.samplerate,
-                "dtype": "int16",
-                "finished": True,
-            }
+            segment = SpeechSegment(
+                index=self.len_sample_to_ms(self.step),
+                content=[],
+                sample_rate=self.audio_info.samplerate,
+                finished=True,
+            )
 
-        return dict_to_return
+        return segment
 
     @property
     def source_length(self):

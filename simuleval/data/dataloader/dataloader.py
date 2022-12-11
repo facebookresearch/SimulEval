@@ -1,8 +1,10 @@
 from importlib.resources import path
 from typing import Any, Dict, List, Union
-from argparse import Namespace
+from argparse import Namespace, ArgumentParser
 
-
+SUPPORTED_MEDIUM = ["text", "speech"]
+SUPPORTED_SOURCE_MEDIUM = ["text", "speech"]
+SUPPORTED_TARGET_MEDIUM = ["text", "speech"]
 DATALOADER_DICT = {}
 
 
@@ -55,3 +57,34 @@ class GenericDataloader:
     @classmethod
     def from_args(cls, args: Namespace):
         return cls(args.source, args.target)
+
+    @staticmethod
+    def add_args(parser: ArgumentParser):
+        parser.add_argument(
+            "--source",
+            type=str,
+            help="Source file.",
+        )
+        parser.add_argument(
+            "--target",
+            type=str,
+            help="Target file.",
+        )
+        parser.add_argument(
+            "--source-type",
+            type=str,
+            choices=SUPPORTED_SOURCE_MEDIUM,
+            help="Source Data type to evaluate.",
+        )
+        parser.add_argument(
+            "--target-type",
+            type=str,
+            choices=SUPPORTED_TARGET_MEDIUM,
+            help="Data type to evaluate.",
+        )
+        parser.add_argument(
+            "--source-segment-size",
+            type=int,
+            default=1,
+            help="Source segment size, For text the unit is # token, for speech is ms",
+        )

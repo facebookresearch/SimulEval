@@ -1,10 +1,13 @@
 import logging
 from typing import Any
-from simuleval import SUPPORTED_SOURCE_MEDIUM, SUPPORTED_TARGET_MEDIUM
+from argparse import ArgumentParser
 from .dataloader import (
     GenericDataloader,
     register_dataloader,
     register_dataloader_class,
+    SUPPORTED_MEDIUM,
+    SUPPORTED_SOURCE_MEDIUM,
+    SUPPORTED_TARGET_MEDIUM,
     DATALOADER_DICT,
 )
 from .t2t_dataloader import TextToTextDataloader
@@ -26,3 +29,5 @@ def build_dataloader(args) -> Any:
 
     logger.info(f"Evaluating from {args.source_type} to {args.target_type}.")
     return DATALOADER_DICT[f"{args.source_type}-to-{args.target_type}"].from_args(args)
+
+
