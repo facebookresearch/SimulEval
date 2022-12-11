@@ -34,10 +34,10 @@ def check_evaluation_system_list():
         logger.error(
             "Please use @entrypoint decorator to indicate the system you want to evaluate."
         )
-    elif len(EVALUATION_SYSTEM_LIST) > 1:
+        sys.exit(1)
+    if len(EVALUATION_SYSTEM_LIST) > 1:
         logger.error("More than one system is not supported right now.")
-    else:
-        logger.info(f"Evaluate system: {EVALUATION_SYSTEM_LIST[0].__name__}")
+        sys.exit(1)
 
 
 def check_argument(name):
@@ -90,6 +90,7 @@ def build_system():
 
     # build system
     system = system_class.from_args(args)
+    logger.info(f"Evaluate system: {system}")
     return system
 
 

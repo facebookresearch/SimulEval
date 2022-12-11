@@ -68,7 +68,7 @@ class AgentPipeline(GenericAgent):
 
     def __repr__(self) -> str:
         pipline_str = "\n\t".join(
-            module_class.__name__ for module_class in self.pipeline
+            f"{module_class.__name__}, {module_class.source_type} -> {module_class.target_type})" for module_class in self.pipeline
         )
         return f"{self.__class__.__name__}(\n\t{pipline_str}\n)"
 
