@@ -90,7 +90,7 @@ def build_system():
 
     # build system
     system = system_class.from_args(args)
-    logger.info(f"Evaluate system: {system}")
+    logger.info(f"Evaluate system:\n{system}")
     return system
 
 
@@ -99,6 +99,8 @@ def evaluate(system):
     parser = options.general_parser()
     options.add_evaluator_args(parser)
     options.add_dataloader_args(parser)
+
+    # To make sure all args are valid
     system.add_args(parser)
 
     args = parser.parse_args()

@@ -17,8 +17,6 @@ import yaml
 import logging
 import json
 from tqdm import tqdm
-from tqdm.contrib.logging import logging_redirect_tqdm
-from statistics import mean
 from pathlib import Path
 from simuleval.data.dataloader import GenericDataloader, build_dataloader
 
@@ -105,7 +103,7 @@ class SentenceLevelEvaluator(object):
             if self.end_index < 0:
                 self.end_index = len(self.dataloader)
 
-        if self.args.no_progress_bar:
+        if not self.args.no_progress_bar:
             self.maybe_tqdm = tqdm
         else:
             self.maybe_tqdm = lambda x: x
@@ -177,15 +175,14 @@ class SentenceLevelEvaluator(object):
         print(results.to_string(index=False))
 
     def __call__(self, system):
-        with logging_redirect_tqdm(loggers=[logger]):
-            for instance in self.maybe_tqdm(self.instances.values()):
-                system.reset()
-                while not instance.finish_prediction:
-                    input_segment = instance.send_source(self.source_segment_size)
-                    output_segment = system.pushpop(input_segment)
-                    instance.receive_prediction(output_segment)
-                if self.output:
-                    self.write_log(instance)
+        for instance in self.maybe_tqdm(self.instances.values()):
+            system.reset()
+            while not instance.finish_prediction:
+                input_segment = instance.send_source(self.source_segment_size)
+                output_segment = system.pushpop(input_segment)
+                instance.receive_prediction(output_segment)
+            if self.output:
+                self.write_log(instance)
 
         self.dump_results()
 
