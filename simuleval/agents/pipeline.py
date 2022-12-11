@@ -14,7 +14,16 @@ class AgentPipeline(GenericAgent):
     pipeline: list = []
 
     def __init__(self, module_list: List[GenericAgent]) -> None:
+        self.check_pipeline_types()
         self.module_list = module_list
+
+    def check_pipeline_types(self):
+        if len(self.pipeline) > 1:
+            for i in range(1, len(self.pipeline)):
+                if self.pipeline[i].source_type != self.pipeline[i - 1].target_type:
+                    raise RuntimeError(
+                        f"{self.pipeline[i]}.source_type({self.pipeline[i].source_type}) != {self.pipeline[i-1]}.target_type({self.pipeline[i - 1].target_type})"
+                    )
 
     @property
     def source_type(self) -> str:
@@ -55,13 +64,6 @@ class AgentPipeline(GenericAgent):
     @classmethod
     def from_args(cls, args):
         assert len(cls.pipeline) > 0
-        if len(cls.pipeline) > 1:
-            for i in range(1, len(cls.pipeline)):
-                if cls.pipeline[i].source_type != cls.pipeline[i - 1].target_type:
-                    raise RuntimeError(
-                        f"{cls.pipeline[i]}.source_type({cls.pipeline[i].source_type}) != {cls.pipeline[i-1]}.target_type({cls.pipeline[i - 1].target_type})"
-                    )
-
         return cls([module_class.from_args(args) for module_class in cls.pipeline])
 
     def __repr__(self) -> str:

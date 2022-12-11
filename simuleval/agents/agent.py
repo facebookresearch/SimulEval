@@ -91,6 +91,9 @@ class GenericAgent:
         if action.is_read():
             return EmptySegment()
         else:
+            if isinstance(action.content, Segment):
+                return action.content
+
             segment = SEGMENT_TYPE_DICT[self.target_type](
                 index=0, content=action.content, finished=action.finished
             )
