@@ -6,57 +6,15 @@
 
 import logging
 import argparse
-from simuleval import SUPPORTED_SOURCE_MEDIUM, SUPPORTED_TARGET_MEDIUM
-from sacrebleu import TOKENIZERS
+from simuleval.data.dataloader import DATALOADER_DICT, GenericDataloader
 
 
-def add_data_args(parser):
-    parser.add_argument(
-        "--source",
-        type=str,
-        help="Source file.",
-    )
-    parser.add_argument(
-        "--target",
-        type=str,
-        help="Target file.",
-    )
-    parser.add_argument(
-        "--dataloader",
-        type=str,
-        help="Target file.",
-    )
-    parser.add_argument(
-        "--source-type",
-        type=str,
-        choices=SUPPORTED_SOURCE_MEDIUM,
-        help="Source Data type to evaluate.",
-    )
-    parser.add_argument(
-        "--target-type",
-        type=str,
-        choices=SUPPORTED_TARGET_MEDIUM,
-        help="Data type to evaluate.",
-    )
-    parser.add_argument(
-        "--source-segment-size",
-        type=int,
-        default=1,
-        help="Source segment size, For text the unit is # token, for speech is ms",
-    )
-    parser.add_argument(
-        "--start-index",
-        type=int,
-        default=0,
-        help="Start index for evaluation.",
-    )
-    parser.add_argument(
-        "--end-index",
-        type=int,
-        default=-1,
-        help="The last index for evaluation.",
-    )
-    return parser
+def add_dataloader_args(parser: argparse.ArgumentParser):
+    args, _ = parser.parse_known_args()
+    dataloader_class = DATALOADER_DICT.get(args.dataloader)
+    if dataloader_class is None:
+        dataloader_class = GenericDataloader
+    dataloader_class.add_args(parser)
 
 
 def add_evaluator_args(parser):
@@ -102,6 +60,18 @@ def add_evaluator_args(parser):
         default=False,
         help="Do not use progress bar",
     )
+    parser.add_argument(
+        "--start-index",
+        type=int,
+        default=0,
+        help="Start index for evaluation.",
+    )
+    parser.add_argument(
+        "--end-index",
+        type=int,
+        default=-1,
+        help="The last index for evaluation.",
+    )
     parser.add_argument("--output", type=str, default=None, help="Output directory")
 
 
@@ -121,6 +91,7 @@ def general_parser():
         "--slurm", action="store_true", default=False, help="Use slurm."
     )
     parser.add_argument("--agent", default=None, help="Agent type")
+    parser.add_argument("--dataloader", default=None, help="Dataloader to use")
     parser.add_argument(
         "--log-level",
         type=str,

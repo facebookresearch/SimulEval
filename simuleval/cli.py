@@ -7,7 +7,6 @@
 import sys
 import logging
 from simuleval import options
-from simuleval import options, EVALUATION_SYSTEM_LIST
 from simuleval.utils.agent import import_file
 from simuleval.utils.slurm import submit_slurm_job
 from simuleval.evaluator import (
@@ -17,6 +16,7 @@ from simuleval.evaluator import (
 )
 from simuleval.agents.service import start_agent_service
 
+EVALUATION_SYSTEM_LIST = []
 
 logging.basicConfig(
     format="%(asctime)s | %(levelname)-8s | %(name)-16s | %(message)s",
@@ -80,7 +80,7 @@ def build_system():
 
     # General Options
     parser = options.general_parser()
-    options.add_data_args(parser)
+    options.add_dataloader_args(parser)
     options.add_evaluator_args(parser)
 
     # System Options
@@ -96,8 +96,8 @@ def build_system():
 def evaluate(system):
 
     parser = options.general_parser()
-    options.add_data_args(parser)
     options.add_evaluator_args(parser)
+    options.add_dataloader_args(parser)
     system.add_args(parser)
 
     args = parser.parse_args()
@@ -114,6 +114,7 @@ def evaluate(system):
 def scoring():
     parser = options.general_parser()
     options.add_evaluator_args(parser)
+    options.add_dataloader_args(parser)
     args = parser.parse_args()
     evaluator = SentenceLevelEvaluator.from_args(args)
     print(evaluator.results)
@@ -122,7 +123,6 @@ def scoring():
 def remote_evaluate():
     # build evaluator
     parser = options.general_parser()
-    options.add_data_args(parser)
     options.add_evaluator_args(parser)
     args = parser.parse_args()
     evaluator = build_remote_evaluator(args)
