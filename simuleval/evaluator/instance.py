@@ -156,6 +156,11 @@ class TextOutputInstance(Instance):
         if self.start_time is None:
             self.start_time = time.time()
 
+        self.finish_prediction = prediction.finished
+
+        if len(prediction.content) == 0:
+            return
+
         current_time = time.time()
 
         if self.latency_unit == "word":
@@ -171,8 +176,6 @@ class TextOutputInstance(Instance):
             prediction_list
         )
         self.delays += [self.step_to_delay(self.step)] * len(prediction_list)
-
-        self.finish_prediction = prediction.finished
 
     @property
     def target_length_latency(self):
@@ -342,6 +345,11 @@ class SpeechOutputInstance(Instance):
         if self.finish_prediction:
             return
 
+        self.finish_prediction = segment.finished
+
+        if len(segment.content) == 0:
+            return
+
         pred_duration = 1000 * len(segment.content) / segment.sample_rate
 
         if self.target_sample_rate is None:
@@ -351,7 +359,6 @@ class SpeechOutputInstance(Instance):
         self.prediction_list.append(segment.content)
         self.delays.append(self.step_to_delay(self.step))
 
-        self.finish_prediction = segment.finished
 
 
 class SpeechToTextInstance(SpeechInputInstance, TextOutputInstance):

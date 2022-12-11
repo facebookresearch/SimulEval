@@ -175,7 +175,11 @@ class SentenceLevelEvaluator(object):
         print(results.to_string(index=False))
 
     def __call__(self, system):
-        for instance in self.maybe_tqdm(self.instances.values()):
+        for instance in self.maybe_tqdm(
+            self.instances.values(),
+            initial=self.start_index,
+            total=len(self.instances.values()),
+        ):
             system.reset()
             while not instance.finish_prediction:
                 input_segment = instance.send_source(self.source_segment_size)
