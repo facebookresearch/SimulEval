@@ -308,8 +308,7 @@ class SpeechOutputInstance(Instance):
                 samples += [0.0] * int(
                     self.target_sample_rate * (start - prev_end) / 1000
                 )
-            samples += self.prediction_list[i]["samples"]
-
+            samples += self.prediction_list[i]
             duration = self.durations[i]
             prev_end = start + duration
             intervals.append([start, duration])
@@ -330,28 +329,29 @@ class SpeechOutputInstance(Instance):
             "source": self.dataloader.get_source_audio_path(self.index),
         }
 
-    def receive_prediction(self, prediction: str):
+    def receive_prediction(self, segment: SpeechSegment):
         """
         Handler for receiving new predictions
         """
         if self.start_time is None:
             self.start_time = time.time()
 
+        if segment.is_empty:
+            return
+
         if self.finish_prediction:
             return
 
-        info_dict = json.loads(prediction)
-
-        pred_duration = 1000 * len(info_dict["samples"]) / info_dict["sample_rate"]
+        pred_duration = 1000 * len(segment.content) / segment.sample_rate
 
         if self.target_sample_rate is None:
-            self.target_sample_rate = info_dict["sample_rate"]
+            self.target_sample_rate = segment.sample_rate
 
         self.durations.append(pred_duration)
-        self.prediction_list.append(info_dict)
+        self.prediction_list.append(segment.content)
         self.delays.append(self.step_to_delay(self.step))
 
-        self.finish_prediction = info_dict["finished"]
+        self.finish_prediction = segment.finished
 
 
 class SpeechToTextInstance(SpeechInputInstance, TextOutputInstance):

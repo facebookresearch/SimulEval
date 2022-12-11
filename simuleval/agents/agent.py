@@ -129,11 +129,10 @@ class GenericAgent:
         return cls(args)
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}, {self.source_type} -> {self.target_type}"
+        return f"{self.__class__.__name__}[{self.source_type} -> {self.target_type}]"
 
     def __str__(self) -> str:
         return self.__repr__()
-
 
 
 class SpeechToTextAgent(GenericAgent):

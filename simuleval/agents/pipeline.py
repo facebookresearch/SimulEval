@@ -14,24 +14,27 @@ class AgentPipeline(GenericAgent):
     pipeline: list = []
 
     def __init__(self, module_list: List[GenericAgent]) -> None:
-        self.check_pipeline_types()
         self.module_list = module_list
+        self.check_pipeline_types()
 
     def check_pipeline_types(self):
         if len(self.pipeline) > 1:
             for i in range(1, len(self.pipeline)):
-                if self.pipeline[i].source_type != self.pipeline[i - 1].target_type:
+                if (
+                    self.module_list[i].source_type
+                    != self.module_list[i - 1].target_type
+                ):
                     raise RuntimeError(
-                        f"{self.pipeline[i]}.source_type({self.pipeline[i].source_type}) != {self.pipeline[i-1]}.target_type({self.pipeline[i - 1].target_type}"
+                        f"{self.module_list[i]}.source_type({self.module_list[i].source_type}) != {self.pipeline[i-1]}.target_type({self.pipeline[i - 1].target_type}"
                     )
 
     @property
     def source_type(self) -> str:
-        return self.pipeline[0].source_type
+        return self.module_list[0].source_type
 
     @property
     def target_type(self) -> str:
-        return self.pipeline[-1].target_type
+        return self.module_list[-1].target_type
 
     def reset(self) -> None:
         for module in self.module_list:
@@ -68,8 +71,8 @@ class AgentPipeline(GenericAgent):
 
     def __repr__(self) -> str:
         pipline_str = "\n\t".join(
-            f"{module_class.__name__}, {module_class.source_type} -> {module_class.target_type})"
-            for module_class in self.pipeline
+            "\t".join(str(module).splitlines(True))
+            for module in self.module_list
         )
         return f"{self.__class__.__name__}(\n\t{pipline_str}\n)"
 

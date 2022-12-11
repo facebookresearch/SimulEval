@@ -1,4 +1,4 @@
-from simuleval.data.segments import Segment, TextSegment
+from simuleval.data.segments import Segment, TextSegment, EmptySegment
 
 
 class AgentStates:
@@ -30,11 +30,12 @@ class AgentStates:
             segment (~simuleval.agents.segments.Segment): input segment
         """
         self.source_finished = segment.finished
-        if not self.source_finished:
-            if isinstance(segment, TextSegment):
-                self.source.append(segment.content)
-            else:
-                self.source += segment.content
+        if isinstance(segment, EmptySegment):
+            return
+        elif isinstance(segment, TextSegment):
+            self.source.append(segment.content)
+        else:
+            self.source += segment.content
 
     def update_target(self, segment: Segment):
         """
