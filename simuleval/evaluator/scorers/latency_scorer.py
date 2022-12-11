@@ -41,7 +41,8 @@ class LatencyScorer:
             if delays is None:
                 logger.warn(f"{index} instance has no delay information. Skipped")
                 continue
-            if self.use_ref_len or ins.reference is None:
+
+            if not self.use_ref_len or ins.reference is None:
                 tgt_len = len(delays)
             else:
                 tgt_len = len(ins.reference.split())
