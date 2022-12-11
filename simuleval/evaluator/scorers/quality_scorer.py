@@ -1,3 +1,4 @@
+import csv
 import logging
 import sacrebleu
 from pathlib import Path
@@ -109,8 +110,6 @@ class ASRSacreBLEUScorer(QualityScorer):
             self.logger.warn("Please install ust_common.")
             return ["" for _ in range(len(self))]
 
-        from simuleval.utils.fairseq import load_fairseq_manifest
-
         wav_dir = Path(instances[0].prediction).absolute().parent
         root_dir = wav_dir.parent
         # TODO make it configurable
@@ -129,9 +128,17 @@ class ASRSacreBLEUScorer(QualityScorer):
                 root_dir / "asr_out",
             )
 
-        translations_w_id = load_fairseq_manifest(
-            root_dir / "asr_out" / "eval_asr_predictions.tsv"
-        )
+        with open(root_dir / "asr_out" / "eval_asr_predictions.tsv") as f:
+            reader = csv.DictReader(
+                f,
+                delimiter="\t",
+                quotechar=None,
+                doublequote=False,
+                lineterminator="\n",
+                quoting=csv.QUOTE_NONE,
+            )
+            translations_w_id = [dict(e) for e in reader]
+
         translations_w_id = sorted(
             translations_w_id, key=lambda x: int(x["id"].split("_")[-1])
         )
