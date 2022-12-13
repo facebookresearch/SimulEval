@@ -82,6 +82,23 @@ def AverageProportion(
     AP = AP / (src_lens * tgt_lens)
     return AP.squeeze(1)
 
+@latency_metric
+def LengthAdaptiveAverageLagging(delays, src_lens, tgt_lens, ref_lens=None, target_padding_mask=None):
+    """
+    Function to calculate Length Adaptive Average Lagging (LAAL) as proposed in
+    CUNI-KIT System for Simultaneous Speech Translation Task at IWSLT 2022
+    (https://arxiv.org/abs/2204.06028). 
+    The name was suggested in Over-Generation Cannot Be Rewarded:
+    Length-Adaptive Average Lagging for Simultaneous Speech Translation 
+    (https://arxiv.org/abs/2206.05807).
+    It is the original Average Lagging as proposed in 
+    Controllable Latency using Prefix-to-Prefix Framework
+    (https://arxiv.org/abs/1810.08398)
+    but is robust to the length differece between the hypothesis and reference.
+    """
+    if ref_lens is not None:
+        ref_lens = torch.maximum(tgt_lens, ref_lens)
+    return AverageLagging(delays, src_lens, ref_lens, target_padding_mask)
 
 @latency_metric
 def AverageLagging(delays, src_lens, tgt_lens, ref_lens=None, target_padding_mask=None):

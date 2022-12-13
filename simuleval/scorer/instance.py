@@ -13,6 +13,7 @@ import sacrebleu
 from simuleval import DEFAULT_EOS
 from simuleval.metrics.latency import (
     AverageLagging,
+    LengthAdaptiveAverageLagging,
     AverageProportion,
     DifferentiableAverageLagging
 )
@@ -23,6 +24,7 @@ def eval_all_latency(delays, src_len, ref_len=None):
         ref_len = len(delays)
     results = {}
     for name, func in {
+        "LAAL": LengthAdaptiveAverageLagging,
         "AL": AverageLagging,
         "AP": AverageProportion,
         "DAL": DifferentiableAverageLagging
