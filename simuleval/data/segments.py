@@ -43,4 +43,4 @@ def segment_from_json_string(string: str):
     elif info_dict["data_type"] == "speech":
         return SpeechSegment.from_json(string)
     else:
-        return EmptySegment()
+        return EmptySegment.from_json(string)

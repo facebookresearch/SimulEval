@@ -11,7 +11,7 @@ from typing import Dict, List, Optional
 import sacrebleu
 from pathlib import Path
 
-from simuleval.data.segments import TextSegment, SpeechSegment
+from simuleval.data.segments import TextSegment, SpeechSegment, EmptySegment
 
 from simuleval.data.dataloader import GenericDataloader
 from argparse import Namespace
@@ -30,9 +30,8 @@ class Instance(object):
         self.finish_prediction = False
         self.dataloader = dataloader
         self.reset()
-        self.source = None
-        self.source = self.preprocess_target(self.dataloader[self.index]["source"])
-        self.reference = self.preprocess_target(self.dataloader[self.index]["target"])
+        self.source = self.dataloader[self.index]["source"]
+        self.reference = self.dataloader[self.index]["target"]
         if args is not None:
             self.args = args
             self.latency_unit = getattr(args, "latency_unit", "word")
@@ -122,6 +121,7 @@ class TextInputInstance(Instance):
     def source_length(self):
         return len(self.source)
 
+    @property
     def source_info(self):
         return " ".join(self.source)
 
@@ -133,11 +133,12 @@ class TextInputInstance(Instance):
 
     def send_source(self, config_dict: Optional[Dict]):
         if self.step >= self.source_length:
-            segment = TextSegment(index=self.step, content="", finished=True)
-            self.step = self.source_length + 1  # Consider EOS
+            segment = EmptySegment(finished=True)
         else:
             segment = TextSegment(
-                index=self.step, content=self.source[self.step], finished=False
+                index=self.step,
+                content=self.source[self.step],
+                finished=(self.step==self.source_length-1)
             )
             self.step += 1
 
@@ -149,6 +150,8 @@ class TextOutputInstance(Instance):
         """
         Handler for receiving new predictions
         """
+
+        self.finish_prediction = prediction.finished
 
         if self.finish_prediction or prediction.is_empty:
             return
@@ -358,7 +361,6 @@ class SpeechOutputInstance(Instance):
         self.durations.append(pred_duration)
         self.prediction_list.append(segment.content)
         self.delays.append(self.step_to_delay(self.step))
-
 
 
 class SpeechToTextInstance(SpeechInputInstance, TextOutputInstance):

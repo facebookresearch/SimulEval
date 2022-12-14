@@ -31,6 +31,12 @@ def add_evaluator_args(parser):
         help="Latency metrics",
     )
     parser.add_argument(
+        "--continue-unfinished",
+        action="store_true",
+        default=False,
+        help="Continue the experiments in output dir.",
+    )
+    parser.add_argument(
         "--computation-aware",
         action="store_true",
         default=False,

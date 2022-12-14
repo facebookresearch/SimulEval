@@ -83,6 +83,9 @@ class GenericAgent:
             Segment: segment to return.
         """
 
+        if self.states.target_finished:
+            return EmptySegment(finished=True)
+
         action = self.policy()
         if not isinstance(action, Action):
             raise RuntimeError(

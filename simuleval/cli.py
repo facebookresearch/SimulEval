@@ -6,6 +6,8 @@
 
 import sys
 import logging
+from argparse import Namespace
+from typing import Optional
 from simuleval import options
 from simuleval.utils.agent import import_file
 from simuleval.utils.slurm import submit_slurm_job
@@ -47,7 +49,9 @@ def check_argument(name):
 
 
 def import_user_system():
-    import_file(check_argument("agent"))
+    agent_file = check_argument("agent")
+    if agent_file is not None:
+        import_file(agent_file)
 
 
 def main():
@@ -94,16 +98,19 @@ def build_system():
     return system
 
 
-def evaluate(system):
+def evaluate(system, args: Optional[Namespace] = None):
 
-    parser = options.general_parser()
-    options.add_evaluator_args(parser)
-    options.add_dataloader_args(parser)
+    if args is None:
 
-    # To make sure all args are valid
-    system.add_args(parser)
+        parser = options.general_parser()
+        options.add_evaluator_args(parser)
+        options.add_dataloader_args(parser)
 
-    args = parser.parse_args()
+        # To make sure all args are valid
+        system.add_args(parser)
+
+        args = parser.parse_args()
+
     args.source_type = system.source_type
     args.target_type = system.target_type
 
@@ -126,6 +133,7 @@ def scoring():
 def remote_evaluate():
     # build evaluator
     parser = options.general_parser()
+    options.add_dataloader_args(parser)
     options.add_evaluator_args(parser)
     args = parser.parse_args()
     evaluator = build_remote_evaluator(args)

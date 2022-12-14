@@ -17,7 +17,7 @@ BLEU  AL    AP  DAL
 
 ## Agent with Command Line Arguments
 ```
-simuleval --source source.txt --target target.txt --agent agent_with_configs.py.py --waitk 3 --vocab dict.txt
+simuleval --source source.txt --target target.txt --agent agent_with_configs.py --waitk 3 --vocab dict.txt
 ```
 
 ## Agent Pipeline
@@ -43,7 +43,7 @@ docker run -p 8888:8888 simuleval_agent:latest
 
 Start a remote evaluator:
 ```
-simuleval --source source.txt --target target.txt --source-type text --target-type text --remote-port 8888
+simuleval --remote-eval --source source.txt --target target.txt --source-type text --target-type text --remote-port 8888
 ```
 
 

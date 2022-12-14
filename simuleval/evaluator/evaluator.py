@@ -98,8 +98,18 @@ class SentenceLevelEvaluator(object):
 
         if not self.score_only:
             if self.output:
-                self.output.mkdir(exist_ok=True, parents=True)
-                open(self.output / "instances.log", "w").close()
+                if (
+                    self.args.continue_unfinished
+                    and (self.output / "instances.log").exists()
+                ):
+                    with open(self.output / "instances.log", "r") as f:
+                        for line in f:
+                            pass
+                        last_info = json.loads(line.strip())
+                    self.start_index = last_info["index"] + 1
+                else:
+                    self.output.mkdir(exist_ok=True, parents=True)
+                    open(self.output / "instances.log", "w").close()
             if self.end_index < 0:
                 self.end_index = len(self.dataloader)
 
@@ -137,6 +147,10 @@ class SentenceLevelEvaluator(object):
     def get_indices(self) -> Generator:
         if self.end_index < 0:
             self.end_index = max(self.instances.keys()) + 1
+
+        if self.start_index > self.end_index:
+            return []
+
         for index in range(self.start_index, self.end_index):
             yield index
 

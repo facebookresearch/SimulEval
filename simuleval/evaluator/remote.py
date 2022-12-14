@@ -35,7 +35,6 @@ class RemoteEvaluator:
             while not instance.finish_prediction:
                 self.send_source(instance.send_source(self.source_segment_size))
                 output_segment = self.receive_prediction()
-                if not output_segment.is_empty:
-                    instance.receive_prediction(output_segment)
+                instance.receive_prediction(output_segment)
 
         self.evaluator.dump_results()
