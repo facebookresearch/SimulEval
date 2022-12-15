@@ -24,7 +24,7 @@ def test_agent(binary="simuleval", root_path=""):
                 tmpdirname,
             ],
             stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
+            stderr=subprocess.PIPE,
         )
     _ = result.communicate()[0]
     returncode = result.returncode

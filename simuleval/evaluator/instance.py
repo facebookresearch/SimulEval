@@ -138,7 +138,7 @@ class TextInputInstance(Instance):
             segment = TextSegment(
                 index=self.step,
                 content=self.source[self.step],
-                finished=(self.step==self.source_length-1)
+                finished=(self.step == self.source_length - 1),
             )
             self.step += 1
 
