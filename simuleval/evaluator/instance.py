@@ -247,10 +247,8 @@ class SpeechInputInstance(Instance):
 
         else:
             # Finish reading this audio
-            segment = SpeechSegment(
+            segment = EmptySegment(
                 index=self.len_sample_to_ms(self.step),
-                content=[],
-                sample_rate=self.audio_info.samplerate,
                 finished=True,
             )
 
@@ -341,6 +339,8 @@ class SpeechOutputInstance(Instance):
         """
         if self.start_time is None:
             self.start_time = time.time()
+
+        self.finish_prediction = segment.finished
 
         if segment.is_empty:
             return
