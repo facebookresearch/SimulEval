@@ -1,21 +1,21 @@
+import os
 import subprocess
-import random
 from simuleval.agents import TextToTextAgent
 from simuleval.agents import AgentPipeline
 from simuleval.agents.actions import ReadAction, WriteAction
 from simuleval.data.segments import TextSegment
 
 
-def test_pipeline_cmd():
+def test_pipeline_cmd(binary="simuleval", root_path=""):
     result = subprocess.Popen(
         [
-            "simuleval",
+            binary,
             "--agent",
-            "examples/quick_start/agent_pipeline.py",
+            os.path.join(root_path, "examples/quick_start/agent_pipeline.py"),
             "--source",
-            "examples/quick_start/source.txt",
+            os.path.join(root_path, "examples/quick_start/source.txt"),
             "--target",
-            "examples/quick_start/target.txt",
+            os.path.join(root_path, "examples/quick_start/target.txt"),
         ]
     )
     _ = result.communicate()[0]

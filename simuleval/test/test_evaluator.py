@@ -9,13 +9,13 @@ import subprocess
 import tempfile
 
 
-def test_score_only():
+def test_score_only(binary="simuleval", root_path=""):
     with tempfile.TemporaryDirectory() as tmpdirname:
         p = subprocess.run(
-            "simuleval"
-            " --agent examples/quick_start/first_agent.py"
-            " --source examples/quick_start/source.txt"
-            " --target examples/quick_start/target.txt"
+            f"{binary}"
+            f" --agent {os.path.join(root_path, 'examples/quick_start/first_agent.py')}"
+            f" --source {os.path.join(root_path, 'examples/quick_start/source.txt')}"
+            f" --target {os.path.join(root_path, 'examples/quick_start/target.txt')}"
             f" --output {tmpdirname} && simuleval --score-only --output {tmpdirname}",
             shell=True,
         )

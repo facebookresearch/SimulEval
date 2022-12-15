@@ -4,22 +4,23 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
-import subprocess
-import tempfile
+import os
 import time
+import tempfile
+import subprocess
 from simuleval.utils.functional import find_free_port
 
 
-def test_remote_eval():
+def test_remote_eval(binary="simuleval", root_path=""):
     port = find_free_port()
     p_1 = subprocess.Popen(
         [
-            "simuleval",
+            binary,
             "--standalone",
             "--remote-port",
             str(port),
             "--agent",
-            "examples/quick_start/first_agent.py",
+            os.path.join(root_path, "examples/quick_start/first_agent.py"),
         ]
     )
     time.sleep(5)
@@ -29,14 +30,14 @@ def test_remote_eval():
     with tempfile.TemporaryDirectory() as tmpdirname:
         p_2 = subprocess.Popen(
             [
-                "simuleval",
+                binary,
                 "--remote-eval",
                 "--remote-port",
                 str(port),
                 "--source",
-                "examples/quick_start/source.txt",
+                os.path.join(root_path, "examples/quick_start/source.txt"),
                 "--target",
-                "examples/quick_start/target.txt",
+                os.path.join(root_path, "examples/quick_start/target.txt"),
                 "--dataloader",
                 "text-to-text",
                 "--output",
