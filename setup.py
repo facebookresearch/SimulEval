@@ -7,31 +7,35 @@
 import setuptools
 
 setuptools.setup(
-    python_requires='>3.7.0',
+    python_requires=">3.7.0",
     name="simuleval",
-    version="1.0.2",
+    version="1.1.0",
     author="Xutai Ma",
     entry_points={
-        'console_scripts': [
-            'simuleval = simuleval.cli:main',
+        "console_scripts": [
+            "simuleval = simuleval.cli:main",
         ],
     },
     install_requires=[
         "pytest",
         "pytest-cov",
         "sacrebleu==1.5.1",
-        "torch",
         "tornado",
         "soundfile",
+        "pandas",
         "requests",
-        "pytest-flake8"
+        "pytest-flake8",
+        "textgrid",
+        "tqdm==4.64.1",
+        "pyyaml",
+        "bitarray==2.6.0",
     ],
     package=setuptools.find_packages(
         exclude=[
-                "examples",
-                "examples.*",
-                "docs",
-                "docs.*",
-            ]
-    )
+            "examples",
+            "examples.*",
+            "docs",
+            "docs.*",
+        ]
+    ),
 )
