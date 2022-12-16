@@ -4,10 +4,9 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
+import os
 import sys
 import logging
-from argparse import Namespace
-from typing import Optional
 from simuleval import options
 from simuleval.utils.agent import import_file
 from simuleval.utils.slurm import submit_slurm_job
@@ -98,18 +97,38 @@ def build_system():
     return system
 
 
-def evaluate(system, args: Optional[Namespace] = None):
+def evaluate(system_class, config_dict=None):
 
-    if args is None:
+    parser = options.general_parser()
+    options.add_evaluator_args(parser)
+    options.add_slurm_args(parser)
+    system_class.add_args(parser)
 
-        parser = options.general_parser()
-        options.add_evaluator_args(parser)
+    if config_dict is None:
         options.add_dataloader_args(parser)
-
-        # To make sure all args are valid
-        system.add_args(parser)
-
         args = parser.parse_args()
+    else:
+        string = ""
+        for key, value in config_dict.items():
+            if f"--{key.replace('_', '-')}" in sys.argv:
+                continue
+
+            if type(value) is not bool:
+                string += f" --{key.replace('_', '-')} {value}"
+            else:
+                string += f" --{key.replace('_', '-')}"
+        options.add_dataloader_args(parser, string)
+
+        args = parser.parse_args(sys.argv[1:] + string.split())
+        args.agent = sys.argv[0]
+
+    if args.slurm:
+        args.output = os.path.abspath(args.output)
+        submit_slurm_job(args)
+        return
+
+    system = system_class.from_args(args)
+    logger.info(f"Evaluate system:\n{system}")
 
     args.source_type = system.source_type
     args.target_type = system.target_type

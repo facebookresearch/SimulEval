@@ -19,13 +19,16 @@ def mkdir_output_dir(path: str) -> bool:
         return False
 
 
-def submit_slurm_job() -> None:
-    parser = options.general_parser()
-    options.add_evaluator_args(parser)
-    options.add_slurm_args(parser)
-    args, _ = parser.parse_known_args()
+def submit_slurm_job(args) -> None:
+    if args is None:
+        parser = options.general_parser()
+        options.add_evaluator_args(parser)
+        options.add_slurm_args(parser)
+        args, _ = parser.parse_known_args()
 
+    args.output = os.path.abspath(args.output)
     assert mkdir_output_dir(args.output)
+
     os.system(f"cp {args.agent} {args.output}/agent.py")
     _args = [sys.argv[0]]
     for arg in sys.argv[1:]:
@@ -33,11 +36,23 @@ def submit_slurm_job() -> None:
             _args.append(arg)
         else:
             _args.append(f'"{arg}"')
-    command = " ".join(_args)
+    command = " ".join(_args).strip()
     command = re.sub(r"(--slurm\S*(\s+[^-]\S+)*)", "", command).strip()
-    command = re.sub(
-        r"--agent\s+\S+", f"--agent {args.output}/agent.py", command
-    ).strip()
+    if command.startswith("simuleval"):
+        command = re.sub(
+            r"--agent\s+\S+", f"--agent {args.output}/agent.py", command
+        ).strip()
+    else:
+        # Attention: not fully tested!
+        command = re.sub(
+            r"\S+\.py", f"{os.path.abspath(args.output)}/agent.py", command
+        ).strip()
+
+    if "--output" in command:
+        command = re.sub(r"--output\s+\S+", f"--output {args.output}", command).strip()
+    else:
+        command += f" --output {args.output}"
+
     command = command.replace("--", "\\\n\t--")
     script = f"""#!/bin/bash
 #SBATCH --time={args.slurm_time}
@@ -48,9 +63,14 @@ def submit_slurm_job() -> None:
 #SBATCH --output="{args.output}/slurm-%j.log"
 #SBATCH --job-name="{args.slurm_job_name}"
 
-cd {os.path.abspath(os.getcwd())}
+cd {os.path.abspath(args.output)}
 
-CUDA_VISIBLE_DEVICES=$SLURM_LOCALID {command}
+GPU_ID=$SLURM_LOCALID
+
+# Change to local a gpu id for debugging, e.g.
+# GPU_ID=0
+
+CUDA_VISIBLE_DEVICES=$GPU_ID {command}
     """
     script_file = os.path.join(args.output, "script.sh")
     with open(script_file, "w") as f:

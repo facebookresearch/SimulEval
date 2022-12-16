@@ -38,7 +38,7 @@ class LatencyScorer:
         scores = []
         for index, ins in instances.items():
             delays = getattr(ins, self.timestamp_type, None)
-            if delays is None:
+            if delays is None or len(delays) == 0:
                 logger.warn(f"{index} instance has no delay information. Skipped")
                 continue
 

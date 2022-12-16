@@ -4,13 +4,16 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
+import sys
 import logging
 import argparse
 from simuleval.data.dataloader import DATALOADER_DICT, GenericDataloader
 
 
-def add_dataloader_args(parser: argparse.ArgumentParser):
-    args, _ = parser.parse_known_args()
+def add_dataloader_args(
+    parser: argparse.ArgumentParser, additional_cli_string: str = ""
+):
+    args, _ = parser.parse_known_args(sys.argv + additional_cli_string.split())
     dataloader_class = DATALOADER_DICT.get(args.dataloader)
     if dataloader_class is None:
         dataloader_class = GenericDataloader
