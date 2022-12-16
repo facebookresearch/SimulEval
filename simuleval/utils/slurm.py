@@ -38,14 +38,14 @@ def submit_slurm_job(args=None) -> None:
             _args.append(f'"{arg}"')
     command = " ".join(_args).strip()
     command = re.sub(r"(--slurm\S*(\s+[^-]\S+)*)", "", command).strip()
-    if command.startswith("simuleval"):
+    if subprocess.check_output(["which", "simuleval"]).decode().strip() in command:
         command = re.sub(
             r"--agent\s+\S+", f"--agent {args.output}/agent.py", command
         ).strip()
     else:
         # Attention: not fully tested!
         command = re.sub(
-            r"\S+\.py", f"{os.path.abspath(args.output)}/agent.py", command
+            r"[^\"'\s]+\.py", f"{os.path.abspath(args.output)}/agent.py", command
         ).strip()
 
     if "--output" in command:
