@@ -151,8 +151,6 @@ class TextOutputInstance(Instance):
         Handler for receiving new predictions
         """
 
-        self.finish_prediction = prediction.finished
-
         if self.finish_prediction or prediction.is_empty:
             return
 
@@ -340,15 +338,13 @@ class SpeechOutputInstance(Instance):
         if self.start_time is None:
             self.start_time = time.time()
 
-        self.finish_prediction = segment.finished
-
-        if segment.is_empty:
-            return
-
         if self.finish_prediction:
             return
 
         self.finish_prediction = segment.finished
+
+        if segment.is_empty:
+            return
 
         if len(segment.content) == 0:
             return
