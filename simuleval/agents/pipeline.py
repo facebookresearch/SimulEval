@@ -55,10 +55,6 @@ class AgentPipeline(GenericAgent):
     def pushpop(self, segment: Segment) -> Segment:
         for module in self.module_list:
             segment = module.pushpop(segment)
-            if not segment.finished and segment.is_empty:
-                # Break if the segment is empty but the module didn't finish
-                # This indicates a ReadAction
-                break
         return segment
 
     @classmethod
