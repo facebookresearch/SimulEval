@@ -19,7 +19,7 @@ def mkdir_output_dir(path: str) -> bool:
         return False
 
 
-def submit_slurm_job(args) -> None:
+def submit_slurm_job(args=None) -> None:
     if args is None:
         parser = options.general_parser()
         options.add_evaluator_args(parser)
