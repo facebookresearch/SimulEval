@@ -127,7 +127,6 @@ def evaluate(system_class, config_dict=None):
         return
 
     system = system_class.from_args(args)
-    logger.info(f"Evaluate system:\n{system}")
 
     args.source_type = system.source_type
     args.target_type = system.target_type
