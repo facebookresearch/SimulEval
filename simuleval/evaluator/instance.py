@@ -24,7 +24,16 @@ except Exception:
 
 
 class Instance(object):
-    def __init__(self, index, dataloader: GenericDataloader, args: Namespace):
+    """
+    Instance class. An instance class contains one source and target sentence pair.
+    it send the source to and read hypotheses from the agent.
+
+    Args:
+        index (int): the index of the sentence pair in the corpus.
+        dataloader (GenericDataloader): the dataloader used to load the sentence pair.
+        args (Namespace): command line arguments.
+    """
+    def __init__(self, index: int, dataloader: GenericDataloader, args: Namespace):
         self.index = index
         self.finish_prediction = False
         self.dataloader = dataloader
@@ -227,10 +236,10 @@ class SpeechInputInstance(Instance):
             if self.step + num_samples >= len(self.samples):
                 # Pad zeros if the requested number of samples
                 # are more than available samples.
-                samples = self.samples[self.step :]
+                samples = self.samples[self.step:]
                 is_finished = True
             else:
-                samples = self.samples[self.step : self.step + num_samples]
+                samples = self.samples[self.step: self.step + num_samples]
                 is_finished = False
 
             self.step = min(self.step + num_samples, len(self.samples))
