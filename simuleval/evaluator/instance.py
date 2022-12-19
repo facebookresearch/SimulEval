@@ -33,6 +33,7 @@ class Instance(object):
         dataloader (GenericDataloader): the dataloader used to load the sentence pair.
         args (Namespace): command line arguments.
     """
+
     def __init__(self, index: int, dataloader: GenericDataloader, args: Namespace):
         self.index = index
         self.finish_prediction = False
@@ -236,10 +237,10 @@ class SpeechInputInstance(Instance):
             if self.step + num_samples >= len(self.samples):
                 # Pad zeros if the requested number of samples
                 # are more than available samples.
-                samples = self.samples[self.step:]
+                samples = self.samples[self.step :]
                 is_finished = True
             else:
-                samples = self.samples[self.step: self.step + num_samples]
+                samples = self.samples[self.step : self.step + num_samples]
                 is_finished = False
 
             self.step = min(self.step + num_samples, len(self.samples))
