@@ -11,7 +11,7 @@ class AgentPipeline(GenericAgent):
 
     """
 
-    pipeline: list = []
+    pipeline: List = []
 
     def __init__(self, module_list: List[GenericAgent]) -> None:
         self.module_list = module_list

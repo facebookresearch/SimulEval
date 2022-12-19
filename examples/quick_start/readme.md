@@ -45,5 +45,3 @@ Start a remote evaluator:
 ```
 simuleval --remote-eval --source source.txt --target target.txt --source-type text --target-type text --remote-port 8888
 ```
-
-

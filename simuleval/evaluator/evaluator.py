@@ -103,7 +103,7 @@ class SentenceLevelEvaluator(object):
                     and (self.output / "instances.log").exists()
                 ):
                     with open(self.output / "instances.log", "r") as f:
-                        for line in f:
+                        for line in f: # noqa
                             pass
                         last_info = json.loads(line.strip())
                     self.start_index = last_info["index"] + 1
@@ -185,7 +185,7 @@ class SentenceLevelEvaluator(object):
         if self.output:
             results.to_csv(self.output / "scores.tsv", sep="\t", index=False)
 
-        logger.info(f"Results:")
+        logger.info("Results:")
         print(results.to_string(index=False))
 
     def __call__(self, system):

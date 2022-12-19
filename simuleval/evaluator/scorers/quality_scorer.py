@@ -2,7 +2,7 @@ import csv
 import logging
 import sacrebleu
 from pathlib import Path
-from typing import List, Dict
+from typing import Dict
 
 QUALITY_SCORERS_DICT = {}
 
@@ -61,7 +61,7 @@ class SacreBLEUScorer(QualityScorer):
                 [[ins.reference for ins in instances.values()]],
                 tokenize=self.tokenizer,
             ).score
-        except:
+        except Exception:
             return 0
 
     @staticmethod
@@ -106,7 +106,7 @@ class ASRSacreBLEUScorer(QualityScorer):
         try:
             from ust_common.evaluation import prepare_w2v_audio_finetuning_data
             from ust_common.evaluation import fairseq_w2v_ctc_infer
-        except:
+        except Exception:
             self.logger.warn("Please install ust_common.")
             return ["" for _ in range(len(self))]
 

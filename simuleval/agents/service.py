@@ -43,10 +43,10 @@ def start_agent_service(system):
     args, _ = parser.parse_known_args()
     app = web.Application(
         [
-            (r"/reset", ResetHandle, dict(system=system)),
-            (r"/input", InputHandler, dict(system=system)),
-            (r"/output", OutputHandler, dict(system=system)),
-            (r"/", SystemHandler, dict(system=system)),
+            (r"/reset", ResetHandle, {"system": system}),
+            (r"/input", InputHandler, {"system": system}),
+            (r"/output", OutputHandler, {"system": system}),
+            (r"/", SystemHandler, {"system": system}),
         ],
         debug=False,
     )

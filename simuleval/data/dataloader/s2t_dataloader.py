@@ -9,7 +9,7 @@ try:
     import soundfile
 
     IS_IMPORT_SOUNDFILE = True
-except:
+except Exception:
     IS_IMPORT_SOUNDFILE = False
 
 

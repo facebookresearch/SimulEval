@@ -47,7 +47,3 @@ By default, the SimulEval will give the following output --- one quality and thr
 
 The average lagging is expected since we are running an wait-3 system where the source and target always have the same length.
 Notice that we have a very low yet random BLEU score. It's because we are randomly generate the output.
-
-
-
-

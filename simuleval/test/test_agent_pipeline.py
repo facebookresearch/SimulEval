@@ -1,26 +1,23 @@
 import os
-import subprocess
-from simuleval.agents import TextToTextAgent
-from simuleval.agents import AgentPipeline
+from pathlib import Path
+
+import simuleval.cli as cli
+from simuleval.agents import AgentPipeline, TextToTextAgent
 from simuleval.agents.actions import ReadAction, WriteAction
 from simuleval.data.segments import TextSegment
 
+ROOT_PATH = Path(__file__).parents[2]
 
-def test_pipeline_cmd(binary="simuleval", root_path=""):
-    result = subprocess.Popen(
-        [
-            binary,
-            "--agent",
-            os.path.join(root_path, "examples/quick_start/agent_pipeline.py"),
-            "--source",
-            os.path.join(root_path, "examples/quick_start/source.txt"),
-            "--target",
-            os.path.join(root_path, "examples/quick_start/target.txt"),
-        ]
-    )
-    _ = result.communicate()[0]
-    returncode = result.returncode
-    assert returncode == 0
+def test_pipeline_cmd(root_path=ROOT_PATH):
+    cli.sys.argv[1:] = [
+        "--agent",
+        os.path.join(root_path, "examples", "quick_start", "agent_pipeline.py"),
+        "--source",
+        os.path.join(root_path, "examples", "quick_start", "source.txt"),
+        "--target",
+        os.path.join(root_path, "examples", "quick_start", "target.txt"),
+    ]
+    cli.main()
 
 
 def test_pipeline():

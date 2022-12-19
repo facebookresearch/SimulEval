@@ -43,5 +43,3 @@ and use :code:`--quality-metrics` and :code:`--latency-metrics` to call the scor
     2022-12-06 12:56:01 | INFO | simuleval.sentence_level_evaluator | Results:
     BLEU   RTF
     1.593 1.078
-
-

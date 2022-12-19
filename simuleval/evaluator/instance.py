@@ -8,7 +8,6 @@ import json
 import time
 import math
 from typing import Dict, List, Optional
-import sacrebleu
 from pathlib import Path
 
 from simuleval.data.segments import TextSegment, SpeechSegment, EmptySegment
@@ -20,7 +19,7 @@ try:
     import soundfile
 
     IS_IMPORT_SOUNDFILE = True
-except:
+except Exception:
     IS_IMPORT_SOUNDFILE = False
 
 
@@ -190,7 +189,7 @@ class TextOutputInstance(Instance):
     @property
     def prediction(self):
         # TODO: Make configurable
-        return " ".join([x for x in self.prediction_list])
+        return " ".join(list(self.prediction_list))
 
 
 class SpeechInputInstance(Instance):
