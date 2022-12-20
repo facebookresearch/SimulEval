@@ -1,6 +1,6 @@
 import logging
 from typing import Any
-from .dataloader import ( # noqa
+from .dataloader import (  # noqa
     GenericDataloader,
     register_dataloader,
     register_dataloader_class,
@@ -9,8 +9,8 @@ from .dataloader import ( # noqa
     SUPPORTED_TARGET_MEDIUM,
     DATALOADER_DICT,
 )
-from .t2t_dataloader import TextToTextDataloader # noqa
-from .s2t_dataloader import SpeechToTextDataloader # noqa
+from .t2t_dataloader import TextToTextDataloader  # noqa
+from .s2t_dataloader import SpeechToTextDataloader  # noqa
 
 
 logger = logging.getLogger("simuleval.dataloader")

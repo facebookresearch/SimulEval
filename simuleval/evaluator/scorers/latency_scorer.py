@@ -110,16 +110,17 @@ class ALScorer(LatencyScorer):
         AL /= tau
         return AL
 
+
 @register_latency_scorer("LAAL")
 class LAALScorer(ALScorer):
     r"""
     Length Adaptive Average Lagging (LAAL) as proposed in
     `CUNI-KIT System for Simultaneous Speech Translation Task at IWSLT 2022
-    <https://arxiv.org/abs/2204.06028>`_. 
+    <https://arxiv.org/abs/2204.06028>`_.
     The name was suggested in `Over-Generation Cannot Be Rewarded:
-    Length-Adaptive Average Lagging for Simultaneous Speech Translation 
+    Length-Adaptive Average Lagging for Simultaneous Speech Translation
     <https://arxiv.org/abs/2206.05807>`_.
-    It is the original Average Lagging as proposed in 
+    It is the original Average Lagging as proposed in
     `Controllable Latency using Prefix-to-Prefix Framework
     <https://arxiv.org/abs/1810.08398>`_
     but is robust to the length differece between the hypothesis and reference.
@@ -175,6 +176,7 @@ class LAALScorer(ALScorer):
                     break
         LAAL /= tau
         return LAAL
+
 
 @register_latency_scorer("AP")
 class APScorer(LatencyScorer):
