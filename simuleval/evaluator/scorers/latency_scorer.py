@@ -6,6 +6,7 @@ import textgrid
 import sys
 import shutil
 from typing import List, Union
+from simuleval.evaluator.instance import TextInputInstance
 
 logger = logging.getLogger("simuleval.latency_scorer")
 
@@ -37,6 +38,11 @@ class LatencyScorer:
     def __call__(self, instances) -> float:
         scores = []
         for index, ins in instances.items():
+            if isinstance(ins, TextInputInstance):
+                if self.computation_aware:
+                    raise RuntimeError(
+                        "Computation aware latency is not suppored on text input."
+                    )
             delays = getattr(ins, self.timestamp_type, None)
             if delays is None or len(delays) == 0:
                 logger.warn(f"{index} instance has no delay information. Skipped")
@@ -256,6 +262,10 @@ def speechoutput_aligment_latency_scorer(scorer_class):
                 "COW",
             ], self.boundary_type
             super().__init__()
+            if self.computation_aware:
+                raise RuntimeError(
+                    "Computation aware latency for speech output is not supported yet"
+                )
 
         @property
         def timestamp_type(self):
