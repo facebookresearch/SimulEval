@@ -30,7 +30,7 @@ logging.basicConfig(
 logger = logging.getLogger("simuleval.cli")
 
 
-def check_evaluation_system_list():
+def get_agent_class():
     if len(EVALUATION_SYSTEM_LIST) == 0:
         logger.error(
             "Please use @entrypoint decorator to indicate the system you want to evaluate."
@@ -39,6 +39,7 @@ def check_evaluation_system_list():
     if len(EVALUATION_SYSTEM_LIST) > 1:
         logger.error("More than one system is not supported right now.")
         sys.exit(1)
+    return EVALUATION_SYSTEM_LIST[0]
 
 
 def check_argument(name):
@@ -78,8 +79,7 @@ def build_system():
 
     import_user_system()
 
-    check_evaluation_system_list()
-    system_class = EVALUATION_SYSTEM_LIST[0]
+    system_class = get_agent_class()
 
     # General Options
     parser = options.general_parser()
