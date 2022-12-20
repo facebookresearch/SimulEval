@@ -41,7 +41,7 @@ class LatencyScorer:
             if isinstance(ins, TextInputInstance):
                 if self.computation_aware:
                     raise RuntimeError(
-                        "Computation aware latency is not suppored on text input."
+                        "The computation aware latency is not supported on text input."
                     )
             delays = getattr(ins, self.timestamp_type, None)
             if delays is None or len(delays) == 0:
@@ -264,7 +264,7 @@ def speechoutput_aligment_latency_scorer(scorer_class):
             super().__init__()
             if self.computation_aware:
                 raise RuntimeError(
-                    "Computation aware latency for speech output is not supported yet"
+                    "The computation aware latency for speech output is not supported yet"
                 )
 
         @property
