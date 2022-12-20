@@ -4,10 +4,9 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
+import os
 import sys
 import logging
-from argparse import Namespace
-from typing import Optional
 from simuleval.utils import EVALUATION_SYSTEM_LIST
 from simuleval import options
 from simuleval.utils.agent import import_file
@@ -18,6 +17,7 @@ from simuleval.evaluator import (
     SentenceLevelEvaluator,
 )
 from simuleval.agents.service import start_agent_service
+
 
 logging.basicConfig(
     format="%(asctime)s | %(levelname)-8s | %(name)-16s | %(message)s",
@@ -30,7 +30,7 @@ logging.basicConfig(
 logger = logging.getLogger("simuleval.cli")
 
 
-def check_evaluation_system_list():
+def get_agent_class():
     if len(EVALUATION_SYSTEM_LIST) == 0:
         logger.error(
             "Please use @entrypoint decorator to indicate the system you want to evaluate."
@@ -39,6 +39,7 @@ def check_evaluation_system_list():
     if len(EVALUATION_SYSTEM_LIST) > 1:
         logger.error("More than one system is not supported right now.")
         sys.exit(1)
+    return EVALUATION_SYSTEM_LIST[0]
 
 
 def check_argument(name):
@@ -78,8 +79,7 @@ def build_system():
 
     import_user_system()
 
-    check_evaluation_system_list()
-    system_class = EVALUATION_SYSTEM_LIST[0]
+    system_class = get_agent_class()
 
     # General Options
     parser = options.general_parser()
@@ -97,37 +97,37 @@ def build_system():
     return system
 
 
-def eval_agent(klass, **kwargs):
+def evaluate(system_class, config_dict=None):
+
     parser = options.general_parser()
     options.add_evaluator_args(parser)
-    options.add_dataloader_args(parser)
+    options.add_slurm_args(parser)
+    system_class.add_args(parser)
 
-    # To make sure all args are valid
-    klass.add_args(parser)
-    string = ""
-    for key, value in kwargs.items():
-        if type(value) is not bool:
-            string += f" --{key.replace('_', '-')} {value}"
-        else:
-            string += f" --{key.replace('_', '-')}"
-
-    args = parser.parse_args(string.split())
-
-    evaluate(klass, args)
-
-
-def evaluate(system, args: Optional[Namespace] = None):
-
-    if args is None:
-
-        parser = options.general_parser()
-        options.add_evaluator_args(parser)
+    if config_dict is None:
         options.add_dataloader_args(parser)
-
-        # To make sure all args are valid
-        system.add_args(parser)
-
         args = parser.parse_args()
+    else:
+        string = ""
+        for key, value in config_dict.items():
+            if f"--{key.replace('_', '-')}" in sys.argv:
+                continue
+
+            if type(value) is not bool:
+                string += f" --{key.replace('_', '-')} {value}"
+            else:
+                string += f" --{key.replace('_', '-')}"
+        options.add_dataloader_args(parser, string)
+
+        args = parser.parse_args(sys.argv[1:] + string.split())
+        args.agent = sys.argv[0]
+
+    if args.slurm:
+        args.output = os.path.abspath(args.output)
+        submit_slurm_job(args)
+        return
+
+    system = system_class.from_args(args)
 
     args.source_type = system.source_type
     args.target_type = system.target_type

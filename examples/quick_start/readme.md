@@ -5,7 +5,7 @@ Following are some minimal examples to use SimulEval. More details can be found 
 To evaluate a text-to-text wait-3 system with random output:
 
 ```
-> simuleval --source source.txt --target target.txt --agent first_agent.py.py
+> simuleval --source source.txt --target target.txt --agent first_agent.py
 
 2022-12-05 13:43:58 | INFO | simuleval.cli | Evaluate system: DummyWaitkTextAgent
 2022-12-05 13:43:58 | INFO | simuleval.dataloader | Evaluating from text to text.
