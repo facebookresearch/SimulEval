@@ -388,7 +388,7 @@ def speechoutput_aligment_latency_scorer(scorer_class):
 
 
 for boundary_type in ["BOW", "COW", "EOW"]:
-    for metric in ["AL", "AP", "DAL", "StartOffset", "EndOffset"]:
+    for metric in ["AL", "LAAL", "AP", "DAL", "StartOffset", "EndOffset"]:
 
         @register_latency_scorer(f"{metric}_SpeechAlign_{boundary_type}")
         @speechoutput_aligment_latency_scorer

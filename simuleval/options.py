@@ -27,7 +27,7 @@ def add_evaluator_args(parser):
     parser.add_argument(
         "--latency-metrics",
         nargs="+",
-        default=["AL", "AP", "DAL"],
+        default=["LAAL", "AL", "AP", "DAL"],
         help="Latency metrics",
     )
     parser.add_argument(
