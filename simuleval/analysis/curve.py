@@ -41,10 +41,6 @@ class SimulEvalResults:
         return self.latency.get("AL", 0)
 
     @property
-    def average_lagging(self):
-        return self.latency.get("AL", 0)
-
-    @property
     def average_lagging_ca(self):
         return self.latency.get("AL_CA", 0)
 
