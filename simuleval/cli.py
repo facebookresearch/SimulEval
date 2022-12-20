@@ -7,6 +7,7 @@
 import os
 import sys
 import logging
+from simuleval.utils import EVALUATION_SYSTEM_LIST
 from simuleval import options
 from simuleval.utils.agent import import_file
 from simuleval.utils.slurm import submit_slurm_job
@@ -17,7 +18,6 @@ from simuleval.evaluator import (
 )
 from simuleval.agents.service import start_agent_service
 
-EVALUATION_SYSTEM_LIST = []
 
 logging.basicConfig(
     format="%(asctime)s | %(levelname)-8s | %(name)-16s | %(message)s",

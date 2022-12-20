@@ -6,7 +6,7 @@
 
 import random
 from statistics import mean
-from simuleval import entrypoint
+from simuleval.utils import entrypoint
 from simuleval.evaluator.scorers.latency_scorer import (
     register_latency_scorer,
     LatencyScorer,
