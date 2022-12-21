@@ -193,45 +193,6 @@ class DALScorer(LatencyScorer):
         return DAL
 
 
-@register_latency_scorer("ATD")
-class ATDScorer(LatencyScorer):
-    r"""
-    Average Token Delay: A Latency Metric for Simultaneous Translation
-    (https://arxiv.org/abs/2211.13173)
-
-    Usage:
-        ----latency-metrics ATD
-    """
-    def __call__(self, instances) -> float:
-        scores = []
-        ca = "NCA" if not self.computation_aware else "CA"
-        for index, ins in instances.items():
-            delays = getattr(ins, "atd_delays", None)
-            if delays is None:
-                logger.warn(f"{index} instance has no delay information. Skipped")
-                continue
-
-            scores.append(self.compute(delays[ca]))
-
-        return mean(scores)
-
-
-    def compute(
-        self,
-        delays: List[Union[float, int]],
-    ) -> float:
-        """
-        Function to compute latency on one sentence (instance).
-
-        Args:
-            delays (List[Union[float, int]]): Sequence of delays.
-
-        Returns:
-            float: the latency score on one sentence.
-        """
-        return sum(delays) / len(delays)
-
-
 @register_latency_scorer("StartOffset")
 class StartOffsetScorer(LatencyScorer):
     """Starting offset of the translation
