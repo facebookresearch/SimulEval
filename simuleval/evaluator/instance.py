@@ -174,7 +174,7 @@ class TextOutputInstance(Instance):
         current_time = time.time()
 
         if self.latency_unit == "word":
-            prediction_list = [prediction.content]
+            prediction_list = prediction.content.split(" ")
         elif self.latency_unit == "char":
             prediction_list = prediction.content.split("")
         else:
