@@ -7,6 +7,7 @@ import sys
 import shutil
 from typing import List, Union
 from simuleval.evaluator.instance import TextInputInstance
+from simuleval.evaluator.instance import INSTANCE_TYPE_DICT
 
 logger = logging.getLogger("simuleval.latency_scorer")
 
@@ -266,6 +267,150 @@ class DALScorer(LatencyScorer):
         return DAL
 
 
+@register_latency_scorer("ATD")
+class ATDScorer(LatencyScorer):
+    r"""
+    Average Token Delay (ATD) from
+    Average Token Delay: A Latency Metric for Simultaneous Translation
+    (https://arxiv.org/abs/2211.13173)
+
+    Different from speech segments, text tokens have no length
+    and multiple tokens can be output at the same time like subtitle.
+    Therefore, we set its length to be 0. However, to calculate latency in text-text,
+    we give virtual time 1 for the length of text tokens.
+
+    Usage:
+        ----latency-metrics ATD
+    """
+
+    def __call__(self, instances) -> float:
+        if isinstance(instances[0], INSTANCE_TYPE_DICT["text-text"]):
+            TGT_TOKEN_LEN = 1
+            SRC_TOKEN_LEN = 1
+            INSTANCE_TYPE = "text-text"
+        elif isinstance(instances[0], INSTANCE_TYPE_DICT["speech-text"]):
+            TGT_TOKEN_LEN = 0
+            SRC_TOKEN_LEN = 300  #300ms per word
+            INSTANCE_TYPE = "speech-text"
+        elif  isinstance(instances[0], INSTANCE_TYPE_DICT["speech-speech"]):
+            TGT_TOKEN_LEN = 300
+            SRC_TOKEN_LEN = 300
+            INSTANCE_TYPE = "speech-speech"
+        else:
+            logger.warn(f"{index} instance type is not expected. Skipped")
+            return
+
+        scores = []
+        for index, ins in instances.items():
+            delays = getattr(ins, "delays", None)
+            if delays is None:
+                logger.warn(f"{index} instance has no delay information. Skipped")
+                continue
+
+            if self.computation_aware:
+                elapsed = getattr(ins, "elapsed", None)
+                if elapsed is None:
+                    logger.warn(f"{index} instance has no computational delay information. Skipped")
+                    continue
+            else:
+                elapsed = [0] * len(delays)
+
+            chunk_lens = {"src":[0],"tgt":[0]}
+            token_to_chunk = {"src":[0],"tgt":[0]}
+            token_to_time = {"src":[0],"tgt":[0]}
+            tgt_token_lens = []
+
+            if INSTANCE_TYPE == "speech-speech":
+                s2s_delays = []
+                s2s_elapsed = []
+                chunk_lens["tgt"] += ins.duration
+                for i, chunk_len in enumerate(chunk_lens,1):
+                    num_tokens, rest = divmod(chunk_len, TGT_TOKEN_LEN)
+                    token_lens = num_tokens * [TGT_TOKEN_LEN] + [rest]
+                    s2s_delays += delays[i-1] * len(token_lens)
+                    s2s_elapsed += elapsed[i-1] * len(token_lens)
+                    token_to_chunk["tgt"] += [i] * len(token_lens)
+                    tgt_token_lens += token_lens
+                delays = s2s_delays
+                elapsed = s2s_elapsed
+            else:
+                prev_delay = None
+                for delay in delays:
+                    if delay != prev_delay:
+                        chunk_lens["tgt"].append(1)
+                    else:
+                        chunk_lens["tgt"][-1] += 1
+                    prev_delay = delay
+                for i, chunk_len in enumerate(chunk_lens["tgt"][1:],1):
+                    token_to_chunk["tgt"] +=  [ i ] * chunk_len
+                tgt_token_lens = [TGT_TOKEN_LEN] * len(delays)
+
+            if self.computation_aware and elapsed != [0] * len(delays):
+                compute_elapsed = self.subtract(elapsed, delays)
+                compute_times = self.subtract(compute_elapsed, [0] + compute_elapsed[:-1])
+            else:
+                compute_times = elapsed
+
+            delays_no_duplicate = sorted(set(delays), key=delays.index)
+            chunk_lens["src"] += self.subtract(delays_no_duplicate, [0] + delays_no_duplicate[:-1])
+
+            for i, chunk_len in enumerate(chunk_lens["src"][1:],1):
+                if INSTANCE_TYPE == "text-text":
+                    token_lens = chunk_len * [SRC_TOKEN_LEN]
+                else:
+                    num_tokens, rest = divmod(chunk_len, SRC_TOKEN_LEN)
+                    token_lens = num_tokens * [SRC_TOKEN_LEN] + [rest]
+                for token_len in token_lens:
+                    token_to_time["src"].append(token_to_time["src"][-1] + token_len)
+                    token_to_chunk["src"].append(i)
+
+            for delay, compute_time, token_len in zip(delays, compute_times, tgt_token_lens):
+                tgt_start_time = max(delay, token_to_time["tgt"][-1])
+                token_to_time["tgt"].append(tgt_start_time +token_len + compute_time)
+
+            scores.append(self.compute(chunk_lens, token_to_chunk, token_to_time))
+
+        return mean(scores)
+
+    def subtract(self, arr1, arr2):
+        return [x - y for x, y in zip(arr1, arr2)]
+
+    def compute(
+        self,
+        chunk_lens: dict,
+        token_to_chunk: dict,
+        token_to_time: dict,
+    ) -> float:
+        """
+        Function to compute latency on one sentence (instance).
+        Args:
+            delays (List[Union[float, int]]): Sequence of delays.
+        Returns:
+            float: the latency score on one sentence.
+        """
+
+        tgt_to_src = []
+
+        for t in range(1, len(token_to_chunk["tgt"])):
+            chunk_id = token_to_chunk["tgt"][t]
+            AccLen_x = sum(chunk_lens["src"][:chunk_id])
+            AccLen_y = sum( chunk_lens["tgt"][:chunk_id])
+
+            S = t - max(0, AccLen_y - AccLen_x)
+            current_src_len = sum(chunk_lens["src"][:chunk_id + 1])
+            if S < current_src_len:
+                tgt_to_src.append((t, S))
+            else:
+                tgt_to_src.append((t, current_src_len))
+
+        atd_delays = []
+        for t, s  in tgt_to_src:
+            atd_delay = token_to_time["tgt"][t] - token_to_time["src"][s]
+            atd_delays.append(atd_delay)
+
+        return float(mean(atd_delays))
+
+
 @register_latency_scorer("StartOffset")
 class StartOffsetScorer(LatencyScorer):
     """Starting offset of the translation
@@ -400,7 +545,7 @@ def speechoutput_aligment_latency_scorer(scorer_class):
 
 
 for boundary_type in ["BOW", "COW", "EOW"]:
-    for metric in ["AL", "LAAL", "AP", "DAL", "StartOffset", "EndOffset"]:
+    for metric in ["AL", "LAAL", "AP", "DAL", "ATD", "StartOffset", "EndOffset"]:
 
         @register_latency_scorer(f"{metric}_SpeechAlign_{boundary_type}")
         @speechoutput_aligment_latency_scorer
