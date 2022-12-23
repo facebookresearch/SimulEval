@@ -42,11 +42,7 @@ class AgentPipeline(GenericAgent):
 
     def push(self, segment: Segment) -> None:
         for module in self.module_list[:-1]:
-            if not segment.is_empty:
-                module.push(segment)
-                segment = module.pop()
-            else:
-                return
+            segment = module.pushpop(segment)
         self.module_list[-1].push(segment)
 
     def pop(self) -> Segment:
@@ -55,8 +51,6 @@ class AgentPipeline(GenericAgent):
     def pushpop(self, segment: Segment) -> Segment:
         for module in self.module_list:
             segment = module.pushpop(segment)
-            if segment.is_empty:
-                break
         return segment
 
     @classmethod

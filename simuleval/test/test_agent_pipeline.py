@@ -8,6 +8,7 @@ from simuleval.data.segments import TextSegment
 
 ROOT_PATH = Path(__file__).parents[2]
 
+
 def test_pipeline_cmd(root_path=ROOT_PATH):
     cli.sys.argv[1:] = [
         "--agent",

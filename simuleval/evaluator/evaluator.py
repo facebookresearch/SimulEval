@@ -103,7 +103,7 @@ class SentenceLevelEvaluator(object):
                     and (self.output / "instances.log").exists()
                 ):
                     with open(self.output / "instances.log", "r") as f:
-                        for line in f: # noqa
+                        for line in f:  # noqa
                             pass
                         last_info = json.loads(line.strip())
                     self.start_index = last_info["index"] + 1

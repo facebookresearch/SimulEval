@@ -6,6 +6,7 @@ import textgrid
 import sys
 import shutil
 from typing import List, Union
+from simuleval.evaluator.instance import TextInputInstance
 
 logger = logging.getLogger("simuleval.latency_scorer")
 
@@ -37,8 +38,13 @@ class LatencyScorer:
     def __call__(self, instances) -> float:
         scores = []
         for index, ins in instances.items():
+            if isinstance(ins, TextInputInstance):
+                if self.computation_aware:
+                    raise RuntimeError(
+                        "The computation aware latency is not supported on text input."
+                    )
             delays = getattr(ins, self.timestamp_type, None)
-            if delays is None:
+            if delays is None or len(delays) == 0:
                 logger.warn(f"{index} instance has no delay information. Skipped")
                 continue
 
@@ -109,6 +115,73 @@ class ALScorer(LatencyScorer):
                     break
         AL /= tau
         return AL
+
+
+@register_latency_scorer("LAAL")
+class LAALScorer(ALScorer):
+    r"""
+    Length Adaptive Average Lagging (LAAL) as proposed in
+    `CUNI-KIT System for Simultaneous Speech Translation Task at IWSLT 2022
+    <https://arxiv.org/abs/2204.06028>`_.
+    The name was suggested in `Over-Generation Cannot Be Rewarded:
+    Length-Adaptive Average Lagging for Simultaneous Speech Translation
+    <https://arxiv.org/abs/2206.05807>`_.
+    It is the original Average Lagging as proposed in
+    `Controllable Latency using Prefix-to-Prefix Framework
+    <https://arxiv.org/abs/1810.08398>`_
+    but is robust to the length differece between the hypothesis and reference.
+
+    Give source :math:`X`, target :math:`Y`, delays :math:`D`,
+
+    .. math::
+
+        LAAL = \frac{1}{\tau} \sum_i^\tau D_i - (i - 1) \frac{|X|}{max(|Y|,|Y*|)}
+
+    Where
+
+    .. math::
+
+        \tau = argmin_i(D_i = |X|)
+
+    When reference was given, :math:`|Y|` would be the reference length, and :math:`|Y*|` is the length of the hypothesis.
+
+    Usage:
+        ----latency-metrics LAAL
+    """
+
+    def compute(
+        self,
+        delays: List[Union[float, int]],
+        source_length: Union[float, int],
+        target_length: Union[float, int],
+    ):
+        """
+        Function to compute latency on one sentence (instance).
+
+        Args:
+            delays (List[Union[float, int]]): Sequence of delays.
+            source_length (Union[float, int]): Length of source sequence.
+            target_length (Union[float, int]): Length of target sequence.
+
+        Returns:
+            float: the latency score on one sentence.
+        """
+
+        if delays[0] > source_length:
+            return delays[0]
+
+        LAAL = 0
+        gamma = max(len(delays), target_length) / source_length
+        tau = 0
+        for t_miuns_1, d in enumerate(delays):
+            if d <= source_length:
+                LAAL += d - t_miuns_1 / gamma
+                tau = t_miuns_1 + 1
+
+                if d == source_length:
+                    break
+        LAAL /= tau
+        return LAAL
 
 
 @register_latency_scorer("AP")
@@ -256,6 +329,10 @@ def speechoutput_aligment_latency_scorer(scorer_class):
                 "COW",
             ], self.boundary_type
             super().__init__()
+            if self.computation_aware:
+                raise RuntimeError(
+                    "The computation aware latency for speech output is not supported yet"
+                )
 
         @property
         def timestamp_type(self):
@@ -323,7 +400,7 @@ def speechoutput_aligment_latency_scorer(scorer_class):
 
 
 for boundary_type in ["BOW", "COW", "EOW"]:
-    for metric in ["AL", "AP", "DAL", "StartOffset", "EndOffset"]:
+    for metric in ["AL", "LAAL", "AP", "DAL", "StartOffset", "EndOffset"]:
 
         @register_latency_scorer(f"{metric}_SpeechAlign_{boundary_type}")
         @speechoutput_aligment_latency_scorer

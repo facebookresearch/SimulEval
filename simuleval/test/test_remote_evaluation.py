@@ -27,6 +27,7 @@ def p1(port, root_path):
     cli.main()
     time.sleep(5)
 
+
 def p2(port, root_path):
     with tempfile.TemporaryDirectory() as tmpdirname:
         cli.sys.argv[1:] = [

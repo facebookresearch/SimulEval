@@ -24,7 +24,17 @@ except Exception:
 
 
 class Instance(object):
-    def __init__(self, index, dataloader: GenericDataloader, args: Namespace):
+    """
+    Instance class. An instance class contains one source and target sentence pair.
+    it send the source to and read hypotheses from the agent.
+
+    Args:
+        index (int): the index of the sentence pair in the corpus.
+        dataloader (GenericDataloader): the dataloader used to load the sentence pair.
+        args (Namespace): command line arguments.
+    """
+
+    def __init__(self, index: int, dataloader: GenericDataloader, args: Namespace):
         self.index = index
         self.finish_prediction = False
         self.dataloader = dataloader
@@ -150,8 +160,6 @@ class TextOutputInstance(Instance):
         Handler for receiving new predictions
         """
 
-        self.finish_prediction = prediction.finished
-
         if self.finish_prediction or prediction.is_empty:
             return
 
@@ -246,10 +254,8 @@ class SpeechInputInstance(Instance):
 
         else:
             # Finish reading this audio
-            segment = SpeechSegment(
+            segment = EmptySegment(
                 index=self.len_sample_to_ms(self.step),
-                content=[],
-                sample_rate=self.audio_info.samplerate,
                 finished=True,
             )
 
@@ -341,13 +347,13 @@ class SpeechOutputInstance(Instance):
         if self.start_time is None:
             self.start_time = time.time()
 
-        if segment.is_empty:
-            return
-
         if self.finish_prediction:
             return
 
         self.finish_prediction = segment.finished
+
+        if segment.is_empty:
+            return
 
         if len(segment.content) == 0:
             return
