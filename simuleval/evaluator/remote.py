@@ -1,13 +1,14 @@
 import logging
 from tqdm import tqdm
 from simuleval.data.segments import Segment, segment_from_json_string
+from simuleval.evaluator import SentenceLevelEvaluator
 import requests
 
 logger = logging.getLogger("simuleval.remote_evaluator")
 
 
 class RemoteEvaluator:
-    def __init__(self, evaluator) -> None:
+    def __init__(self, evaluator: SentenceLevelEvaluator) -> None:
         self.evaluator = evaluator
         self.address = evaluator.args.remote_address
         self.port = evaluator.args.remote_port
@@ -30,7 +31,7 @@ class RemoteEvaluator:
         return self.evaluator.results()
 
     def remote_eval(self):
-        for instance in tqdm(self.evaluator.instances.values()):
+        for instance in self.evaluator.instance_iterator:
             self.system_reset()
             while not instance.finish_prediction:
                 self.send_source(instance.send_source(self.source_segment_size))
