@@ -35,14 +35,14 @@ class SpeechToTextDataloader(GenericDataloader):
         cls, source: Union[Path, str], target: Union[Path, str]
     ) -> SpeechToTextDataloader:
         with open(source) as f:
-            source_list = f.readlines()
+            source_list = [line.strip() for line in f]
         with open(target) as f:
-            target_list = f.readlines()
+            target_list = [line.strip() for line in f]
         dataloader = cls(source_list, target_list)
         return dataloader
 
     @classmethod
     def from_args(cls, args: Namespace):
-        args.source_type = "text"
+        args.source_type = "speech"
         args.target_type = "text"
         return cls.from_files(args.source, args.target)
