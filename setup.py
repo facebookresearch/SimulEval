@@ -19,7 +19,7 @@ setuptools.setup(
     install_requires=[
         "pytest",
         "pytest-cov",
-        "sacrebleu==1.5.1",
+        "sacrebleu==2.3.1",
         "tornado",
         "soundfile",
         "pandas",
