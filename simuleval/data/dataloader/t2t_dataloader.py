@@ -9,7 +9,7 @@ from argparse import Namespace
 @register_dataloader("text-to-text")
 class TextToTextDataloader(GenericDataloader):
     def __init__(
-        self, source_list: List[str], target_list: List[Optional[str]]
+        self, source_list: List[str], target_list: Union[List[str], List[None]]
     ) -> None:
         super().__init__(source_list, target_list)
         self.source_splitter = lambda x: x.split()

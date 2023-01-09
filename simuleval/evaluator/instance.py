@@ -7,12 +7,12 @@
 import json
 import time
 import math
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 from pathlib import Path
 
 from simuleval.data.segments import TextSegment, SpeechSegment, EmptySegment
 
-from simuleval.data.dataloader import GenericDataloader
+from simuleval.data.dataloader import SpeechToTextDataloader, TextToTextDataloader
 from argparse import Namespace
 
 try:
@@ -34,16 +34,22 @@ class Instance(object):
         args (Namespace): command line arguments.
     """
 
-    def __init__(self, index: int, dataloader: GenericDataloader, args: Namespace):
+    def __init__(
+        self,
+        index: int,
+        dataloader: Optional[Union[SpeechToTextDataloader, TextToTextDataloader]],
+        args: Optional[Namespace],
+    ):
         self.index = index
         self.finish_prediction = False
         self.dataloader = dataloader
+        if self.dataloader is not None:
+            self.source = self.dataloader[self.index]["source"]
+            self.reference = self.dataloader[self.index]["target"]
         self.reset()
-        self.source = self.dataloader[self.index]["source"]
-        self.reference = self.dataloader[self.index]["target"]
         if args is not None:
             self.args = args
-            self.latency_unit = getattr(args, "latency_unit", "word")
+            self.latency_unit = args.eval_latency_unit
 
     def reset(self):
         self.step = 0
@@ -52,6 +58,12 @@ class Instance(object):
         self.delays = []
         self.start_time = None
         self.metrics = {}
+
+    def step_to_elapsed(self, *args):
+        raise NotImplementedError
+
+    def step_to_delay(self, step):
+        raise NotImplementedError
 
     @property
     def finish(self):
@@ -98,6 +110,10 @@ class Instance(object):
     @property
     def source_info(self):
         return self.source
+
+    @property
+    def reference_length(self) -> int:
+        raise NotImplementedError
 
     def summarize(self):
         return {
@@ -161,6 +177,7 @@ class TextOutputInstance(Instance):
         """
 
         if self.finish_prediction or prediction.is_empty:
+            self.finish_prediction = prediction.finished
             return
 
         if self.start_time is None:
@@ -174,9 +191,9 @@ class TextOutputInstance(Instance):
         current_time = time.time()
 
         if self.latency_unit == "word":
-            prediction_list = [prediction.content]
+            prediction_list = prediction.content.strip().split()
         elif self.latency_unit == "char":
-            prediction_list = prediction.content.split("")
+            prediction_list = list(prediction.content.replace(" ", ""))
         else:
             raise NotImplementedError
 
@@ -197,16 +214,35 @@ class TextOutputInstance(Instance):
             raise NotImplementedError
 
     @property
-    def prediction(self):
-        # TODO: Make configurable
-        return " ".join(list(self.prediction_list))
+    def reference_length(self) -> int:
+        if self.latency_unit == "word":
+            return len(self.reference.split(" "))
+        elif self.latency_unit == "char":
+            return len(self.reference.strip())
+        else:
+            raise NotImplementedError
+
+    @property
+    def prediction(self) -> str:
+        if self.latency_unit == "word":
+            return " ".join(list(self.prediction_list))
+        elif self.latency_unit == "char":
+            return "".join(list(self.prediction_list))
+        else:
+            raise NotImplementedError
 
 
 class SpeechInputInstance(Instance):
-    def __init__(self, index, dataloader, args):
+    def __init__(
+        self,
+        index: int,
+        dataloader: Optional[SpeechToTextDataloader],
+        args: Optional[Namespace],
+    ):
         super().__init__(index, dataloader, args)
         self.sample_rate_value = None
         self.sample_list = None
+        self.dataloader: SpeechToTextDataloader
 
     @property
     def sample_rate(self):
@@ -290,7 +326,8 @@ class SpeechOutputInstance(Instance):
         super().__init__(index, dataloader, args)
         self.prediction_time = 0
         self.durations = []
-        self.target_sample_rate = None
+        self.target_sample_rate = -1
+        self.dataloader: SpeechToTextDataloader  # For now we only support speech input.
         assert IS_IMPORT_SOUNDFILE, "Please make sure soundfile is properly installed."
 
     @property
@@ -360,7 +397,7 @@ class SpeechOutputInstance(Instance):
 
         pred_duration = 1000 * len(segment.content) / segment.sample_rate
 
-        if self.target_sample_rate is None:
+        if self.target_sample_rate < 0:
             self.target_sample_rate = segment.sample_rate
 
         self.durations.append(pred_duration)
@@ -393,6 +430,7 @@ class LogInstance:
         for key, value in self.info.items():
             setattr(self, key, value)
 
+        self.index = 0
         self.reference = self.info.get("reference", "")
         self.source_length = self.info.get("source_length")  # just for testing!
         self.finish_prediction = True

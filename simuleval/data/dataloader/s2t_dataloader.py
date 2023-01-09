@@ -21,10 +21,10 @@ class SpeechToTextDataloader(GenericDataloader):
         samples = samples.tolist()
         return samples
 
-    def preprocess_target(self, target: str) -> List:
+    def preprocess_target(self, target: str) -> str:
         return target
 
-    def get_source_audio_info(self, index: int) -> float:
+    def get_source_audio_info(self, index: int) -> soundfile._SoundFileInfo:
         return soundfile.info(self.get_source_audio_path(index))
 
     def get_source_audio_path(self, index: int):
