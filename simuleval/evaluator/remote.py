@@ -36,5 +36,6 @@ class RemoteEvaluator:
                 self.send_source(instance.send_source(self.source_segment_size))
                 output_segment = self.receive_prediction()
                 instance.receive_prediction(output_segment)
+            self.evaluator.write_log(instance)
 
         self.evaluator.dump_results()
