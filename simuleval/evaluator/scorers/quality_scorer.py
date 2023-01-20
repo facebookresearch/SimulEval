@@ -19,7 +19,7 @@ class QualityScorer:
     def __init__(self) -> None:
         pass
 
-    def __call__(self, references, translations) -> float:
+    def __call__(self, instances: Dict) -> float:
         raise NotImplementedError
 
     @staticmethod
@@ -29,7 +29,11 @@ class QualityScorer:
 
 def add_sacrebleu_args(parser):
     parser.add_argument(
-        "--sacrebleu-tokenizer", type=str, default="13a", help="Tokenizer in sacrebleu"
+        "--sacrebleu-tokenizer",
+        type=str,
+        default=sacrebleu.metrics.METRICS["BLEU"].TOKENIZER_DEFAULT,
+        choices=sacrebleu.metrics.METRICS["BLEU"].TOKENIZERS,
+        help="Tokenizer in sacrebleu",
     )
 
 
@@ -61,7 +65,8 @@ class SacreBLEUScorer(QualityScorer):
                 [[ins.reference for ins in instances.values()]],
                 tokenize=self.tokenizer,
             ).score
-        except Exception:
+        except Exception as e:
+            self.logger.error(str(e))
             return 0
 
     @staticmethod
@@ -94,7 +99,7 @@ class ASRSacreBLEUScorer(QualityScorer):
         self.logger = logging.getLogger("simuleval.scorer.asr_bleu")
         self.tokenizer = "13a"  # todo make it configurable
 
-    def __call__(self, instances) -> float:
+    def __call__(self, instances: Dict) -> float:
         return sacrebleu.corpus_bleu(
             self.asr_transcribe(instances),
             [[ins.reference for ins in instances.values()]],
@@ -108,7 +113,7 @@ class ASRSacreBLEUScorer(QualityScorer):
             from ust_common.evaluation import fairseq_w2v_ctc_infer
         except Exception:
             self.logger.warn("Please install ust_common.")
-            return ["" for _ in range(len(self))]
+            return ["" for _ in instances.keys()]
 
         wav_dir = Path(instances[0].prediction).absolute().parent
         root_dir = wav_dir.parent

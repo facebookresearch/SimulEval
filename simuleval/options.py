@@ -8,6 +8,7 @@ import sys
 import logging
 import argparse
 from simuleval.data.dataloader import DATALOADER_DICT, GenericDataloader
+from simuleval.evaluator.scorers import get_scorer_class
 
 
 def add_dataloader_args(
@@ -20,7 +21,7 @@ def add_dataloader_args(
     dataloader_class.add_args(parser)
 
 
-def add_evaluator_args(parser):
+def add_evaluator_args(parser: argparse.ArgumentParser):
     parser.add_argument(
         "--quality-metrics",
         nargs="+",
@@ -82,6 +83,17 @@ def add_evaluator_args(parser):
         help="The last index for evaluation.",
     )
     parser.add_argument("--output", type=str, default=None, help="Output directory")
+
+    add_scorer_args(parser)
+
+
+def add_scorer_args(parser: argparse.ArgumentParser):
+    args, _ = parser.parse_known_args()
+    for metric in args.latency_metrics:
+        get_scorer_class("latency", metric).add_args(parser)
+
+    for metric in args.quality_metrics:
+        get_scorer_class("quality", metric).add_args(parser)
 
 
 def general_parser():

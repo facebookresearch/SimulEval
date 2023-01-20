@@ -7,7 +7,7 @@ import pandas
 import os
 import numbers
 from argparse import Namespace
-from typing import Dict, Generator, List
+from typing import Dict, Generator, Optional
 from .scorers import get_scorer_class
 from .scorers.latency_scorer import LatencyScorer
 from .scorers.quality_scorer import QualityScorer
@@ -55,9 +55,9 @@ class SentenceLevelEvaluator(object):
 
     def __init__(
         self,
-        dataloader: GenericDataloader,
-        quality_scorers: List[QualityScorer],
-        latency_scorers: List[LatencyScorer],
+        dataloader: Optional[GenericDataloader],
+        quality_scorers: Dict[str, QualityScorer],
+        latency_scorers: Dict[str, LatencyScorer],
         args: Namespace,
     ) -> None:
         self.dataloader = dataloader
@@ -72,7 +72,11 @@ class SentenceLevelEvaluator(object):
         self.source_type = getattr(args, "source_type", None)
         self.target_type = getattr(args, "target_type", None)
 
-        if self.source_type is None and self.target_type is None:
+        if (
+            self.source_type is None
+            and self.target_type is None
+            and self.output is not None
+        ):
             with open(self.output / "config.yaml") as f:
                 configs = yaml.safe_load(f)
                 self.source_type = configs["source_type"]
@@ -103,26 +107,34 @@ class SentenceLevelEvaluator(object):
                     and (self.output / "instances.log").exists()
                 ):
                     with open(self.output / "instances.log", "r") as f:
+                        line = None
                         for line in f:  # noqa
                             pass
-                        last_info = json.loads(line.strip())
-                    self.start_index = last_info["index"] + 1
+                        if line is not None:
+                            last_info = json.loads(line.strip())
+                            self.start_index = last_info["index"] + 1
                 else:
                     self.output.mkdir(exist_ok=True, parents=True)
                     open(self.output / "instances.log", "w").close()
             if self.end_index < 0:
+                assert self.dataloader is not None
                 self.end_index = len(self.dataloader)
-
-        if not self.args.no_progress_bar:
-            self.maybe_tqdm = tqdm
-        else:
-            self.maybe_tqdm = lambda x: x
 
         self.build_instances()
 
+        if not self.args.no_progress_bar:
+            self.instance_iterator = tqdm(
+                self.instances.values(),
+                initial=self.start_index,
+                total=len(self.instances.values()),
+            )
+        else:
+            self.instance_iterator = self.instances.values()
+
     def write_log(self, instance):
-        with open(self.output / "instances.log", "a") as f:
-            f.write(json.dumps(instance.summarize()) + "\n")
+        if self.output is not None:
+            with open(self.output / "instances.log", "a") as f:
+                f.write(json.dumps(instance.summarize()) + "\n")
 
     def build_instances(self):
         if self.score_only:
@@ -132,10 +144,11 @@ class SentenceLevelEvaluator(object):
 
     def build_instances_from_log(self):
         self.instances = {}
-        with open(self.output / "instances.log", "r") as f:
-            for line in f:
-                instance = LogInstance(line.strip())
-                self.instances[instance.index] = instance
+        if self.output is not None:
+            with open(self.output / "instances.log", "r") as f:
+                for line in f:
+                    instance = LogInstance(line.strip())
+                    self.instances[instance.index] = instance
 
     def build_instances_from_dataloader(self):
         for i in self.get_indices():
@@ -162,7 +175,7 @@ class SentenceLevelEvaluator(object):
         }
 
     @property
-    def latency(self) -> Dict[str, Dict[str, float]]:
+    def latency(self) -> Dict[str, float]:
         return {
             name: scorer(self.instances)
             for name, scorer in self.latency_scorers.items()
@@ -189,18 +202,13 @@ class SentenceLevelEvaluator(object):
         print(results.to_string(index=False))
 
     def __call__(self, system):
-        for instance in self.maybe_tqdm(
-            self.instances.values(),
-            initial=self.start_index,
-            total=len(self.instances.values()),
-        ):
+        for instance in self.instance_iterator:
             system.reset()
             while not instance.finish_prediction:
                 input_segment = instance.send_source(self.source_segment_size)
                 output_segment = system.pushpop(input_segment)
                 instance.receive_prediction(output_segment)
-            if self.output:
-                self.write_log(instance)
+            self.write_log(instance)
 
         self.dump_results()
 
@@ -221,6 +229,6 @@ class SentenceLevelEvaluator(object):
 
         quality_scorers = {}
         for name in args.quality_metrics:
-            quality_scorers[name] = get_scorer_class("quality", name)()
+            quality_scorers[name] = get_scorer_class("quality", name).from_args(args)
 
         return cls(dataloader, quality_scorers, latency_scorers, args)
