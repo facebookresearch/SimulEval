@@ -88,7 +88,7 @@ class GenericAgent:
         action = self.policy()
         if not isinstance(action, Action):
             raise RuntimeError(
-                f"The return value of {self.policy.__qualname__} is not a {Action.__qualname__} instance"
+                f"The return value of {self.policy.__qualname__} is not an {Action.__qualname__} instance"
             )
         if action.is_read():
             return EmptySegment()
