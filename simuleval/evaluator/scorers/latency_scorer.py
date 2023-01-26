@@ -289,7 +289,7 @@ class ATDScorer(LatencyScorer):
             INPUT_TYPE = "text"
             OUTPUT_TYPE = "text"
         else:
-            SRC_TOKEN_LEN = 300 #300ms per word
+            SRC_TOKEN_LEN = 300  # 300ms per word
             INPUT_TYPE = "speech"
             if isinstance(instances[0], TextOutputInstance):
                 TGT_TOKEN_LEN = 0
@@ -308,19 +308,23 @@ class ATDScorer(LatencyScorer):
             if self.computation_aware:
                 elapsed = getattr(ins, "elapsed", None)
                 if elapsed is None:
-                    logger.warn(f"{index} instance has no computational delay information. Skipped")
+                    logger.warn(
+                        f"{index} instance has no computational delay information. Skipped"
+                    )
                     continue
                 if elapsed != [0] * len(delays):
                     compute_elapsed = self.subtract(elapsed, delays)
-                    compute_times = self.subtract(compute_elapsed, [0] + compute_elapsed[:-1])
+                    compute_times = self.subtract(
+                        compute_elapsed, [0] + compute_elapsed[:-1]
+                    )
                 else:
                     compute_times = elapsed
             else:
                 compute_times = [0] * len(delays)
 
-            chunk_sizes = {"src":[0],"tgt":[0]}
-            token_to_chunk = {"src":[0],"tgt":[0]}
-            token_to_time = {"src":[0],"tgt":[0]}
+            chunk_sizes = {"src": [0], "tgt": [0]}
+            token_to_chunk = {"src": [0], "tgt": [0]}
+            token_to_time = {"src": [0], "tgt": [0]}
 
             tgt_token_lens = []
             delays_no_duplicate = sorted(set(delays), key=delays.index)
@@ -333,8 +337,8 @@ class ATDScorer(LatencyScorer):
                     else:
                         chunk_sizes["tgt"][-1] += 1
                     prev_delay = delay
-                for i, chunk_size in enumerate(chunk_sizes["tgt"][1:],1):
-                    token_to_chunk["tgt"] +=  [ i ] * chunk_size
+                for i, chunk_size in enumerate(chunk_sizes["tgt"][1:], 1):
+                    token_to_chunk["tgt"] += [i] * chunk_size
                 tgt_token_lens = [TGT_TOKEN_LEN] * len(delays)
             else:
                 s2s_delays = []
@@ -342,7 +346,9 @@ class ATDScorer(LatencyScorer):
                 chunk_durations = []
                 chunk_compute_times = []
                 prev_delay = None
-                for delay, compute_time, duration in zip(delays, compute_times, ins.duration):
+                for delay, compute_time, duration in zip(
+                    delays, compute_times, ins.duration
+                ):
                     if delay != prev_delay:
                         chunk_durations.append(duration)
                         chunk_compute_times.append(compute_time)
@@ -352,35 +358,51 @@ class ATDScorer(LatencyScorer):
                     prev_delay = delay
                 for i, chunk_duration in enumerate(chunk_durations, 1):
                     num_tokens, rest = divmod(chunk_duration, TGT_TOKEN_LEN)
-                    token_lens = num_tokens * [TGT_TOKEN_LEN] + ([rest] if rest != 0 else [])
+                    token_lens = num_tokens * [TGT_TOKEN_LEN] + (
+                        [rest] if rest != 0 else []
+                    )
                     tgt_token_lens += token_lens
                     chunk_sizes["tgt"] += [len(token_lens)]
                     token_to_chunk["tgt"] += [i] * len(token_lens)
-                    s2s_delays += [delays_no_duplicate[i-1]] * len(token_lens)
-                    s2s_compute_times += [chunk_compute_times[i-1] / len(token_lens)] * len(token_lens)
+                    s2s_delays += [delays_no_duplicate[i - 1]] * len(token_lens)
+                    s2s_compute_times += [
+                        chunk_compute_times[i - 1] / len(token_lens)
+                    ] * len(token_lens)
                 delays = s2s_delays
                 compute_times = s2s_compute_times
 
             if INPUT_TYPE == "text":
-                chunk_sizes["src"] += self.subtract(delays_no_duplicate, [0] + delays_no_duplicate[:-1])
-                for i, chunk_size in enumerate(chunk_sizes["src"][1:],1):
+                chunk_sizes["src"] += self.subtract(
+                    delays_no_duplicate, [0] + delays_no_duplicate[:-1]
+                )
+                for i, chunk_size in enumerate(chunk_sizes["src"][1:], 1):
                     token_lens = chunk_size * [SRC_TOKEN_LEN]
                     for token_len in token_lens:
-                        token_to_time["src"].append(token_to_time["src"][-1] + token_len)
+                        token_to_time["src"].append(
+                            token_to_time["src"][-1] + token_len
+                        )
                         token_to_chunk["src"].append(i)
             else:
-                chunk_durations= self.subtract(delays_no_duplicate, [0] + delays_no_duplicate[:-1])
+                chunk_durations = self.subtract(
+                    delays_no_duplicate, [0] + delays_no_duplicate[:-1]
+                )
                 for i, chunk_duration in enumerate(chunk_durations, 1):
                     num_tokens, rest = divmod(chunk_duration, SRC_TOKEN_LEN)
-                    token_lens = num_tokens * [SRC_TOKEN_LEN] +  ([rest] if rest != 0 else [])
+                    token_lens = num_tokens * [SRC_TOKEN_LEN] + (
+                        [rest] if rest != 0 else []
+                    )
                     chunk_sizes["src"] += [len(token_lens)]
                     for token_len in token_lens:
-                        token_to_time["src"].append(token_to_time["src"][-1] + token_len)
+                        token_to_time["src"].append(
+                            token_to_time["src"][-1] + token_len
+                        )
                         token_to_chunk["src"].append(i)
 
-            for delay, compute_time, token_len in zip(delays, compute_times, tgt_token_lens):
+            for delay, compute_time, token_len in zip(
+                delays, compute_times, tgt_token_lens
+            ):
                 tgt_start_time = max(delay, token_to_time["tgt"][-1])
-                token_to_time["tgt"].append(tgt_start_time +token_len + compute_time)
+                token_to_time["tgt"].append(tgt_start_time + token_len + compute_time)
 
             scores.append(self.compute(chunk_sizes, token_to_chunk, token_to_time))
 
@@ -411,10 +433,10 @@ class ATDScorer(LatencyScorer):
         for t in range(1, len(token_to_chunk["tgt"])):
             chunk_id = token_to_chunk["tgt"][t]
             AccSize_x = sum(chunk_sizes["src"][:chunk_id])
-            AccSize_y = sum( chunk_sizes["tgt"][:chunk_id])
+            AccSize_y = sum(chunk_sizes["tgt"][:chunk_id])
 
             S = t - max(0, AccSize_y - AccSize_x)
-            current_src_size = sum(chunk_sizes["src"][:chunk_id + 1])
+            current_src_size = sum(chunk_sizes["src"][: chunk_id + 1])
 
             if S < current_src_size:
                 tgt_to_src.append((t, S))
@@ -423,7 +445,7 @@ class ATDScorer(LatencyScorer):
 
         atd_delays = []
 
-        for t, s  in tgt_to_src:
+        for t, s in tgt_to_src:
             atd_delay = token_to_time["tgt"][t] - token_to_time["src"][s]
             atd_delays.append(atd_delay)
 
