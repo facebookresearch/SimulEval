@@ -6,7 +6,12 @@ import textgrid
 import sys
 import shutil
 from typing import List, Union, Dict
-from simuleval.evaluator.instance import TextInputInstance, TextOutputInstance, Instance
+from simuleval.evaluator.instance import (
+    TextInputInstance,
+    TextOutputInstance,
+    Instance,
+    LogInstance,
+)
 from argparse import ArgumentParser
 
 logger = logging.getLogger("simuleval.latency_scorer")
