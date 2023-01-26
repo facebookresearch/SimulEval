@@ -297,7 +297,7 @@ class ATDScorer(LatencyScorer):
         else:
             SRC_TOKEN_LEN = 300  # 300ms per word
             INPUT_TYPE = "speech"
-            if isinstance(instances[0], TextOutputInstance):
+            if isinstance(instances[0], TextOutputInstance) or isinstance(instances[0], LogInstance):
                 TGT_TOKEN_LEN = 0
                 OUTPUT_TYPE = "text"
             else:
