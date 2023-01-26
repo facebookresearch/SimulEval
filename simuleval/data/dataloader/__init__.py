@@ -16,7 +16,7 @@ from .s2t_dataloader import SpeechToTextDataloader  # noqa
 logger = logging.getLogger("simuleval.dataloader")
 
 
-def build_dataloader(args) -> Any:
+def build_dataloader(args) -> GenericDataloader:
     dataloader_key = getattr(args, "dataloader", None)
     if dataloader_key is not None:
         assert dataloader_key in DATALOADER_DICT, f"{dataloader_key} is not defined"

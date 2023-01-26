@@ -6,7 +6,8 @@ import textgrid
 import sys
 import shutil
 from typing import List, Union, Dict
-from simuleval.evaluator.instance import TextInputInstance, TextOutputInstance
+from simuleval.evaluator.instance import TextInputInstance, TextOutputInstance, Instance
+from argparse import ArgumentParser
 
 logger = logging.getLogger("simuleval.latency_scorer")
 
@@ -35,7 +36,10 @@ class LatencyScorer:
     def timestamp_type(self):
         return "delays" if not self.computation_aware else "elapsed"
 
-    def __call__(self, instances) -> float:
+    def compute(self, *args):
+        raise NotImplementedError
+
+    def __call__(self, instances: Dict[int, Instance]) -> float:
         scores = []
         for index, ins in instances.items():
             if isinstance(ins, TextInputInstance):
@@ -51,11 +55,15 @@ class LatencyScorer:
             if not self.use_ref_len or ins.reference is None:
                 tgt_len = len(delays)
             else:
-                tgt_len = len(ins.reference.split())
+                tgt_len = ins.reference_length
             src_len = ins.source_length
             scores.append(self.compute(delays, src_len, tgt_len))
 
         return mean(scores)
+
+    @staticmethod
+    def add_args(parser: ArgumentParser):
+        pass
 
 
 @register_latency_scorer("AL")
@@ -106,13 +114,12 @@ class ALScorer(LatencyScorer):
         AL = 0
         gamma = target_length / source_length
         tau = 0
-        for t_miuns_1, d in enumerate(delays):
-            if d <= source_length:
-                AL += d - t_miuns_1 / gamma
-                tau = t_miuns_1 + 1
+        for t_minus_1, d in enumerate(delays):
+            AL += d - t_minus_1 / gamma
+            tau = t_minus_1 + 1
 
-                if d == source_length:
-                    break
+            if d >= source_length:
+                break
         AL /= tau
         return AL
 
@@ -129,7 +136,7 @@ class LAALScorer(ALScorer):
     It is the original Average Lagging as proposed in
     `Controllable Latency using Prefix-to-Prefix Framework
     <https://arxiv.org/abs/1810.08398>`_
-    but is robust to the length differece between the hypothesis and reference.
+    but is robust to the length difference between the hypothesis and reference.
 
     Give source :math:`X`, target :math:`Y`, delays :math:`D`,
 
@@ -173,13 +180,12 @@ class LAALScorer(ALScorer):
         LAAL = 0
         gamma = max(len(delays), target_length) / source_length
         tau = 0
-        for t_miuns_1, d in enumerate(delays):
-            if d <= source_length:
-                LAAL += d - t_miuns_1 / gamma
-                tau = t_miuns_1 + 1
+        for t_minus_1, d in enumerate(delays):
+            LAAL += d - t_minus_1 / gamma
+            tau = t_minus_1 + 1
 
-                if d == source_length:
-                    break
+            if d >= source_length:
+                break
         LAAL /= tau
         return LAAL
 
@@ -253,13 +259,13 @@ class DALScorer(LatencyScorer):
         target_length = len(delays)
         gamma = target_length / source_length
         g_prime_last = 0
-        for i_miuns_1, g in enumerate(delays):
-            if i_miuns_1 + 1 == 1:
+        for i_minus_1, g in enumerate(delays):
+            if i_minus_1 + 1 == 1:
                 g_prime = g
             else:
                 g_prime = max([g, g_prime_last + 1 / gamma])
 
-            DAL += g_prime - i_miuns_1 / gamma
+            DAL += g_prime - i_minus_1 / gamma
             g_prime_last = g_prime
 
         DAL /= target_length
@@ -506,7 +512,7 @@ class RTFScorer(LatencyScorer):
         return delays[-1] / source_length
 
 
-def speechoutput_aligment_latency_scorer(scorer_class):
+def speechoutput_alignment_latency_scorer(scorer_class):
     class Klass(scorer_class):
         def __init__(self) -> None:
             assert getattr(self, "boundary_type", None) in [
@@ -589,8 +595,8 @@ for boundary_type in ["BOW", "COW", "EOW"]:
     for metric in ["AL", "LAAL", "AP", "DAL", "ATD", "StartOffset", "EndOffset"]:
 
         @register_latency_scorer(f"{metric}_SpeechAlign_{boundary_type}")
-        @speechoutput_aligment_latency_scorer
-        class SpeechAlignScorer(LATENCY_SCORERS_DICT[metric]):
+        @speechoutput_alignment_latency_scorer
+        class SpeechAlignScorer(LATENCY_SCORERS_DICT[metric]):  # type: ignore
             f"""Compute {metric} based on alignment ({boundary_type})
 
             Usage:
