@@ -395,6 +395,8 @@ class SpeechOutputInstance(Instance):
         if len(segment.content) == 0:
             return
 
+        current_time = time.time()
+
         pred_duration = 1000 * len(segment.content) / segment.sample_rate
 
         if self.target_sample_rate < 0:
@@ -402,6 +404,7 @@ class SpeechOutputInstance(Instance):
 
         self.durations.append(pred_duration)
         self.prediction_list.append(segment.content)
+        self.elapsed.append(self.step_to_elapsed(self.step, current_time))
         self.delays.append(self.step_to_delay(self.step))
 
 

@@ -12,7 +12,12 @@ import textgrid
 import sys
 import shutil
 from typing import List, Union, Dict
-from simuleval.evaluator.instance import TextInputInstance, Instance
+from simuleval.evaluator.instance import (
+    TextInputInstance,
+    TextOutputInstance,
+    Instance,
+    LogInstance,
+)
 from argparse import ArgumentParser
 
 logger = logging.getLogger("simuleval.latency_scorer")
@@ -278,6 +283,194 @@ class DALScorer(LatencyScorer):
         return DAL
 
 
+@register_latency_scorer("ATD")
+class ATDScorer(LatencyScorer):
+    r"""
+    Average Token Delay (ATD) from
+    Average Token Delay: A Latency Metric for Simultaneous Translation
+    (https://arxiv.org/abs/2211.13173)
+
+    Different from speech segments, text tokens have no length
+    and multiple tokens can be output at the same time like subtitle.
+    Therefore, we set its length to be 0. However, to calculate latency in text-text,
+    we give virtual time 1 for the length of text tokens.
+
+    Usage:
+        ----latency-metrics ATD
+    """
+
+    def __call__(self, instances) -> float:
+        if isinstance(instances[0], TextInputInstance):
+            TGT_TOKEN_LEN = 1
+            SRC_TOKEN_LEN = 1
+            INPUT_TYPE = "text"
+            OUTPUT_TYPE = "text"
+        else:
+            SRC_TOKEN_LEN = 300  # 300ms per word
+            INPUT_TYPE = "speech"
+            if isinstance(instances[0], TextOutputInstance) or isinstance(
+                instances[0], LogInstance
+            ):
+                TGT_TOKEN_LEN = 0
+                OUTPUT_TYPE = "text"
+            else:
+                TGT_TOKEN_LEN = 300
+                OUTPUT_TYPE = "speech"
+
+        scores = []
+        for index, ins in instances.items():
+            delays = getattr(ins, "delays", None)
+            if delays is None:
+                logger.warn(f"{index} instance has no delay information. Skipped")
+                continue
+
+            if self.computation_aware:
+                elapsed = getattr(ins, "elapsed", None)
+                if elapsed is None:
+                    logger.warn(
+                        f"{index} instance has no computational delay information. Skipped"
+                    )
+                    continue
+                if elapsed != [0] * len(delays):
+                    compute_elapsed = self.subtract(elapsed, delays)
+                    compute_times = self.subtract(
+                        compute_elapsed, [0] + compute_elapsed[:-1]
+                    )
+                else:
+                    compute_times = elapsed
+            else:
+                compute_times = [0] * len(delays)
+
+            chunk_sizes = {"src": [0], "tgt": [0]}
+            token_to_chunk = {"src": [0], "tgt": [0]}
+            token_to_time = {"src": [0], "tgt": [0]}
+
+            tgt_token_lens = []
+            delays_no_duplicate = sorted(set(delays), key=delays.index)
+
+            if OUTPUT_TYPE == "text":
+                prev_delay = None
+                for delay in delays:
+                    if delay != prev_delay:
+                        chunk_sizes["tgt"].append(1)
+                    else:
+                        chunk_sizes["tgt"][-1] += 1
+                    prev_delay = delay
+                for i, chunk_size in enumerate(chunk_sizes["tgt"][1:], 1):
+                    token_to_chunk["tgt"] += [i] * chunk_size
+                tgt_token_lens = [TGT_TOKEN_LEN] * len(delays)
+            else:
+                s2s_delays = []
+                s2s_compute_times = []
+                chunk_durations = []
+                chunk_compute_times = []
+                prev_delay = None
+                for delay, compute_time, duration in zip(
+                    delays, compute_times, ins.duration
+                ):
+                    if delay != prev_delay:
+                        chunk_durations.append(duration)
+                        chunk_compute_times.append(compute_time)
+                    else:
+                        chunk_durations[-1] += duration
+                        chunk_compute_times[-1] += compute_time
+                    prev_delay = delay
+                for i, chunk_duration in enumerate(chunk_durations, 1):
+                    num_tokens, rest = divmod(chunk_duration, TGT_TOKEN_LEN)
+                    token_lens = num_tokens * [TGT_TOKEN_LEN] + (
+                        [rest] if rest != 0 else []
+                    )
+                    tgt_token_lens += token_lens
+                    chunk_sizes["tgt"] += [len(token_lens)]
+                    token_to_chunk["tgt"] += [i] * len(token_lens)
+                    s2s_delays += [delays_no_duplicate[i - 1]] * len(token_lens)
+                    s2s_compute_times += [
+                        chunk_compute_times[i - 1] / len(token_lens)
+                    ] * len(token_lens)
+                delays = s2s_delays
+                compute_times = s2s_compute_times
+
+            if INPUT_TYPE == "text":
+                chunk_sizes["src"] += self.subtract(
+                    delays_no_duplicate, [0] + delays_no_duplicate[:-1]
+                )
+                for i, chunk_size in enumerate(chunk_sizes["src"][1:], 1):
+                    token_lens = chunk_size * [SRC_TOKEN_LEN]
+                    for token_len in token_lens:
+                        token_to_time["src"].append(
+                            token_to_time["src"][-1] + token_len
+                        )
+                        token_to_chunk["src"].append(i)
+            else:
+                chunk_durations = self.subtract(
+                    delays_no_duplicate, [0] + delays_no_duplicate[:-1]
+                )
+                for i, chunk_duration in enumerate(chunk_durations, 1):
+                    num_tokens, rest = divmod(chunk_duration, SRC_TOKEN_LEN)
+                    token_lens = num_tokens * [SRC_TOKEN_LEN] + (
+                        [rest] if rest != 0 else []
+                    )
+                    chunk_sizes["src"] += [len(token_lens)]
+                    for token_len in token_lens:
+                        token_to_time["src"].append(
+                            token_to_time["src"][-1] + token_len
+                        )
+                        token_to_chunk["src"].append(i)
+
+            for delay, compute_time, token_len in zip(
+                delays, compute_times, tgt_token_lens
+            ):
+                tgt_start_time = max(delay, token_to_time["tgt"][-1])
+                token_to_time["tgt"].append(tgt_start_time + token_len + compute_time)
+
+            scores.append(self.compute(chunk_sizes, token_to_chunk, token_to_time))
+
+        return mean(scores)
+
+    def subtract(self, arr1, arr2):
+        return [x - y for x, y in zip(arr1, arr2)]
+
+    def compute(
+        self,
+        chunk_sizes: Dict[str, List[Union[float, int]]],
+        token_to_chunk: Dict[str, List[Union[float, int]]],
+        token_to_time: Dict[str, List[Union[float, int]]],
+    ) -> float:
+        """
+        Function to compute latency on one sentence (instance).
+        Args:
+            chunk_sizes Dict[str, List[Union[float, int]]]: Sequence of chunk sizes for source and target.
+            token_to_chunk Dict[str, List[Union[float, int]]]: Sequence of chunk indices to which the tokens belong for source and target.
+            token_to_time Dict[str, List[Union[float, int]]]: Sequence of ending times of tokens for source and target.
+
+        Returns:
+            float: the latency score on one sentence.
+        """
+
+        tgt_to_src = []
+
+        for t in range(1, len(token_to_chunk["tgt"])):
+            chunk_id = token_to_chunk["tgt"][t]
+            AccSize_x = sum(chunk_sizes["src"][:chunk_id])
+            AccSize_y = sum(chunk_sizes["tgt"][:chunk_id])
+
+            S = t - max(0, AccSize_y - AccSize_x)
+            current_src_size = sum(chunk_sizes["src"][: chunk_id + 1])
+
+            if S < current_src_size:
+                tgt_to_src.append((t, S))
+            else:
+                tgt_to_src.append((t, current_src_size))
+
+        atd_delays = []
+
+        for t, s in tgt_to_src:
+            atd_delay = token_to_time["tgt"][t] - token_to_time["src"][s]
+            atd_delays.append(atd_delay)
+
+        return float(mean(atd_delays))
+
+
 @register_latency_scorer("StartOffset")
 class StartOffsetScorer(LatencyScorer):
     """Starting offset of the translation
@@ -412,7 +605,7 @@ def speechoutput_alignment_latency_scorer(scorer_class):
 
 
 for boundary_type in ["BOW", "COW", "EOW"]:
-    for metric in ["AL", "LAAL", "AP", "DAL", "StartOffset", "EndOffset"]:
+    for metric in ["AL", "LAAL", "AP", "DAL", "ATD", "StartOffset", "EndOffset"]:
 
         @register_latency_scorer(f"{metric}_SpeechAlign_{boundary_type}")
         @speechoutput_alignment_latency_scorer
