@@ -7,14 +7,18 @@
 import sys
 import logging
 import argparse
+from typing import List, Optional
 from simuleval.data.dataloader import DATALOADER_DICT, GenericDataloader
 from simuleval.evaluator.scorers import get_scorer_class
 
 
 def add_dataloader_args(
-    parser: argparse.ArgumentParser, additional_cli_string: str = ""
+    parser: argparse.ArgumentParser, cli_argument_list: Optional[List[str]] = None
 ):
-    args, _ = parser.parse_known_args(sys.argv + additional_cli_string.split())
+    if cli_argument_list is None:
+        args, _ = parser.parse_known_args()
+    else:
+        args, _ = parser.parse_known_args(cli_argument_list)
     dataloader_class = DATALOADER_DICT.get(args.dataloader)
     if dataloader_class is None:
         dataloader_class = GenericDataloader
@@ -111,7 +115,22 @@ def general_parser():
     parser.add_argument(
         "--slurm", action="store_true", default=False, help="Use slurm."
     )
-    parser.add_argument("--agent", default=None, help="Agent type")
+    parser.add_argument("--agent", default=None, help="Agent file")
+    parser.add_argument(
+        "--agent-class",
+        default=None,
+        help="The full string of class of the agent.",
+    )
+    parser.add_argument(
+        "--system-dir",
+        default=None,
+        help="Directory that contains everything to start the simultaneous system.",
+    )
+    parser.add_argument(
+        "--system-config",
+        default="main.yaml",
+        help="Name of the config yaml of the system configs.",
+    )
     parser.add_argument("--dataloader", default=None, help="Dataloader to use")
     parser.add_argument(
         "--log-level",
