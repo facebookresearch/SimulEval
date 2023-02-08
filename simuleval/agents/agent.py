@@ -26,6 +26,7 @@ class GenericAgent:
         self.args = args
         assert self.source_type
         assert self.target_type
+        self.device = "cpu"
 
         self.states = self.build_states()
         self.reset()

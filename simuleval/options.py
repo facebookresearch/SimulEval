@@ -4,7 +4,6 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
-import sys
 import logging
 import argparse
 from typing import List, Optional
@@ -144,6 +143,9 @@ def general_parser():
         action="store_true",
         default=False,
         help="Only score the inference file.",
+    )
+    parser.add_argument(
+        "--device", type=str, default="cpu", help="Device to run the model."
     )
     return parser
 
