@@ -4,9 +4,9 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import List
+from typing import List, Optional
 from simuleval.data.segments import Segment
-from .agent import GenericAgent
+from .agent import GenericAgent, AgentStates
 
 
 class AgentPipeline(GenericAgent):
@@ -35,24 +35,40 @@ class AgentPipeline(GenericAgent):
                     )
 
     @property
-    def source_type(self) -> str:
+    def source_type(self) -> Optional[str]:
         return self.module_list[0].source_type
 
     @property
-    def target_type(self) -> str:
+    def target_type(self) -> Optional[str]:
         return self.module_list[-1].target_type
 
     def reset(self) -> None:
         for module in self.module_list:
             module.reset()
 
-    def push(self, segment: Segment) -> None:
-        for module in self.module_list[:-1]:
-            segment = module.pushpop(segment)
-        self.module_list[-1].push(segment)
+    def build_states(self) -> List[AgentStates]:
+        return [module.build_states() for module in self.module_list]
 
-    def pop(self) -> Segment:
-        return self.module_list[-1].pop()
+    def push(
+        self, segment: Segment, states: Optional[List[Optional[AgentStates]]] = None
+    ) -> None:
+        if states is None:
+            states = [None for _ in self.module_list]
+        else:
+            assert len(states) == len(self.module_list)
+
+        for index, module in enumerate(self.module_list[:-1]):
+            segment = module.pushpop(segment, states[index])
+        self.module_list[-1].push(segment, states[-1])
+
+    def pop(self, states: Optional[List[Optional[AgentStates]]] = None) -> Segment:
+        if states is None:
+            last_states = None
+        else:
+            assert len(states) == len(self.module_list)
+            last_states = states[-1]
+
+        return self.module_list[-1].pop(last_states)
 
     @classmethod
     def add_args(cls, parser) -> None:
