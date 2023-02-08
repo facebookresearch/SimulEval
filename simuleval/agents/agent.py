@@ -6,6 +6,7 @@
 
 from argparse import Namespace, ArgumentParser
 from simuleval.data.segments import Segment, TextSegment, SpeechSegment, EmptySegment
+from typing import Optional
 from .states import AgentStates
 from .actions import Action
 
@@ -44,11 +45,14 @@ class GenericAgent:
         """
         self.states.reset()
 
-    def policy(self) -> Action:
+    def policy(self, states: Optional[AgentStates] = None) -> Action:
         """
         The policy to make decision every time
         when the system has new input.
         The function has to return an Action instance
+
+        Args:
+            states (Optional[AgentStates]): an optional states for stateless agent
 
         Returns:
             Action: The actions to make at certain point.
@@ -57,19 +61,25 @@ class GenericAgent:
 
             WriteAction means that the system has a prediction.
             ReadAction means that the system needs more source.
+            When states are provided, the agent will become stateless and ignore self.states.
         """
         assert NotImplementedError
 
-    def push(self, source_segment: Segment) -> None:
+    def push(
+        self, source_segment: Segment, states: Optional[AgentStates] = None
+    ) -> None:
         """
         The function to process the incoming information.
 
         Args:
             source_info (dict): incoming information dictionary
+            states (Optional[AgentStates]): an optional states for stateless agent
         """
-        self.states.update_source(source_segment)
+        if states is None:
+            states = self.states
+        states.update_source(source_segment)
 
-    def pop(self) -> Segment:
+    def pop(self, states: Optional[AgentStates] = None) -> Segment:
         """
         The function to generate system output.
         By default, it first runs policy,
@@ -77,15 +87,26 @@ class GenericAgent:
         If the policy decide to read,
         it will return an empty segment.
 
+        Args:
+            states (Optional[AgentStates]): an optional states for stateless agent
 
         Returns:
             Segment: segment to return.
         """
+        if states is None:
+            states = self.states
+            is_stateless = False
+        else:
+            is_stateless = True
 
-        if self.states.target_finished:
+        if states.target_finished:
             return EmptySegment(finished=True)
 
-        action = self.policy()
+        if is_stateless:
+            action = self.policy(states)
+        else:
+            action = self.policy()
+
         if not isinstance(action, Action):
             raise RuntimeError(
                 f"The return value of {self.policy.__qualname__} is not an {Action.__qualname__} instance"
@@ -99,10 +120,12 @@ class GenericAgent:
             segment = SEGMENT_TYPE_DICT[self.target_type](
                 index=0, content=action.content, finished=action.finished
             )
-            self.states.update_target(segment)
+            states.update_target(segment)
             return segment
 
-    def pushpop(self, segment: Segment) -> Segment:
+    def pushpop(
+        self, segment: Segment, states: Optional[AgentStates] = None
+    ) -> Segment:
         """
         Operate pop immediately after push.
 
@@ -112,8 +135,8 @@ class GenericAgent:
         Returns:
             Segment: output segment
         """
-        self.push(segment)
-        return self.pop()
+        self.push(segment, states)
+        return self.pop(states)
 
     @staticmethod
     def add_args(parser: ArgumentParser):
@@ -129,6 +152,15 @@ class GenericAgent:
     @classmethod
     def from_args(cls, args):
         return cls(args)
+
+    def to(self, device: str) -> None:
+        """
+        Move agent to specified device.
+
+        Args:
+            device (str): Device to move agent to.
+        """
+        pass
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}[{self.source_type} -> {self.target_type}]"
