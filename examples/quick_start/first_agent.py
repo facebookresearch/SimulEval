@@ -12,7 +12,6 @@ from simuleval.agents.actions import ReadAction, WriteAction
 
 @entrypoint
 class DummyWaitkTextAgent(TextToTextAgent):
-
     waitk = 3
     vocab = [chr(i) for i in range(ord("A"), ord("Z") + 1)]
 

@@ -28,16 +28,15 @@ Latency Scorers
 
 Customized Scorers
 ------------------
-To add customized scorers, the user can use :code:`@register_latency_scorer` or :code:`@register_quality_scorer` to decorate an scorer class.
+To add customized scorers, the user can use :code:`@register_latency_scorer` or :code:`@register_quality_scorer` to decorate a scorer class.
 and use :code:`--quality-metrics` and :code:`--latency-metrics` to call the scorer. For example:
 
-.. literalinclude:: ../../examples/quick_start/dummy_waitk_text_agent_v4.py
-   :language: python
+.. literalinclude:: ../../examples/quick_start/agent_with_new_metrics.py
    :lines: 6-
 
 .. code-block:: bash
 
-    > simuleval --source source.txt --target target.txt --agent dummy_waitk_text_agent_v4.py --latency-metrics RTF
+    > simuleval --source source.txt --target target.txt --agent agent_with_new_metrics.py --latency-metrics RTF
     2022-12-06 12:56:01 | INFO | simuleval.cli | Evaluate system: DummyWaitkTextAgent
     2022-12-06 12:56:01 | INFO | simuleval.dataloader | Evaluating from text to text.
     2022-12-06 12:56:01 | INFO | simuleval.sentence_level_evaluator | Results:

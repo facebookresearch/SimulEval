@@ -112,7 +112,7 @@ We concatenate two wait-k systems with different rates (:code:`k=2` and :code:`k
 Note that if there are more than one agent class define,
 the :code:`@entrypoint` decorator has to be used to determine the entry point
 
-.. literalinclude:: ../../examples/quick_start/dummy_waitk_text_agent_v3.py
+.. literalinclude:: ../../examples/quick_start/agent_pipeline.py
    :language: python
    :lines: 7-
 
@@ -123,7 +123,7 @@ It is often the case that we need to pass some customized arguments for the syst
 The agent class has a built-in static method :code:`add_args` for this purpose.
 The following is an updated version of the dummy agent from :ref:`first-agent`.
 
-.. literalinclude:: ../../examples/quick_start/dummy_waitk_text_agent_v2.py
+.. literalinclude:: ../../examples/quick_start/agent_with_configs.py
    :language: python
    :lines: 6-
 
@@ -135,3 +135,64 @@ Then just simply pass the arguments through command line as follow.
         --source source.txt --source target.txt \ # data arguments
         --agent dummy_waitk_text_agent_v2.py \
         --waitk 3 --vocab data/dict.txt # agent arguments
+
+Load Agents from Python Class
+-----------------------------
+
+If you have the agent class in the python environment, for instance 
+
+.. literalinclude:: ../../examples/quick_start/agent_with_configs.py
+   :language: python
+   :lines: 6-
+
+You can also start the evaluation with following command
+
+.. code-block:: bash
+
+    simuleval \
+        --source source.txt --source target.txt \ # data arguments
+        --agent-class DummyWaitkTextAgent \
+        --waitk 3 --vocab data/dict.txt # agent arguments
+
+
+Load Agents from Directory
+--------------------------
+
+Agent can also be loaded from a directory, which will be referred to as system directory.
+The system directory should have everything required to start the agent. Again use the following agent as example
+
+.. literalinclude:: ../../examples/quick_start/agent_with_configs.py
+   :language: python
+   :lines: 6-
+
+and the system directory has 
+
+.. code-block:: bash
+
+    > ls ${system_dir}
+    main.yaml dict.txt 
+
+Where the `main.yaml` has all the command line options. The path will be the relative path to the `${system_dir}`.
+
+.. code-block:: yaml
+
+    waitk: 3
+    vocab: dict.txt
+
+The agent can then be started as following
+
+.. code-block:: bash
+
+    simuleval \
+        --source source.txt --source target.txt \ # data arguments
+        --system-dir ${system_dir}
+
+By default, the `main.yaml` will be read. You can also have multiple YAML files in the system directory and pass them through command line arguments
+
+.. code-block:: bash
+     > ls ${system_dir}
+    main.yaml dict.txt v1.yaml 
+
+    > simuleval \
+        --source source.txt --source target.txt \ # data arguments
+        --system-dir ${system_dir} --system-config v1.yaml

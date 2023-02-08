@@ -17,7 +17,7 @@ The example simultaneous system is a dummy wait-k agent, which
 
 The implementation of this agent is shown as follow.
 
-.. literalinclude:: ../examples/quick_start/first_agent.py.py
+.. literalinclude:: ../examples/quick_start/first_agent.py
    :language: python
    :lines: 6-
 
@@ -26,12 +26,12 @@ There two essential components for an agent:
 - :code:`states`:  The attribute keeps track of the source and target information.
 - :code:`policy`:  The method makes decisions when the there is a new source segment.
 
-Once the agent is implemented and saved at :code:`first_agent.py.py`,
+Once the agent is implemented and saved at :code:`first_agent.py`,
 run the following command for latency evaluation on:
 
 .. code-block:: bash
 
-    simuleval --source source.txt --reference target.txt --agent first_agent.py.py
+    simuleval --source source.txt --reference target.txt --agent first_agent.py
 
 where :code:`--source` is the input file while :code:`--target` is the reference file.
 

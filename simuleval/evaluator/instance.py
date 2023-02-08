@@ -262,7 +262,6 @@ class SpeechInputInstance(Instance):
         return self.step == len(self.samples)
 
     def send_source(self, segment_size=10):
-
         if self.step == 0:
             self.start_time = time.time()
         assert segment_size >= 1, "instance size has to larger than 1 ms"
@@ -348,7 +347,6 @@ class SpeechOutputInstance(Instance):
         intervals = []
 
         for i, delay in enumerate(self.delays):
-
             start = max(prev_end, delay)
 
             if start > prev_end:

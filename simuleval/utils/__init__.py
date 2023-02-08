@@ -10,3 +10,6 @@ EVALUATION_SYSTEM_LIST = []
 def entrypoint(klass):
     EVALUATION_SYSTEM_LIST.append(klass)
     return klass
+
+
+from .agent import build_system_from_dir
