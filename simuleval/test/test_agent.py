@@ -30,6 +30,7 @@ def test_agent(root_path=ROOT_PATH):
         ]
         cli.main()
 
+
 def test_statelss_agent(root_path=ROOT_PATH):
     class DummyWaitkTextAgent(TextToTextAgent):
         waitk = 0

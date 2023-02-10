@@ -14,9 +14,10 @@ from argparse import Namespace
 from typing import Union, Optional, Tuple
 from pathlib import Path
 from simuleval import options
-from simuleval.utils import EVALUATION_SYSTEM_LIST
 from simuleval.agents import GenericAgent
 from simuleval.utils.arguments import cli_argument_list, check_argument
+
+EVALUATION_SYSTEM_LIST = []
 
 logger = logging.getLogger("simuleval.utils.agent")
 

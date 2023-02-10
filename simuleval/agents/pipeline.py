@@ -31,7 +31,7 @@ class AgentPipeline(GenericAgent):
                     != self.module_list[i - 1].target_type
                 ):
                     raise RuntimeError(
-                        f"{self.module_list[i]}.source_type({self.module_list[i].source_type}) != {self.pipeline[i-1]}.target_type({self.pipeline[i - 1].target_type}"
+                        f"{self.module_list[i]}.source_type({self.module_list[i].source_type}) != {self.pipeline[i-1]}.target_type({self.pipeline[i - 1].target_type}"  # noqa F401
                     )
 
     @property

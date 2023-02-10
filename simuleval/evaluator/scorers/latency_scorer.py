@@ -60,7 +60,7 @@ class LatencyScorer:
                     )
             delays = getattr(ins, self.timestamp_type, None)
             if delays is None or len(delays) == 0:
-                logger.warn(f"{index} instance has no delay information. Skipped")
+                logger.warn(f"Instance {index} has no delay information. Skipped")
                 continue
 
             if not self.use_ref_len or ins.reference is None:
@@ -99,7 +99,7 @@ class ALScorer(LatencyScorer):
 
     Usage:
         ----latency-metrics AL
-    """
+    """  # noqa: E501
 
     def compute(
         self,
@@ -299,7 +299,7 @@ class ATDScorer(LatencyScorer):
         ----latency-metrics ATD
     """
 
-    def __call__(self, instances) -> float:
+    def __call__(self, instances) -> float:  # noqa C901
         if isinstance(instances[0], TextInputInstance):
             TGT_TOKEN_LEN = 1
             SRC_TOKEN_LEN = 1
@@ -445,7 +445,7 @@ class ATDScorer(LatencyScorer):
 
         Returns:
             float: the latency score on one sentence.
-        """
+        """  # noqa C501
 
         tgt_to_src = []
 
@@ -525,7 +525,7 @@ class RTFScorer(LatencyScorer):
         return delays[-1] / source_length
 
 
-def speechoutput_alignment_latency_scorer(scorer_class):
+def speechoutput_alignment_latency_scorer(scorer_class):  # noqa C901
     class Klass(scorer_class):
         def __init__(self) -> None:
             assert getattr(self, "boundary_type", None) in [
@@ -549,7 +549,7 @@ def speechoutput_alignment_latency_scorer(scorer_class):
 
         def prepare_alignment(self, instances):
             try:
-                subprocess.check_output("mfa -h", shell=True, stderr=subprocess.STDOUT)
+                subprocess.check_output("mfa", shell=True, stderr=subprocess.STDOUT)
             except subprocess.CalledProcessError as grepexc:
                 logger.error(grepexc.output.decode("utf-8").strip())
                 logger.error("Please make sure the mfa is correctly installed.")
@@ -571,7 +571,10 @@ def speechoutput_alignment_latency_scorer(scorer_class):
                 dictionary_path.symlink_to(
                     original_model_path / "dictionary" / "english_mfa.dict"
                 )
-                mfa_command = f"mfa align {output_dir  / 'wavs'} {dictionary_path.as_posix()} {acoustic_model_path.as_posix()} {align_dir.as_posix()} --clean --overwrite --temporary_directory  {temp_dir.as_posix()}"
+                mfa_command = (
+                    f"mfa align {output_dir  / 'wavs'} {dictionary_path.as_posix()} {acoustic_model_path.as_posix()}"
+                    + f" {align_dir.as_posix()} --clean --overwrite --temporary_directory  {temp_dir.as_posix()}"
+                )
                 logger.info(mfa_command)
 
                 subprocess.run(

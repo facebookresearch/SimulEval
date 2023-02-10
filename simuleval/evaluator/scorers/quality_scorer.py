@@ -4,11 +4,12 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
-import csv
 import logging
 import sacrebleu
 from pathlib import Path
 from typing import Dict
+from sacrebleu.metrics.bleu import BLEU
+import subprocess
 
 QUALITY_SCORERS_DICT = {}
 
@@ -66,11 +67,14 @@ class SacreBLEUScorer(QualityScorer):
 
     def __call__(self, instances: Dict) -> float:
         try:
-            return sacrebleu.corpus_bleu(
-                [ins.prediction for ins in instances.values()],
-                [[ins.reference for ins in instances.values()]],
-                tokenize=self.tokenizer,
-            ).score
+            return (
+                BLEU(tokenize=self.tokenizer)
+                .corpus_score(
+                    [ins.prediction for ins in instances.values()],
+                    [[ins.reference for ins in instances.values()]],
+                )
+                .score
+            )
         except Exception as e:
             self.logger.error(str(e))
             return 0
@@ -100,72 +104,87 @@ class ASRSacreBLEUScorer(QualityScorer):
         :prog:
     """
 
-    def __init__(self, tokenizer: str = "13a") -> None:
+    def __init__(self, tokenizer: str = "13a", target_lang: str = "en") -> None:
         super().__init__()
         self.logger = logging.getLogger("simuleval.scorer.asr_bleu")
-        self.tokenizer = "13a"  # todo make it configurable
+        self.tokenizer = tokenizer
+        self.target_lang = target_lang
 
     def __call__(self, instances: Dict) -> float:
-        return sacrebleu.corpus_bleu(
-            self.asr_transcribe(instances),
-            [[ins.reference for ins in instances.values()]],
-            tokenize=self.tokenizer,
-        ).score
+        transcripts = self.asr_transcribe(instances)
+        score = (
+            BLEU(tokenize=self.tokenizer)
+            .corpus_score(
+                transcripts,
+                [[ins.reference for ins in instances.values()]],
+            )
+            .score
+        )
+        return score
 
     def asr_transcribe(self, instances):
-        self.logger.warn("Beta feature: Evaluating speech output")
+        self.logger.warn("Beta feature: Evaluating speech output. Faieseq is required.")
         try:
-            from ust_common.evaluation import prepare_w2v_audio_finetuning_data
-            from ust_common.evaluation import fairseq_w2v_ctc_infer
+            import fairseq
+
+            fairseq_path = Path(fairseq.__path__[0]).parent  # type: ignore
         except Exception:
-            self.logger.warn("Please install ust_common.")
+            self.logger.warn("Please install fairseq.")
             return ["" for _ in instances.keys()]
 
         wav_dir = Path(instances[0].prediction).absolute().parent
         root_dir = wav_dir.parent
-        # TODO make it configurable
-        if not (root_dir / "asr_prep_data").exists():
-            prepare_w2v_audio_finetuning_data(
-                wav_dir,
-                root_dir / "asr_prep_data",
-                output_subset_name="eval",
-                waveform_filename_pattern="*",
-            )
-        if not (root_dir / "asr_out").exists():
-            fairseq_w2v_ctc_infer(
-                root_dir / "asr_prep_data",
-                "/checkpoint/annl/s2st/eval/asr/model/wav2vec2/wav2vec_vox_960h_pl.pt",
-                "eval",
-                root_dir / "asr_out",
-            )
+        transcripts_path = root_dir / "asr_transcripts.txt"
+        asr_cmd_bash_path = root_dir / "asr_cmd.bash"
 
-        with open(root_dir / "asr_out" / "eval_asr_predictions.tsv") as f:
-            reader = csv.DictReader(
-                f,
-                delimiter="\t",
-                quotechar=None,
-                doublequote=False,
-                lineterminator="\n",
-                quoting=csv.QUOTE_NONE,
-            )
-            translations_w_id = [dict(e) for e in reader]
+        # This is a dummy reference. The bleu score will be compute separately.
+        reference_path = root_dir / "instances.log"
 
-        translations_w_id = sorted(
-            translations_w_id, key=lambda x: int(x["id"].split("_")[-1])
+        fairseq_asr_bleu_cmd = "\n".join(
+            [
+                f"cd {fairseq_path.as_posix()}/examples/speech_to_speech/asr_bleu/",
+                " ".join(
+                    [
+                        "python compute_asr_bleu.py",
+                        f"--reference_path {reference_path.as_posix()}",
+                        f"--lang {self.target_lang}",
+                        f"--audio_dirpath {wav_dir.as_posix()}",
+                        "--reference_format txt",
+                        f"--transcripts_path {(root_dir / 'asr_transcripts.txt').as_posix()}",
+                    ]
+                ),
+            ]
         )
+        with open(asr_cmd_bash_path, "w") as f:
+            f.write(fairseq_asr_bleu_cmd + "\n")
 
-        translation_list = []
-        for idx, item in enumerate(translations_w_id):
+        process = subprocess.Popen(["bash", asr_cmd_bash_path])
+        _, stderr = process.communicate()
+
+        if process.returncode != 0:
+            self.logger.error("ASR on target speech failed:")
+            self.logger.error(str(stderr) + "\n")
+            return ["" for _ in instances.keys()]
+
+        with open(transcripts_path, "r") as f:
+            transcripts = [line.strip() for line in f]
+
+        for idx, item in enumerate(transcripts):
             with open(wav_dir / f"{idx}_pred.txt", "w") as f:
-                f.write(item["transcription"].lower() + "\n")
-            translation_list.append(item["transcription"].lower())
+                f.write(item.lower() + "\n")
 
-        return translation_list
+        return transcripts
 
     @staticmethod
     def add_args(parser):
         add_sacrebleu_args(parser)
+        parser.add_argument(
+            "--target-speech-lang",
+            type=str,
+            default="en",
+            help="The language of target speech",
+        )
 
     @classmethod
     def from_args(cls, args):
-        return cls(args.sacrebleu_tokenizer)
+        return cls(args.sacrebleu_tokenizer, args.target_speech_lang)
