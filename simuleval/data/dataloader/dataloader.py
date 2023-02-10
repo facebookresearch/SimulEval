@@ -4,8 +4,7 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
-from pathlib import Path
-from typing import Any, Dict, List, Union, Optional
+from typing import Any, Dict, List, Union
 from argparse import Namespace, ArgumentParser
 
 SUPPORTED_MEDIUM = ["text", "speech"]

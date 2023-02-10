@@ -5,7 +5,6 @@
 # LICENSE file in the root directory of this source tree.
 
 import logging
-from tqdm import tqdm
 from simuleval.data.segments import Segment, segment_from_json_string
 from simuleval.evaluator import SentenceLevelEvaluator
 import requests

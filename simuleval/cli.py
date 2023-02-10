@@ -7,7 +7,6 @@
 import os
 import sys
 import logging
-from typing import Optional
 from simuleval import options
 from simuleval.utils.agent import build_system_args
 from simuleval.utils.slurm import submit_slurm_job

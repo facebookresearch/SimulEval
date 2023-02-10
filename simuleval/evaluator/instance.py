@@ -431,7 +431,7 @@ class LogInstance:
         for key, value in self.info.items():
             setattr(self, key, value)
 
-        self.index = 0
+        self.index = self.info["index"]
         self.reference = self.info.get("reference", "")
         self.reference_length = len(
             self.reference.split(" ")

@@ -5,7 +5,6 @@
 # LICENSE file in the root directory of this source tree.
 
 import logging
-from typing import Any
 from .dataloader import (  # noqa
     GenericDataloader,
     register_dataloader,
