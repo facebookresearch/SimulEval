@@ -158,7 +158,7 @@ class ASRSacreBLEUScorer(QualityScorer):
         with open(asr_cmd_bash_path, "w") as f:
             f.write(fairseq_asr_bleu_cmd + "\n")
 
-        process = subprocess.Popen(["bash", asr_cmd_bash_path])
+        process = subprocess.Popen(["bash", asr_cmd_bash_path], stdout=subprocess.PIPE)
         _, stderr = process.communicate()
 
         if process.returncode != 0:

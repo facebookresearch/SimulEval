@@ -76,6 +76,7 @@ def evaluate(system_class: GenericAgent, config_dict: dict = {}):
 def scoring():
     parser = options.general_parser()
     options.add_evaluator_args(parser)
+    options.add_scorer_args(parser)
     options.add_dataloader_args(parser)
     args = parser.parse_args()
     evaluator = SentenceLevelEvaluator.from_args(args)
@@ -87,6 +88,7 @@ def remote_evaluate():
     parser = options.general_parser()
     options.add_dataloader_args(parser)
     options.add_evaluator_args(parser)
+    options.add_scorer_args(parser)
     args = parser.parse_args()
     evaluator = build_remote_evaluator(args)
 

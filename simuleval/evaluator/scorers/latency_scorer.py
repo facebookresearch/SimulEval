@@ -407,7 +407,7 @@ class ATDScorer(LatencyScorer):
                 )
                 for i, chunk_duration in enumerate(chunk_durations, 1):
                     num_tokens, rest = divmod(chunk_duration, SRC_TOKEN_LEN)
-                    token_lens = num_tokens * [SRC_TOKEN_LEN] + (
+                    token_lens = int(num_tokens) * [SRC_TOKEN_LEN] + (
                         [rest] if rest != 0 else []
                     )
                     chunk_sizes["src"] += [len(token_lens)]

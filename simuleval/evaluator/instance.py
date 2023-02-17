@@ -113,7 +113,12 @@ class Instance(object):
 
     @property
     def reference_length(self) -> int:
-        raise NotImplementedError
+        if self.latency_unit == "word":
+            return len(self.reference.split(" "))
+        elif self.latency_unit == "char":
+            return len(self.reference.strip())
+        else:
+            raise NotImplementedError
 
     def summarize(self):
         return {
@@ -210,15 +215,6 @@ class TextOutputInstance(Instance):
             return len(self.reference.split(" "))
         elif self.latency_unit == "char":
             return len(self.reference)
-        else:
-            raise NotImplementedError
-
-    @property
-    def reference_length(self) -> int:
-        if self.latency_unit == "word":
-            return len(self.reference.split(" "))
-        elif self.latency_unit == "char":
-            return len(self.reference.strip())
         else:
             raise NotImplementedError
 

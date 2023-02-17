@@ -113,9 +113,11 @@ def build_system_args(
     config_dict: Optional[dict] = None,
 ) -> Tuple[GenericAgent, Namespace]:
     parser = options.general_parser()
+    cli_arguments = cli_argument_list(config_dict)
     options.add_evaluator_args(parser)
+    options.add_scorer_args(parser, cli_arguments)
     options.add_slurm_args(parser)
-    options.add_dataloader_args(parser, cli_argument_list(config_dict))
+    options.add_dataloader_args(parser, cli_arguments)
 
     if check_argument("system_dir"):
         system = build_system_from_dir(
