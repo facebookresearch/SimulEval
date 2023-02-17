@@ -87,11 +87,15 @@ def add_evaluator_args(parser: argparse.ArgumentParser):
     )
     parser.add_argument("--output", type=str, default=None, help="Output directory")
 
-    add_scorer_args(parser)
 
+def add_scorer_args(
+    parser: argparse.ArgumentParser, cli_argument_list: Optional[List[str]] = None
+):
+    if cli_argument_list is None:
+        args, _ = parser.parse_known_args()
+    else:
+        args, _ = parser.parse_known_args(cli_argument_list)
 
-def add_scorer_args(parser: argparse.ArgumentParser):
-    args, _ = parser.parse_known_args()
     for metric in args.latency_metrics:
         get_scorer_class("latency", metric).add_args(parser)
 
@@ -156,4 +160,3 @@ def add_slurm_args(parser):
     )
     parser.add_argument("--slurm-job-name", default="simuleval", help="Slurm job name.")
     parser.add_argument("--slurm-time", default="10:00:00", help="Slurm partition.")
-    args, _ = parser.parse_known_args()

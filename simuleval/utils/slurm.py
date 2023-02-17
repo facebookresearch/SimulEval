@@ -29,6 +29,7 @@ def submit_slurm_job(args=None) -> None:
     if args is None:
         parser = options.general_parser()
         options.add_evaluator_args(parser)
+        options.add_scorer_args(parser)
         options.add_slurm_args(parser)
         args, _ = parser.parse_known_args()
 

@@ -4,6 +4,7 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
+from inspect import signature
 from argparse import Namespace, ArgumentParser
 from simuleval.data.segments import Segment, TextSegment, SpeechSegment, EmptySegment
 from typing import Optional
@@ -94,11 +95,15 @@ class GenericAgent:
         Returns:
             Segment: segment to return.
         """
-        if states is None:
-            states = self.states
+        if len(signature(self.policy).parameters) == 0:
             is_stateless = False
+            if states:
+                raise RuntimeError("Feeding states to stateful agents.")
         else:
             is_stateless = True
+
+        if states is None:
+            states = self.states
 
         if states.target_finished:
             return EmptySegment(finished=True)
