@@ -268,10 +268,10 @@ class SpeechInputInstance(Instance):
             if self.step + num_samples >= len(self.samples):
                 # Pad zeros if the requested number of samples
                 # are more than available samples.
-                samples = self.samples[self.step :]
+                samples = self.samples[self.step :]  # noqa E203
                 is_finished = True
             else:
-                samples = self.samples[self.step : self.step + num_samples]
+                samples = self.samples[self.step : self.step + num_samples]  # noqa E203
                 is_finished = False
 
             self.step = min(self.step + num_samples, len(self.samples))

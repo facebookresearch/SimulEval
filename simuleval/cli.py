@@ -4,7 +4,6 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
-import os
 import sys
 import logging
 from simuleval import options
@@ -60,12 +59,11 @@ def main():
 def evaluate(system_class: GenericAgent, config_dict: dict = {}):
     EVALUATION_SYSTEM_LIST.append(system_class)
 
-    system, args = build_system_args(config_dict)
-
-    if args.slurm:
-        args.output = os.path.abspath(args.output)
-        submit_slurm_job(args)
+    if check_argument("slurm", config_dict):
+        submit_slurm_job(config_dict)
         return
+
+    system, args = build_system_args(config_dict)
 
     # build evaluator
     evaluator = build_evaluator(args)
