@@ -9,7 +9,10 @@ import re
 import sys
 import logging
 import subprocess
+from typing import Optional, Dict
 from simuleval import options
+from simuleval.utils.arguments import cli_argument_list
+from simuleval.utils.agent import get_agent_class
 
 logger = logging.getLogger("simuleval.slurm")
 
@@ -25,16 +28,23 @@ def mkdir_output_dir(path: str) -> bool:
         return False
 
 
-def submit_slurm_job(args=None) -> None:
-    if args is None:
-        parser = options.general_parser()
-        options.add_evaluator_args(parser)
-        options.add_scorer_args(parser)
-        options.add_slurm_args(parser)
-        args, _ = parser.parse_known_args()
-
+def submit_slurm_job(config_dict: Optional[Dict] = None) -> None:
+    if config_dict is not None and "slurm" in config_dict:
+        raise RuntimeError("--slurm is only available as a CLI argument")
+    parser = options.general_parser()
+    cli_arguments = cli_argument_list(config_dict)
+    options.add_evaluator_args(parser)
+    options.add_scorer_args(parser, cli_arguments)
+    options.add_slurm_args(parser)
+    options.add_dataloader_args(parser, cli_arguments)
+    system_class = get_agent_class(config_dict)
+    system_class.add_args(parser)
+    args = parser.parse_args(cli_argument_list(config_dict))
     args.output = os.path.abspath(args.output)
     assert mkdir_output_dir(args.output)
+
+    if args.agent is None:
+        args.agent = sys.argv[0]
 
     os.system(f"cp {args.agent} {args.output}/agent.py")
     _args = [sys.argv[0]]
