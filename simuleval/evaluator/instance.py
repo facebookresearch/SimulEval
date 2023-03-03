@@ -340,7 +340,7 @@ class SpeechOutputInstance(Instance):
         samples = []
         # start from the first segment offset
         start = prev_end = self.delays[0]
-        intervals = []
+        self.intervals = []
 
         for i, delay in enumerate(self.delays):
             start = max(prev_end, delay)
@@ -353,7 +353,7 @@ class SpeechOutputInstance(Instance):
             samples += self.prediction_list[i]
             duration = self.durations[i]
             prev_end = start + duration
-            intervals.append([start, duration])
+            self.intervals.append([start, duration])
 
         soundfile.write(self.wav_path, samples, self.target_sample_rate)
 
@@ -364,7 +364,7 @@ class SpeechOutputInstance(Instance):
             "durations": self.durations,
             "prediction_offset": self.delays[0],
             "elapsed": [],
-            "intervals": intervals,
+            "intervals": self.intervals,
             "prediction_length": len(samples) / self.target_sample_rate,
             "source_length": self.source_length,
             "reference": self.reference,

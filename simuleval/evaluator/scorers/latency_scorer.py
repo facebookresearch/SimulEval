@@ -17,6 +17,7 @@ from simuleval.evaluator.instance import (
     TextOutputInstance,
     Instance,
     LogInstance,
+    SpeechOutputInstance,
 )
 from argparse import ArgumentParser
 
@@ -67,6 +68,8 @@ class LatencyScorer:
                 tgt_len = len(delays)
             else:
                 tgt_len = ins.reference_length
+            if isinstance(ins, SpeechOutputInstance):
+                delays = [start + duration for start, duration in ins.intervals]
             src_len = ins.source_length
             scores.append(self.compute(delays, src_len, tgt_len))
 
