@@ -50,6 +50,12 @@ def add_evaluator_args(parser: argparse.ArgumentParser):
         help="Include computational latency.",
     )
     parser.add_argument(
+        "--no-use-ref-len",
+        action="store_true",
+        default=False,
+        help="Include computational latency.",
+    )
+    parser.add_argument(
         "--eval-latency-unit",
         type=str,
         default="word",

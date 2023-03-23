@@ -209,7 +209,8 @@ class SentenceLevelEvaluator(object):
                 input_segment = instance.send_source(self.source_segment_size)
                 output_segment = system.pushpop(input_segment)
                 instance.receive_prediction(output_segment)
-            self.write_log(instance)
+            if not self.score_only:
+                self.write_log(instance)
 
         self.dump_results()
 
@@ -221,11 +222,12 @@ class SentenceLevelEvaluator(object):
             dataloader = None
 
         latency_scorers = {}
+        use_ref_len = not args.no_use_ref_len
         for name in args.latency_metrics:
             latency_scorers[name] = get_scorer_class("latency", name).from_args(args)
             if args.computation_aware:
                 latency_scorers[name + "_CA"] = get_scorer_class("latency", name)(
-                    computation_aware=True
+                    computation_aware=True, use_ref_len=use_ref_len
                 )
 
         quality_scorers = {}
