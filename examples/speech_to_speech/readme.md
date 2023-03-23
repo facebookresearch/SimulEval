@@ -58,7 +58,7 @@ We use three metrics for latency evaluation
 - `EndOffset`: The ending offset of translation comparing with source audio
 - `AL_SpeechAlign_BOW`: compute average lagging (AL) on transcribed text, and use the beginning of the aligned word as the delay to compute AL. This feature requires `mfa`.
 
-The results of the evaluation should be as following. The transcripts and alignment can be found in the `output` directory.
+The results of the evaluation should be as following. The transcripts and alignments can be found in the `output` directory.
 
 ```
  ASR_BLEU  AL_SpeechAlign_BOW  StartOffset  EndOffset

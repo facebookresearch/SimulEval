@@ -15,6 +15,7 @@ from typing import List, Union, Dict
 from simuleval.evaluator.instance import (
     TextInputInstance,
     TextOutputInstance,
+    SpeechOutputInstance,
     Instance,
     LogInstance,
 )
@@ -36,6 +37,7 @@ def register_latency_scorer(name):
 
 class LatencyScorer:
     metric = None
+    add_duration = False
 
     def __init__(
         self, computation_aware: bool = False, use_ref_len: bool = True
@@ -68,8 +70,10 @@ class LatencyScorer:
                 tgt_len = len(delays)
             else:
                 tgt_len = ins.reference_length
-            if isinstance(ins, SpeechOutputInstance):
+
+            if self.add_duration and isinstance(ins, SpeechOutputInstance):
                 delays = [start + duration for start, duration in ins.intervals]
+
             src_len = ins.source_length
             scores.append(self.compute(delays, src_len, tgt_len))
 
@@ -508,6 +512,8 @@ class EndOffsetScorer(LatencyScorer):
 
     """
 
+    add_duration = True
+
     def compute(
         self,
         delays: List[Union[float, int]],
@@ -537,13 +543,13 @@ class RTFScorer(LatencyScorer):
 
 def speechoutput_alignment_latency_scorer(scorer_class):  # noqa C901
     class Klass(scorer_class):
-        def __init__(self) -> None:
+        def __init__(self, **kargs) -> None:
             assert getattr(self, "boundary_type", None) in [
                 "BOW",
                 "EOW",
                 "COW",
             ], self.boundary_type
-            super().__init__()
+            super().__init__(**kargs)
             if self.computation_aware:
                 raise RuntimeError(
                     "The computation aware latency for speech output is not supported yet"
