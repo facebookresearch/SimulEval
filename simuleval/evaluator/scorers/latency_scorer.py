@@ -369,7 +369,7 @@ class ATDScorer(LatencyScorer):
                 chunk_compute_times = []
                 prev_delay = None
                 for delay, compute_time, duration in zip(
-                    delays, compute_times, ins.duration
+                    delays, compute_times, ins.durations
                 ):
                     if delay != prev_delay:
                         chunk_durations.append(duration)
