@@ -1,6 +1,6 @@
 ## Simultaneous Speech-to-Speech Translation
 
-This example provides a minimal example on speech-to-speech.
+This tutorial provides a minimal example on how to evaluate a simultaneous speech-to-speech translation system.
 
 ### Requirements
 
