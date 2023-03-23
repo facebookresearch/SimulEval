@@ -380,7 +380,7 @@ class ATDScorer(LatencyScorer):
                 chunk_compute_times = []
                 prev_delay = None
                 for delay, compute_time, duration in zip(
-                    delays, compute_times, ins.duration
+                    delays, compute_times, ins.durations
                 ):
                     if delay != prev_delay:
                         chunk_durations.append(duration)
@@ -391,7 +391,7 @@ class ATDScorer(LatencyScorer):
                     prev_delay = delay
                 for i, chunk_duration in enumerate(chunk_durations, 1):
                     num_tokens, rest = divmod(chunk_duration, TGT_TOKEN_LEN)
-                    token_lens = num_tokens * [TGT_TOKEN_LEN] + (
+                    token_lens = int(num_tokens) * [TGT_TOKEN_LEN] + (
                         [rest] if rest != 0 else []
                     )
                     tgt_token_lens += token_lens
