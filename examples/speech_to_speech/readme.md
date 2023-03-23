@@ -61,6 +61,6 @@ We use three metrics for latency evaluation
 The results of the evaluation should be as following. The transcripts and alignments can be found in the `output` directory.
 
 ```
- ASR_BLEU  AL_SpeechAlign_BOW  StartOffset  EndOffset
-   80.911             974.334       1000.0        0.0
+ ASR_BLEU  StartOffset  EndOffset  AL_SpeechAlign_BOW
+   80.911       1000.0   1490.703             973.565
 ```
