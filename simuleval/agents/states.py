@@ -4,7 +4,7 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
-from simuleval.data.segments import Segment, TextSegment, EmptySegment
+from simuleval.data.segments import Segment, TextSegment, EmptySegment, SpeechSegment
 
 
 class AgentStates:
@@ -27,6 +27,8 @@ class AgentStates:
         self.target = []
         self.source_finished = False
         self.target_finished = False
+        self.source_sample_rate = 0
+        self.target_sample_rate = 0
 
     def update_source(self, segment: Segment):
         """
@@ -40,8 +42,11 @@ class AgentStates:
             return
         elif isinstance(segment, TextSegment):
             self.source.append(segment.content)
-        else:
+        elif isinstance(segment, SpeechSegment):
             self.source += segment.content
+            self.source_sample_rate = segment.sample_rate
+        else:
+            raise NotImplementedError
 
     def update_target(self, segment: Segment):
         """
@@ -52,7 +57,12 @@ class AgentStates:
         """
         self.target_finished = segment.finished
         if not self.target_finished:
-            if isinstance(segment, TextSegment):
+            if isinstance(segment, EmptySegment):
+                return
+            elif isinstance(segment, TextSegment):
                 self.target.append(segment.content)
-            else:
+            elif isinstance(segment, SpeechSegment):
                 self.target += segment.content
+                self.target_sample_rate = segment.sample_rate
+            else:
+                raise NotImplementedError

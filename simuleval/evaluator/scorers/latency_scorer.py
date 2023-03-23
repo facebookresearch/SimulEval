@@ -19,6 +19,7 @@ from simuleval.evaluator.instance import (
     LogInstance,
 )
 from argparse import ArgumentParser
+from subprocess import Popen, PIPE
 
 logger = logging.getLogger("simuleval.latency_scorer")
 
@@ -75,6 +76,10 @@ class LatencyScorer:
     @staticmethod
     def add_args(parser: ArgumentParser):
         pass
+
+    @classmethod
+    def from_args(cls, *args):
+        return cls()
 
 
 @register_latency_scorer("AL")
@@ -549,10 +554,12 @@ def speechoutput_alignment_latency_scorer(scorer_class):  # noqa C901
 
         def prepare_alignment(self, instances):
             try:
-                subprocess.check_output("mfa", shell=True, stderr=subprocess.STDOUT)
+                subprocess.check_output(
+                    "mfa version", shell=True, stderr=subprocess.STDOUT
+                )
             except subprocess.CalledProcessError as grepexc:
                 logger.error(grepexc.output.decode("utf-8").strip())
-                logger.error("Please make sure the mfa is correctly installed.")
+                logger.error("Please make sure the mfa>=2.0.6 is correctly installed. ")
                 sys.exit(1)
 
             output_dir = Path(instances[0].prediction).absolute().parent.parent
@@ -620,3 +627,268 @@ for boundary_type in ["BOW", "COW", "EOW"]:
             """
             boundary_type = boundary_type
             __name__ = f"{metric}SpeechAlign{boundary_type}Scorer"
+
+
+@register_latency_scorer("AL_align")
+class ALAlignScorer(ALScorer):
+    def __init__(self, args) -> None:
+        super().__init__()
+        self.args = args
+        self.use_ref_len = True
+        self.computation_aware = False
+
+    # @staticmethod
+    # def add_args(parser):
+    #    add_sacrebleu_args(parser)
+
+    @classmethod
+    def from_args(cls, args):
+        return cls(args.sacrebleu_tokenizer)
+
+    def __call__(self, instances: Dict[int, Instance]) -> float:
+        scores = []
+        from tqdm import tqdm
+
+        for index, ins in tqdm(instances.items()):
+            if isinstance(ins, TextInputInstance):
+                if self.computation_aware:
+                    raise RuntimeError(
+                        "The computation aware latency is not supported on text input."
+                    )
+            delays = getattr(ins, self.timestamp_type, None)
+            if delays is None or len(delays) == 0:
+                logger.warn(f"Instance {index} has no delay information. Skipped")
+                continue
+
+            if not self.use_ref_len or ins.reference is None:
+                tgt_len = len(delays)
+            else:
+                tgt_len = ins.reference_length
+            src_len = ins.source_length
+            scores.append(self.compute(delays, src_len, tgt_len, ins))
+        return mean(scores)
+
+    def get_alignment(self, instance: Instance):
+        index = instance.index
+        delays = instance.delays
+        asr_align = Path(
+            "/large_experiments/seamless/ust/xutaima/2023_H1/alignment/asr_alignment",
+            f"{index}_pred.TextGrid",
+        )
+        if not asr_align.exists():
+            return {}
+        info = textgrid.TextGrid.fromFile(asr_align)
+        source = []
+        source_delays = []
+        for interval in info[0]:
+            if len(interval.mark) > 0:
+                source_delays.append(interval.maxTime * 1000)
+                source.append(interval.mark)
+        source_text = " ".join(source)  # .replace('"', '"')
+        align_dir = (
+            "/large_experiments/seamless/ust/xutaima/2023_H1/alignment/tt_alignment"
+        )
+        cmd = f'cd /private/home/xutaima/projects/fast_align/build/; echo "{source_text} ||| {instance.prediction}" | ./force_align.py {align_dir}/fwd_params {align_dir}/fwd_err {align_dir}/rev_params {align_dir}/rev_err'
+        process = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
+        stdout, stderr = process.communicate()
+        delays = {}
+        for align in stdout.decode().split("\n")[0].split():
+            j, i = align.split("-")
+            i = int(i)
+            j = int(j)
+            delays[i] = source_delays[j]
+        return delays
+
+    def compute(
+        self,
+        delays: List[Union[float, int]],
+        source_length: Union[float, int],
+        target_length: Union[float, int],
+        instance: Instance,
+    ):
+        """
+        Function to compute latency on one sentence (instance).
+
+        Args:
+            delays (List[Union[float, int]]): Sequence of delays.
+            source_length (Union[float, int]): Length of source sequence.
+            target_length (Union[float, int]): Length of target sequence.
+
+        Returns:
+            float: the latency score on one sentence.
+        """
+
+        if delays[0] > source_length:
+            return delays[0]
+
+        AL = 0
+        tau = 0
+        align_delays = self.get_alignment(instance)
+
+        gamma = target_length / source_length
+        tau = 0
+
+        for t_minus_1, d in enumerate(delays):
+            if t_minus_1 in align_delays:
+                AL += d - align_delays[t_minus_1]
+            else:
+                AL += d - t_minus_1 / gamma
+
+            tau = t_minus_1 + 1
+
+            if d >= source_length:
+                break
+
+        AL /= tau
+        return AL
+
+
+@register_latency_scorer("AL")
+class ALScorer(LatencyScorer):
+    r"""
+    Average Lagging (AL) from
+    `STACL: Simultaneous Translation with Implicit Anticipation and Controllable Latency using Prefix-to-Prefix Framework <https://arxiv.org/abs/1810.08398>`_
+
+    Give source :math:`X`, target :math:`Y`, delays :math:`D`,
+
+    .. math::
+
+        AL = \frac{1}{\tau} \sum_i^\tau D_i - (i - 1) \frac{|X|}{|Y|}
+
+    Where
+
+    .. math::
+
+        \tau = argmin_i(D_i = |X|)
+
+    When reference was given, :math:`|Y|` would be the reference length
+
+    Usage:
+        ----latency-metrics AL
+    """  # noqa: E501
+
+    def compute(
+        self,
+        delays: List[Union[float, int]],
+        source_length: Union[float, int],
+        target_length: Union[float, int],
+    ):
+        """
+        Function to compute latency on one sentence (instance).
+
+        Args:
+            delays (List[Union[float, int]]): Sequence of delays.
+            source_length (Union[float, int]): Length of source sequence.
+            target_length (Union[float, int]): Length of target sequence.
+
+        Returns:
+            float: the latency score on one sentence.
+        """
+
+        if delays[0] > source_length:
+            return delays[0]
+
+        AL = 0
+        gamma = target_length / source_length
+        tau = 0
+        for t_minus_1, d in enumerate(delays):
+            AL += d - t_minus_1 / gamma
+            tau = t_minus_1 + 1
+
+            if d >= source_length:
+                break
+        AL /= tau
+        return AL
+
+
+from collections import defaultdict
+
+
+@register_latency_scorer("AL_POS")
+class ALAlignScorer(ALScorer):
+    def __init__(self, args) -> None:
+        super().__init__()
+        self.args = args
+        self.use_ref_len = True
+        self.computation_aware = False
+        import spacy
+
+        self.nlp = spacy.load("es_core_news_md")
+
+    # @staticmethod
+    # def add_args(parser):
+    #    add_sacrebleu_args(parser)
+
+    @classmethod
+    def from_args(cls, args):
+        return cls(args.sacrebleu_tokenizer)
+
+    def __call__(self, instances: Dict[int, Instance]) -> float:
+        scores = defaultdict(list)
+        from tqdm import tqdm
+
+        for index, ins in tqdm(instances.items()):
+            if isinstance(ins, TextInputInstance):
+                if self.computation_aware:
+                    raise RuntimeError(
+                        "The computation aware latency is not supported on text input."
+                    )
+            delays = getattr(ins, self.timestamp_type, None)
+            if delays is None or len(delays) == 0:
+                logger.warn(f"Instance {index} has no delay information. Skipped")
+                continue
+
+            if not self.use_ref_len or ins.reference is None:
+                tgt_len = len(delays)
+            else:
+                tgt_len = ins.reference_length
+            src_len = ins.source_length
+            al = self.compute(delays, src_len, tgt_len, ins)
+            for key, value in al.items():
+                scores[key] += value
+        for key, value in scores.items():
+            scores[key] = mean(value)
+
+        print()
+        print(",".join(scores.keys()))
+        print(",".join(str(round(x / 1000, 2)) for x in scores.values()))
+        return scores
+
+    def compute(
+        self,
+        delays: List[Union[float, int]],
+        source_length: Union[float, int],
+        target_length: Union[float, int],
+        instance: Instance,
+    ):
+        """
+        Function to compute latency on one sentence (instance).
+
+        Args:
+            delays (List[Union[float, int]]): Sequence of delays.
+            source_length (Union[float, int]): Length of source sequence.
+            target_length (Union[float, int]): Length of target sequence.
+
+        Returns:
+            float: the latency score on one sentence.
+        """
+
+        if delays[0] > source_length:
+            return delays[0]
+
+        AL = defaultdict(list)
+        tau = 0
+
+        gamma = target_length / source_length
+        tau = 0
+        sentence = self.nlp(instance.prediction)
+
+        for t_minus_1, d in enumerate(delays):
+            AL[sentence[t_minus_1].pos_].append(d - t_minus_1 / gamma)
+
+            tau = t_minus_1 + 1
+
+            if d >= source_length:
+                break
+
+        return AL

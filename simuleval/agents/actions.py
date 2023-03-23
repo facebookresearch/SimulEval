@@ -6,6 +6,7 @@
 
 from typing import Union, List
 from dataclasses import dataclass
+from simuleval.data.segments import Segment
 
 
 class Action:
@@ -49,7 +50,7 @@ class WriteAction(Action):
 
     """
 
-    content: Union[str, List[float]]
+    content: Union[str, List[float], Segment]
     finished: bool
 
     def is_read(self) -> bool:

@@ -222,7 +222,7 @@ class SentenceLevelEvaluator(object):
 
         latency_scorers = {}
         for name in args.latency_metrics:
-            latency_scorers[name] = get_scorer_class("latency", name)()
+            latency_scorers[name] = get_scorer_class("latency", name).from_args(args)
             if args.computation_aware:
                 latency_scorers[name + "_CA"] = get_scorer_class("latency", name)(
                     computation_aware=True

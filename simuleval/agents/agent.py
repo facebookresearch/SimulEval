@@ -23,8 +23,9 @@ class GenericAgent:
     source_type = None
     target_type = None
 
-    def __init__(self, args: Namespace) -> None:
-        self.args = args
+    def __init__(self, args: Optional[Namespace] = None) -> None:
+        if args is not None:
+            self.args = args
         assert self.source_type
         assert self.target_type
         self.device = "cpu"
