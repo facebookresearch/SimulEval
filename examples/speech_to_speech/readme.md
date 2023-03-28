@@ -52,15 +52,16 @@ simuleval \
 
 For quality evaluation, we use ASR_BLEU, that is transcribing the speech output and compute BLEU score with the reference text. To use this feature, `fairseq` has to be installed.
 
-We use three metrics for latency evaluation
+We use four metrics for latency evaluation
 
 - `StartOffset`: The starting offset of translation comparing with source audio
 - `EndOffset`: The ending offset of translation comparing with source audio
 - `AL_SpeechAlign_BOW`: compute average lagging (AL) on transcribed text, and use the beginning of the aligned word as the delay to compute AL. This feature requires `mfa`.
+- `ATD`: Average Token Delay
 
 The results of the evaluation should be as following. The transcripts and alignments can be found in the `output` directory.
 
 ```
- ASR_BLEU  StartOffset  EndOffset  AL_SpeechAlign_BOW
-   80.911       1000.0   1490.703             973.565
+ ASR_BLEU  StartOffset  EndOffset  AL_SpeechAlign_BOW      ATD
+   80.911       1000.0   1490.703             973.565 1247.831
 ```
