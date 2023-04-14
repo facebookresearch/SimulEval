@@ -312,15 +312,15 @@ class ATDScorer(LatencyScorer):
         scores = []
         for index, ins in instances.items():
             delays = getattr(ins, "delays", None)
-            if delays is None:
-                logger.warn(f"{index} instance has no delay information. Skipped")
+            if delays is None or len(delays) == 0:
+                logger.warn(f"Instance {index} has no delay information. Skipped")
                 continue
 
             if self.computation_aware:
                 elapsed = getattr(ins, "elapsed", None)
-                if elapsed is None:
+                if elapsed is None or len(elapsed) == 0:
                     logger.warn(
-                        f"{index} instance has no computational delay information. Skipped"
+                        f"Instance {index} has no computational delay information. Skipped"
                     )
                     continue
                 if elapsed != [0] * len(delays):
