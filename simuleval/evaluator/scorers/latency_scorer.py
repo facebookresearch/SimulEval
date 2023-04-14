@@ -66,6 +66,7 @@ class LatencyScorer:
             tgt_len (Union[float, int]): Length of target sequence.
         """
         delays = getattr(ins, self.timestamp_type, None)
+        assert delays
 
         if not self.use_ref_len or ins.reference is None:
             tgt_len = len(delays)
@@ -542,8 +543,6 @@ class StartOffsetScorer(LatencyScorer):
 
     def compute(self, ins: Instance):
         delays, _, _ = self.get_delays_lengths(ins)
-        if isinstance(ins, SpeechOutputInstance):
-            delays = [start + duration for start, duration in ins.intervals]
         return delays[0]
 
 
@@ -560,7 +559,6 @@ class EndOffsetScorer(LatencyScorer):
         delays, source_length, _ = self.get_delays_lengths(ins)
         if isinstance(ins, SpeechOutputInstance):
             delays = [start + duration for start, duration in ins.intervals]
-        assert delays
         return delays[-1] - source_length
 
 

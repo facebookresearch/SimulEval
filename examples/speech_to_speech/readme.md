@@ -6,8 +6,7 @@ This tutorial provides a minimal example on how to evaluate a simultaneous speec
 
 To run this example, the following package is required
 
-- [`fairseq`](https://github.com/facebookresearch/fairseq): for quality evaluation (ASR_BLEU).
-- [`mfa >= 2.0.6](https://montreal-forced-aligner.readthedocs.io/en/latest/getting_started.html): for latency evaluation (average lagging on aligned target transcripts).
+- [`whisper`](https://github.com/openai/whisper): for quality evaluation (`WHISPER_ASR_BLEU`).
 
 ### Agent
 
@@ -46,22 +45,22 @@ The following command will start an evaluation
 simuleval \
     --agent english_counter_agent.py --output output \
     --source source.txt --target reference/en.txt --source-segment-size 1000\
-    --quality-metrics ASR_BLEU \
-    --latency-metrics StartOffset EndOffset AL_SpeechAlign_BOW --target-speech-lang en
+    --quality-metrics WHISPER_ASR_BLEU \
+    --target-speech-lang en --transcript-lowercase --transcript-non-punctuation\
+    --latency-metrics StartOffset EndOffset ATD
 ```
 
-For quality evaluation, we use ASR_BLEU, that is transcribing the speech output and compute BLEU score with the reference text. To use this feature, `fairseq` has to be installed.
+For quality evaluation, we use ASR_BLEU, that is transcribing the speech output and compute BLEU score with the reference text. To use this feature, `whisper` has to be installed.
 
-We use four metrics for latency evaluation
+We use three metrics for latency evaluation
 
 - `StartOffset`: The starting offset of translation comparing with source audio
 - `EndOffset`: The ending offset of translation comparing with source audio
-- `AL_SpeechAlign_BOW`: compute average lagging (AL) on transcribed text, and use the beginning of the aligned word as the delay to compute AL. This feature requires `mfa`.
 - `ATD`: Average Token Delay
 
 The results of the evaluation should be as following. The transcripts and alignments can be found in the `output` directory.
 
 ```
- ASR_BLEU  StartOffset  EndOffset  AL_SpeechAlign_BOW      ATD
-   80.911       1000.0   1490.703             973.565 1247.831
+ WHISPER_ASR_BLEU  StartOffset  EndOffset      ATD
+            100.0       1000.0   1490.703 1248.261
 ```

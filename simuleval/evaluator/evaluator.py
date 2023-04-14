@@ -123,7 +123,7 @@ class SentenceLevelEvaluator(object):
 
         self.build_instances()
 
-        if not self.args.no_progress_bar:
+        if not self.args.no_progress_bar and not self.score_only:
             self.instance_iterator = tqdm(
                 self.instances.values(),
                 initial=self.start_index,

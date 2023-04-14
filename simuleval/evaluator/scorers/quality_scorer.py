@@ -4,12 +4,15 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
+import re
 import logging
 import sacrebleu
 from pathlib import Path
 from typing import Dict
 from sacrebleu.metrics.bleu import BLEU
 import subprocess
+import string
+import tqdm
 
 QUALITY_SCORERS_DICT = {}
 
@@ -188,3 +191,141 @@ class ASRSacreBLEUScorer(QualityScorer):
     @classmethod
     def from_args(cls, args):
         return cls(args.sacrebleu_tokenizer, args.target_speech_lang)
+
+
+PUNCTUATIONS_EXCLUDE_APOSTROPHE = (
+    string.punctuation.replace("'", "") + "¡¨«°³º»¿‘“”…♪♫ˆᵉ™，ʾ˚"
+)
+PUNCTUATIONS_TO_SPACE = "-/–·—•"
+
+
+def remove_punctuations(text, punctuations=string.punctuation):
+    text = text.translate(
+        str.maketrans(PUNCTUATIONS_TO_SPACE, " " * len(PUNCTUATIONS_TO_SPACE))
+    )
+    return text.translate(str.maketrans("", "", punctuations))
+
+
+@register_quality_scorer("WHISPER_ASR_BLEU")
+class WhisperASRSacreBLEUScorer(QualityScorer):
+    """
+    Whisper ASR + SacreBLEU Scorer with whisper model
+
+    Usage:
+        :code:`--quality-metrics ASR_BLEU`
+
+    Additional command line arguments:
+
+    .. argparse::
+        :ref: simuleval.evaluator.scorers.quality_scorer.add_sacrebleu_args
+        :passparser:
+        :prog:
+    """
+
+    def __init__(
+        self,
+        tokenizer: str = "13a",
+        target_lang: str = "en",
+        model_size: str = "base",
+        lowercase: bool = False,
+        remove_punctuations: bool = False,
+    ) -> None:
+        super().__init__()
+        self.logger = logging.getLogger("simuleval.scorer.whisper_asr_bleu")
+        self.tokenizer = tokenizer
+        self.target_lang = target_lang
+        self.model_size = model_size
+        self.lowercase = lowercase
+        self.remove_punctuations = remove_punctuations
+
+    def __call__(self, instances: Dict) -> float:
+        transcripts = self.asr_transcribe(instances)
+        score = (
+            BLEU(tokenize=self.tokenizer)
+            .corpus_score(
+                transcripts,
+                [[ins.reference for ins in instances.values()]],
+            )
+            .score
+        )
+        return score
+
+    def asr_transcribe(self, instances):
+        self.logger.info(
+            "Evaluating speech output by ASR BLEU. whisper and sacrebleu are required."
+        )
+        self.logger.info("Configs:")
+        self.logger.info(f"tokenizer = {self.tokenizer}")
+        self.logger.info(f"target_lang = {self.target_lang}")
+        self.logger.info(f"model_size = {self.model_size}")
+        self.logger.info(f"lowercase = {self.lowercase}")
+        self.logger.info(f"remove_punctuations = {self.remove_punctuations}")
+        try:
+            import whisper
+        except Exception:
+            self.logger.warn("Please install whisper.")
+            return ["" for _ in instances.keys()]
+
+        model = whisper.load_model(self.model_size)
+        wav_dir = Path(instances[0].prediction).absolute().parent
+
+        transcripts = []
+        for index in tqdm.tqdm(instances.keys()):
+            wav_path = wav_dir / f"{index}_pred.wav"
+            if wav_path.exists():
+                result = model.transcribe(
+                    wav_path.as_posix(), language=self.target_lang
+                )
+                text = result["text"]
+                assert type(text) == str
+                if self.lowercase:
+                    text = text.lower()
+                if self.remove_punctuations:
+                    text = remove_punctuations(text)
+                transcripts.append(text.strip())
+            else:
+                transcripts.append("")
+
+        root_dir = wav_dir.parent
+        transcripts_path = root_dir / "asr_transcripts.txt"
+        with open(transcripts_path, "w") as f:
+            for line in transcripts:
+                f.write(line + "\n")
+
+        return transcripts
+
+    @staticmethod
+    def add_args(parser):
+        add_sacrebleu_args(parser)
+        parser.add_argument(
+            "--target-speech-lang",
+            type=str,
+            default="en",
+            help="The language of target speech",
+        )
+        parser.add_argument(
+            "--whisper-model-size",
+            type=str,
+            default="large",
+            help="The size of whisper asr model",
+        )
+        parser.add_argument(
+            "--transcript-lowercase",
+            action="store_true",
+            help="Lowercase the whisper output",
+        )
+        parser.add_argument(
+            "--transcript-non-punctuation",
+            action="store_true",
+            help="Remove punctuations in the whisper output",
+        )
+
+    @classmethod
+    def from_args(cls, args):
+        return cls(
+            args.sacrebleu_tokenizer,
+            args.target_speech_lang,
+            args.whisper_model_size,
+            args.transcript_lowercase,
+            args.transcript_non_punctuation,
+        )
