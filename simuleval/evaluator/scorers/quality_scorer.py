@@ -10,6 +10,8 @@ from pathlib import Path
 from typing import Dict
 from sacrebleu.metrics.bleu import BLEU
 import subprocess
+import editdistance
+from simuleval.evaluator.scorers.tokenizer import EvaluationTokenizer
 
 QUALITY_SCORERS_DICT = {}
 
@@ -34,6 +36,27 @@ class QualityScorer:
         pass
 
 
+def add_wer_args(parser):
+    parser.add_argument(
+        "--lowercase",
+        action="store_true",
+        default=False,
+        help="Lowercasing",
+    )
+    parser.add_argument(
+        "--remove-punct",
+        action="store_true",
+        default=False,
+        help="Remove puncturaiton marks",
+    )
+    parser.add_argument(
+        "--char-level",
+        action="store_true",
+        default=False,
+        help="Character-level evaluation",
+    )
+
+
 def add_sacrebleu_args(parser):
     parser.add_argument(
         "--sacrebleu-tokenizer",
@@ -42,6 +65,68 @@ def add_sacrebleu_args(parser):
         choices=sacrebleu.metrics.METRICS["BLEU"].TOKENIZERS,
         help="Tokenizer in sacrebleu",
     )
+
+
+@register_quality_scorer("WER")
+class WERScorer(QualityScorer):
+    """
+    WER Scorer
+
+    Usage:
+        :code:`--quality-metrics WER`
+
+    Additional command line arguments:
+
+    .. argparse::
+        :ref: simuleval.evaluator.scorers.quality_scorer.add_wer_args
+        :passparser:
+        :prog:
+    """
+
+    def __init__(
+        self,
+        tokenizer: str = "13a",
+        lowercase: bool = False,
+        remove_punct: bool = False,
+        char_level: bool = False,
+    ) -> None:
+        super().__init__()
+        self.logger = logging.getLogger("simuleval.scorer.wer")
+        self.tokenizer = EvaluationTokenizer(
+            tokenizer_type=tokenizer,
+            lowercase=lowercase,
+            punctuation_removal=remove_punct,
+            character_tokenization=char_level,
+        )
+
+    def __call__(self, instances: Dict) -> float:
+        try:
+            hyps = [
+                self.tokenizer.tokenize(ins.prediction) for ins in instances.values()
+            ]
+            refs = [
+                self.tokenizer.tokenize(ins.reference) for ins in instances.values()
+            ]
+            err_rates = (
+                sum([editdistance.eval(hyp, ref) for hyp, ref in zip(hyps, refs)])
+                * 100
+                / sum([len(ref) for ref in refs])
+            )
+            return err_rates
+        except Exception as e:
+            self.logger.error(str(e))
+            return 0
+
+    @staticmethod
+    def add_args(parser):
+        add_wer_args(parser)
+        add_sacrebleu_args(parser)
+
+    @classmethod
+    def from_args(cls, args):
+        return cls(
+            args.sacrebleu_tokenizer, args.lowercase, args.remove_punct, args.char_level
+        )
 
 
 @register_quality_scorer("BLEU")
