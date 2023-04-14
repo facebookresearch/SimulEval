@@ -342,6 +342,7 @@ class SpeechOutputInstance(Instance):
         # start from the first segment offset
         start = prev_end = self.delays[0]
         self.intervals = []
+        self.silences = []
 
         for i, delay in enumerate(self.delays):
             start = max(prev_end, delay)
@@ -351,6 +352,8 @@ class SpeechOutputInstance(Instance):
                 samples += [0.0] * int(
                     self.target_sample_rate * (start - prev_end) / 1000
                 )
+                self.silences.append(start - prev_end)
+
             samples += self.prediction_list[i]
             duration = self.durations[i]
             prev_end = start + duration

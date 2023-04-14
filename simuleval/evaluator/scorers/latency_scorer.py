@@ -18,6 +18,7 @@ from simuleval.evaluator.instance import (
     SpeechOutputInstance,
     Instance,
     LogInstance,
+    SpeechOutputInstance,
 )
 from argparse import ArgumentParser, Namespace
 from subprocess import Popen, PIPE
@@ -53,6 +54,26 @@ class LatencyScorer:
     def compute(self, *args):
         raise NotImplementedError
 
+    def get_delays_lengths(self, ins: Instance):
+        """
+        Args:
+            ins Instance: one instance
+
+        Returns:
+            A tuple with the 3 elements:
+            delays (List[Union[float, int]]): Sequence of delays.
+            src_len (Union[float, int]): Length of source sequence.
+            tgt_len (Union[float, int]): Length of target sequence.
+        """
+        delays = getattr(ins, self.timestamp_type, None)
+
+        if not self.use_ref_len or ins.reference is None:
+            tgt_len = len(delays)
+        else:
+            tgt_len = ins.reference_length
+        src_len = ins.source_length
+        return delays, src_len, tgt_len
+
     def __call__(self, instances: Dict[int, Instance]) -> float:
         scores = []
         for index, ins in instances.items():
@@ -66,16 +87,7 @@ class LatencyScorer:
                 logger.warn(f"Instance {index} has no delay information. Skipped")
                 continue
 
-            if not self.use_ref_len or ins.reference is None:
-                tgt_len = len(delays)
-            else:
-                tgt_len = ins.reference_length
-
-            if self.add_duration and isinstance(ins, SpeechOutputInstance):
-                delays = [start + duration for start, duration in ins.intervals]
-
-            src_len = ins.source_length
-            scores.append(self.compute(delays, src_len, tgt_len))
+            scores.append(self.compute(ins))
 
         return mean(scores)
 
@@ -115,23 +127,17 @@ class ALScorer(LatencyScorer):
         ----latency-metrics AL
     """  # noqa: E501
 
-    def compute(
-        self,
-        delays: List[Union[float, int]],
-        source_length: Union[float, int],
-        target_length: Union[float, int],
-    ):
+    def compute(self, ins: Instance):
         """
         Function to compute latency on one sentence (instance).
 
         Args:
-            delays (List[Union[float, int]]): Sequence of delays.
-            source_length (Union[float, int]): Length of source sequence.
-            target_length (Union[float, int]): Length of target sequence.
+            ins Instance: one instance
 
         Returns:
             float: the latency score on one sentence.
         """
+        delays, source_length, target_length = self.get_delays_lengths(ins)
 
         if delays[0] > source_length:
             return delays[0]
@@ -181,24 +187,17 @@ class LAALScorer(ALScorer):
         ----latency-metrics LAAL
     """
 
-    def compute(
-        self,
-        delays: List[Union[float, int]],
-        source_length: Union[float, int],
-        target_length: Union[float, int],
-    ):
+    def compute(self, ins: Instance):
         """
         Function to compute latency on one sentence (instance).
 
         Args:
-            delays (List[Union[float, int]]): Sequence of delays.
-            source_length (Union[float, int]): Length of source sequence.
-            target_length (Union[float, int]): Length of target sequence.
+            ins: Instance: one instance
 
         Returns:
             float: the latency score on one sentence.
         """
-
+        delays, source_length, target_length = self.get_delays_lengths(ins)
         if delays[0] > source_length:
             return delays[0]
 
@@ -232,23 +231,17 @@ class APScorer(LatencyScorer):
         ----latency-metrics AP
     """
 
-    def compute(
-        self,
-        delays: List[Union[float, int]],
-        source_length: Union[float, int],
-        target_length: Union[float, int],
-    ) -> float:
+    def compute(self, ins: Instance) -> float:
         """
         Function to compute latency on one sentence (instance).
 
         Args:
-            delays (List[Union[float, int]]): Sequence of delays.
-            source_length (Union[float, int]): Length of source sequence.
-            target_length (Union[float, int]): Length of target sequence.
+            ins Instance: one instance
 
         Returns:
             float: the latency score on one sentence.
         """
+        delays, source_length, target_length = self.get_delays_lengths(ins)
         return sum(delays) / (source_length * target_length)
 
 
@@ -263,23 +256,18 @@ class DALScorer(LatencyScorer):
         ----latency-metrics DAL
     """
 
-    def compute(
-        self,
-        delays: List[Union[float, int]],
-        source_length: Union[float, int],
-        target_length: Union[float, int],
-    ):
+    def compute(self, ins: Instance):
         """
         Function to compute latency on one sentence (instance).
 
         Args:
-            delays (List[Union[float, int]]): Sequence of delays.
-            source_length (Union[float, int]): Length of source sequence.
-            target_length (Union[float, int]): Length of target sequence.
+            ins Instance: one instance
 
         Returns:
             float: the latency score on one sentence.
         """
+        delays, source_length, target_length = self.get_delays_lengths(ins)
+
         DAL = 0
         target_length = len(delays)
         gamma = target_length / source_length
@@ -485,6 +473,64 @@ class ATDScorer(LatencyScorer):
         return float(mean(atd_delays))
 
 
+@register_latency_scorer("NumChunks")
+class NumChunksScorer(LatencyScorer):
+    """Number of chunks (of speech/text) in output
+
+    Usage:
+        ----latency-metrics NumChunks
+
+    """
+
+    def compute(self, ins: Instance):
+        delays, _, _ = self.get_delays_lengths(ins)
+        return len(delays)
+
+
+@register_latency_scorer("DiscontinuitySum")
+class DiscontinuitySumScorer(LatencyScorer):
+    """Sum of discontinuity in speech output
+
+    Usage:
+        ----latency-metrics DiscontinuitySum
+
+    """
+
+    def compute(self, ins: Instance):
+        assert isinstance(ins, SpeechOutputInstance)
+        return sum(ins.silences)
+
+
+@register_latency_scorer("DiscontinuityAve")
+class DiscontinuityAveScorer(LatencyScorer):
+    """Average of discontinuities in speech output
+
+    Usage:
+        ----latency-metrics DiscontinuityAve
+
+    """
+
+    def compute(self, ins: Instance):
+        assert isinstance(ins, SpeechOutputInstance)
+        if len(ins.silences) == 0:
+            return 0
+        return sum(ins.silences) / len(ins.silences)
+
+
+@register_latency_scorer("DiscontinuityNum")
+class DiscontinuityNumScorer(LatencyScorer):
+    """Number of discontinuities in speech output
+
+    Usage:
+        ----latency-metrics DiscontinuityNum
+
+    """
+
+    def compute(self, ins: Instance):
+        assert isinstance(ins, SpeechOutputInstance)
+        return len(ins.silences)
+
+
 @register_latency_scorer("StartOffset")
 class StartOffsetScorer(LatencyScorer):
     """Starting offset of the translation
@@ -494,12 +540,10 @@ class StartOffsetScorer(LatencyScorer):
 
     """
 
-    def compute(
-        self,
-        delays: List[Union[float, int]],
-        source_length: Union[float, int],
-        target_length: Union[float, int],
-    ):
+    def compute(self, ins: Instance):
+        delays, _, _ = self.get_delays_lengths(ins)
+        if isinstance(ins, SpeechOutputInstance):
+            delays = [start + duration for start, duration in ins.intervals]
         return delays[0]
 
 
@@ -512,14 +556,11 @@ class EndOffsetScorer(LatencyScorer):
 
     """
 
-    add_duration = True
-
-    def compute(
-        self,
-        delays: List[Union[float, int]],
-        source_length: Union[float, int],
-        target_length: Union[float, int],
-    ):
+    def compute(self, ins: Instance):
+        delays, source_length, _ = self.get_delays_lengths(ins)
+        if isinstance(ins, SpeechOutputInstance):
+            delays = [start + duration for start, duration in ins.intervals]
+        assert delays
         return delays[-1] - source_length
 
 
@@ -532,12 +573,10 @@ class RTFScorer(LatencyScorer):
 
     """
 
-    def compute(
-        self,
-        delays: List[Union[float, int]],
-        source_length: Union[float, int],
-        target_length: Union[float, int],
-    ):
+    def compute(self, ins: Instance):
+        delays, source_length, _ = self.get_delays_lengths(ins)
+        if isinstance(ins, SpeechOutputInstance):
+            delays = [start + duration for start, duration in ins.intervals]
         return delays[-1] / source_length
 
 
