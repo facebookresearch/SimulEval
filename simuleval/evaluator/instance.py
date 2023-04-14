@@ -437,3 +437,4 @@ class LogInstance:
         )  # ToDo: temporary solution, make it configurable
         self.source_length = self.info.get("source_length")  # just for testing!
         self.finish_prediction = True
+        self.metrics = {}
