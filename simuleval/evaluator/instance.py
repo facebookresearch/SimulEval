@@ -130,7 +130,6 @@ class Instance(object):
             "reference": self.reference,
             "source": self.source_info,
             "source_length": self.source_length,
-            "metric": self.metrics,
         }
 
     @classmethod

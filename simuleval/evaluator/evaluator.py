@@ -202,6 +202,12 @@ class SentenceLevelEvaluator(object):
         logger.info("Results:")
         print(results.to_string(index=False))
 
+    def dump_metrics(self) -> None:
+        metrics = pandas.DataFrame([ins.metrics for ins in self.instances.values()])
+        metrics = metrics.round(3)
+        if self.output:
+            metrics.to_csv(self.output / "metrics.tsv", sep="\t", index=False)
+
     def __call__(self, system):
         for instance in self.instance_iterator:
             system.reset()
@@ -213,6 +219,7 @@ class SentenceLevelEvaluator(object):
                 self.write_log(instance)
 
         self.dump_results()
+        self.dump_metrics()
 
     @classmethod
     def from_args(cls, args):
