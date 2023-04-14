@@ -26,11 +26,13 @@ from subprocess import Popen, PIPE
 logger = logging.getLogger("simuleval.latency_scorer")
 
 LATENCY_SCORERS_DICT = {}
+LATENCY_SCORERS_NAME_DICT = {}
 
 
 def register_latency_scorer(name):
     def register(cls):
         LATENCY_SCORERS_DICT[name] = cls
+        LATENCY_SCORERS_NAME_DICT[cls.__name__] = name
         return cls
 
     return register
@@ -75,6 +77,10 @@ class LatencyScorer:
         src_len = ins.source_length
         return delays, src_len, tgt_len
 
+    @property
+    def metric_name(self) -> str:
+        return LATENCY_SCORERS_NAME_DICT[self.__class__.__name__]
+
     def __call__(self, instances: Dict[int, Instance]) -> float:
         scores = []
         for index, ins in instances.items():
@@ -87,8 +93,9 @@ class LatencyScorer:
             if delays is None or len(delays) == 0:
                 logger.warn(f"Instance {index} has no delay information. Skipped")
                 continue
-
-            scores.append(self.compute(ins))
+            score = self.compute(ins)
+            ins.metrics[self.metric_name] = score
+            scores.append(score)
 
         return mean(scores)
 

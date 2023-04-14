@@ -130,7 +130,6 @@ class Instance(object):
             "reference": self.reference,
             "source": self.source_info,
             "source_length": self.source_length,
-            "metric": self.metrics,
         }
 
     @classmethod
@@ -438,3 +437,4 @@ class LogInstance:
         )  # ToDo: temporary solution, make it configurable
         self.source_length = self.info.get("source_length")  # just for testing!
         self.finish_prediction = True
+        self.metrics = {}
