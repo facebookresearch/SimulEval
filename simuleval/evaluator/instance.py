@@ -321,6 +321,7 @@ class SpeechOutputInstance(Instance):
         super().__init__(index, dataloader, args)
         self.prediction_time = 0
         self.durations = []
+        self.intervals = []
         self.target_sample_rate = -1
         self.dataloader: SpeechToTextDataloader  # For now we only support speech input.
         assert IS_IMPORT_SOUNDFILE, "Please make sure soundfile is properly installed."

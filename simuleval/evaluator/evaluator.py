@@ -123,7 +123,7 @@ class SentenceLevelEvaluator(object):
 
         self.build_instances()
 
-        if not self.args.no_progress_bar:
+        if not self.args.no_progress_bar and not self.score_only:
             self.instance_iterator = tqdm(
                 self.instances.values(),
                 initial=self.start_index,
@@ -224,9 +224,7 @@ class SentenceLevelEvaluator(object):
         latency_scorers = {}
         use_ref_len = not args.no_use_ref_len
         for name in args.latency_metrics:
-            latency_scorers[name] = get_scorer_class("latency", name)(
-                use_ref_len=use_ref_len
-            )
+            latency_scorers[name] = get_scorer_class("latency", name).from_args(args)
             if args.computation_aware:
                 latency_scorers[name + "_CA"] = get_scorer_class("latency", name)(
                     computation_aware=True, use_ref_len=use_ref_len

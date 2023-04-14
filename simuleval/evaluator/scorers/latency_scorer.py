@@ -15,11 +15,13 @@ from typing import List, Union, Dict
 from simuleval.evaluator.instance import (
     TextInputInstance,
     TextOutputInstance,
+    SpeechOutputInstance,
     Instance,
     LogInstance,
     SpeechOutputInstance,
 )
-from argparse import ArgumentParser
+from argparse import ArgumentParser, Namespace
+from subprocess import Popen, PIPE
 
 logger = logging.getLogger("simuleval.latency_scorer")
 
@@ -36,6 +38,7 @@ def register_latency_scorer(name):
 
 class LatencyScorer:
     metric = None
+    add_duration = False
 
     def __init__(
         self, computation_aware: bool = False, use_ref_len: bool = True
@@ -63,6 +66,7 @@ class LatencyScorer:
             tgt_len (Union[float, int]): Length of target sequence.
         """
         delays = getattr(ins, self.timestamp_type, None)
+        assert delays
 
         if not self.use_ref_len or ins.reference is None:
             tgt_len = len(delays)
@@ -91,6 +95,13 @@ class LatencyScorer:
     @staticmethod
     def add_args(parser: ArgumentParser):
         pass
+
+    @classmethod
+    def from_args(cls, args: Namespace):
+        return cls(
+            computation_aware=args.computation_aware,
+            use_ref_len=not args.no_use_ref_len,
+        )
 
 
 @register_latency_scorer("AL")
@@ -358,7 +369,7 @@ class ATDScorer(LatencyScorer):
                 chunk_compute_times = []
                 prev_delay = None
                 for delay, compute_time, duration in zip(
-                    delays, compute_times, ins.duration
+                    delays, compute_times, ins.durations
                 ):
                     if delay != prev_delay:
                         chunk_durations.append(duration)
@@ -369,7 +380,7 @@ class ATDScorer(LatencyScorer):
                     prev_delay = delay
                 for i, chunk_duration in enumerate(chunk_durations, 1):
                     num_tokens, rest = divmod(chunk_duration, TGT_TOKEN_LEN)
-                    token_lens = num_tokens * [TGT_TOKEN_LEN] + (
+                    token_lens = int(num_tokens) * [TGT_TOKEN_LEN] + (
                         [rest] if rest != 0 else []
                     )
                     tgt_token_lens += token_lens
@@ -532,8 +543,6 @@ class StartOffsetScorer(LatencyScorer):
 
     def compute(self, ins: Instance):
         delays, _, _ = self.get_delays_lengths(ins)
-        if isinstance(ins, SpeechOutputInstance):
-            delays = [start + duration for start, duration in ins.intervals]
         return delays[0]
 
 
@@ -571,13 +580,13 @@ class RTFScorer(LatencyScorer):
 
 def speechoutput_alignment_latency_scorer(scorer_class):  # noqa C901
     class Klass(scorer_class):
-        def __init__(self) -> None:
+        def __init__(self, **kargs) -> None:
             assert getattr(self, "boundary_type", None) in [
                 "BOW",
                 "EOW",
                 "COW",
             ], self.boundary_type
-            super().__init__()
+            super().__init__(**kargs)
             if self.computation_aware:
                 raise RuntimeError(
                     "The computation aware latency for speech output is not supported yet"
@@ -593,10 +602,12 @@ def speechoutput_alignment_latency_scorer(scorer_class):  # noqa C901
 
         def prepare_alignment(self, instances):
             try:
-                subprocess.check_output("mfa", shell=True, stderr=subprocess.STDOUT)
+                subprocess.check_output(
+                    "mfa version", shell=True, stderr=subprocess.STDOUT
+                )
             except subprocess.CalledProcessError as grepexc:
                 logger.error(grepexc.output.decode("utf-8").strip())
-                logger.error("Please make sure the mfa is correctly installed.")
+                logger.error("Please make sure the mfa>=2.0.6 is correctly installed. ")
                 sys.exit(1)
 
             output_dir = Path(instances[0].prediction).absolute().parent.parent
