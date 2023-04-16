@@ -359,12 +359,10 @@ class SpeechOutputInstance(Instance):
                 duration = self.durations[i]
                 prev_end = start + duration
                 self.intervals.append([start, duration])
+                soundfile.write(self.wav_path, samples, self.target_sample_rate)
         else:
             # For empty prediction
             prediction_offset = self.source_length
-            samples = [0.0] * 1000
-
-        soundfile.write(self.wav_path, samples, self.target_sample_rate)
 
         return {
             "index": self.index,
