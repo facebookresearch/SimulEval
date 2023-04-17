@@ -338,34 +338,38 @@ class SpeechOutputInstance(Instance):
 
     def summarize(self):
         samples = []
-        # start from the first segment offset
-        start = prev_end = self.delays[0]
         self.intervals = []
         self.silences = []
 
-        for i, delay in enumerate(self.delays):
-            start = max(prev_end, delay)
+        if len(self.prediction_list) > 0:
+            # start from the first segment offset
+            start = prev_end = prediction_offset = self.delays[0]
 
-            if start > prev_end:
-                # Wait source speech, add discontinuity with silence
-                samples += [0.0] * int(
-                    self.target_sample_rate * (start - prev_end) / 1000
-                )
-                self.silences.append(start - prev_end)
+            for i, delay in enumerate(self.delays):
+                start = max(prev_end, delay)
 
-            samples += self.prediction_list[i]
-            duration = self.durations[i]
-            prev_end = start + duration
-            self.intervals.append([start, duration])
+                if start > prev_end:
+                    # Wait source speech, add discontinuity with silence
+                    samples += [0.0] * int(
+                        self.target_sample_rate * (start - prev_end) / 1000
+                    )
+                    self.silences.append(start - prev_end)
 
-        soundfile.write(self.wav_path, samples, self.target_sample_rate)
+                samples += self.prediction_list[i]
+                duration = self.durations[i]
+                prev_end = start + duration
+                self.intervals.append([start, duration])
+                soundfile.write(self.wav_path, samples, self.target_sample_rate)
+        else:
+            # For empty prediction
+            prediction_offset = self.source_length
 
         return {
             "index": self.index,
             "prediction": self.wav_path.as_posix(),
             "delays": self.delays,
             "durations": self.durations,
-            "prediction_offset": self.delays[0],
+            "prediction_offset": prediction_offset,
             "elapsed": [],
             "intervals": self.intervals,
             "prediction_length": len(samples) / self.target_sample_rate,
