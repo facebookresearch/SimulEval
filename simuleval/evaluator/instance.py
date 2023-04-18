@@ -324,6 +324,7 @@ class SpeechOutputInstance(Instance):
         self.target_sample_rate = -1
         self.dataloader: SpeechToTextDataloader  # For now we only support speech input.
         assert IS_IMPORT_SOUNDFILE, "Please make sure soundfile is properly installed."
+        assert self.args.output is not None, "'output' is needed for speech output"
 
     @property
     def wav_path(self):
@@ -359,7 +360,7 @@ class SpeechOutputInstance(Instance):
                 duration = self.durations[i]
                 prev_end = start + duration
                 self.intervals.append([start, duration])
-                soundfile.write(self.wav_path, samples, self.target_sample_rate)
+            soundfile.write(self.wav_path, samples, self.target_sample_rate)
         else:
             # For empty prediction
             prediction_offset = self.source_length
@@ -408,7 +409,10 @@ class SpeechOutputInstance(Instance):
         self.elapsed.append(self.step_to_elapsed(self.step, current_time))
         self.delays.append(self.step_to_delay(self.step))
 
+        if self.finish_prediction:
+            self.summarize()
 
+            
 class SpeechToTextInstance(SpeechInputInstance, TextOutputInstance):
     pass
 
