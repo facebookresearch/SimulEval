@@ -412,7 +412,7 @@ class SpeechOutputInstance(Instance):
         if self.finish_prediction:
             self.summarize()
 
-            
+
 class SpeechToTextInstance(SpeechInputInstance, TextOutputInstance):
     pass
 
