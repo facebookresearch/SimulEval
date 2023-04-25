@@ -564,7 +564,9 @@ class EndOffsetScorer(LatencyScorer):
 
     def compute(self, ins: Instance):
         delays, source_length, _ = self.get_delays_lengths(ins)
-        if isinstance(ins, SpeechOutputInstance):
+        if isinstance(ins, SpeechOutputInstance) or (
+            isinstance(ins, LogInstance) and len(ins.intervals) > 0
+        ):
             delays = [start + duration for start, duration in ins.intervals]
         return delays[-1] - source_length
 

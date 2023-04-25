@@ -427,6 +427,7 @@ INSTANCE_TYPE_DICT = {
 class LogInstance:
     def __init__(self, info: str) -> None:
         self.info = json.loads(info.strip())
+        self.intervals = []
         for key, value in self.info.items():
             setattr(self, key, value)
 
