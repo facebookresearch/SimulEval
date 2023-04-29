@@ -160,7 +160,7 @@ class GenericAgent:
     def from_args(cls, args):
         return cls(args)
 
-    def to(self, device: str) -> None:
+    def to(self, device: str, *args, **kwargs) -> None:
         """
         Move agent to specified device.
 
