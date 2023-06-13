@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Union
 from argparse import Namespace, ArgumentParser
 
 SUPPORTED_MEDIUM = ["text", "speech"]
-SUPPORTED_SOURCE_MEDIUM = ["text", "speech"]
+SUPPORTED_SOURCE_MEDIUM = ["youtube", "text", "speech"]
 SUPPORTED_TARGET_MEDIUM = ["text", "speech"]
 DATALOADER_DICT = {}
 

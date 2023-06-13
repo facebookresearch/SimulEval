@@ -237,6 +237,7 @@ class SpeechInputInstance(Instance):
         super().__init__(index, dataloader, args)
         self.sample_rate_value = None
         self.sample_list = None
+        self.source_finished_reading = False
         self.dataloader: SpeechToTextDataloader
 
     @property
@@ -269,6 +270,7 @@ class SpeechInputInstance(Instance):
                 # are more than available samples.
                 samples = self.samples[self.step :]  # noqa E203
                 is_finished = True
+                self.source_finished_reading = True
             else:
                 samples = self.samples[self.step : self.step + num_samples]  # noqa E203
                 is_finished = False
@@ -288,6 +290,7 @@ class SpeechInputInstance(Instance):
                 index=self.len_sample_to_ms(self.step),
                 finished=True,
             )
+            self.source_finished_reading = True
 
         return segment
 
@@ -386,7 +389,7 @@ class SpeechOutputInstance(Instance):
         if self.start_time is None:
             self.start_time = time.time()
 
-        if self.finish_prediction:
+        if self.finish_prediction and self.source_finished_reading:
             return
 
         self.finish_prediction = segment.finished
@@ -429,6 +432,8 @@ INSTANCE_TYPE_DICT = {
     "speech-text": SpeechToTextInstance,
     "text-text": TextToTextInstance,
     "speech-speech": SpeechToSpeechInstance,
+    "youtube-text": SpeechToTextInstance,
+    "youtube-speech": SpeechToSpeechInstance,
 }
 
 
