@@ -12,7 +12,6 @@ from simuleval.data.dataloader import register_dataloader
 from argparse import Namespace
 from urllib.parse import urlparse, parse_qs
 import yt_dlp as youtube_dl
-from pydub import AudioSegment
 
 
 try:
