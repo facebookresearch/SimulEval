@@ -217,9 +217,9 @@ class SentenceLevelEvaluator(object):
                 instance.receive_prediction(output_segment)
                 if instance.finish_prediction:
                     # if instance.finish_prediction where set by the reader,
-                    # source_finished_reading will be set as well. If it is 
+                    # source_finished_reading will be set as well. If it is
                     # set by any of the intermediate components, then we didn't
-                    # end yet. We are going to clear the state and continue 
+                    # end yet. We are going to clear the state and continue
                     # processing the rest of the input.
                     system.reset()
 

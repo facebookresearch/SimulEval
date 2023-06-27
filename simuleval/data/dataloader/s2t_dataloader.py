@@ -12,7 +12,7 @@ from simuleval.data.dataloader import register_dataloader
 from argparse import Namespace
 from urllib.parse import urlparse, parse_qs
 import yt_dlp as youtube_dl
-
+from pydub import AudioSegment
 
 try:
     import soundfile
@@ -37,13 +37,15 @@ def download_youtube_video(url):
 
     if not Path(name).exists():
         ydl_opts = {
-            'format': 'bestaudio/best',
-            'postprocessors': [{
-                'key': 'FFmpegExtractAudio',
-                'preferredcodec': 'wav',
-                'preferredquality': '192',
-            }],
-            'outtmpl': id,  # name the file "downloaded_video" with original extension
+            "format": "bestaudio/best",
+            "postprocessors": [
+                {
+                    "key": "FFmpegExtractAudio",
+                    "preferredcodec": "wav",
+                    "preferredquality": "192",
+                }
+            ],
+            "outtmpl": id,  # name the file "downloaded_video" with original extension
         }
         with youtube_dl.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
