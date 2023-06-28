@@ -208,10 +208,15 @@ class SentenceLevelEvaluator(object):
         if self.output:
             metrics.to_csv(self.output / "metrics.tsv", sep="\t", index=False)
 
+    def is_finished(self, instance) -> bool:
+        if hasattr(instance, "source_finished_reading"):
+            return instance.source_finished_reading
+        return instance.finish_prediction
+
     def __call__(self, system):
         system.reset()
         for instance in self.instance_iterator:
-            while not instance.source_finished_reading:
+            while not self.is_finished(instance):
                 input_segment = instance.send_source(self.source_segment_size)
                 output_segment = system.pushpop(input_segment)
                 instance.receive_prediction(output_segment)
