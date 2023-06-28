@@ -389,7 +389,9 @@ class SpeechOutputInstance(Instance):
         if self.start_time is None:
             self.start_time = time.time()
 
-        if self.finish_prediction and self.source_finished_reading:
+        if self.finish_prediction and (
+            not hasattr(self, "source_finished_reading") or self.source_finished_reading
+        ):
             return
 
         self.finish_prediction = segment.finished
