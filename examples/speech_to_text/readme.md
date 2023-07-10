@@ -1,10 +1,10 @@
-## Simultaneous Speech-to-Speech Translation
+## Simultaneous Speech-to-Text Translation
 
 This tutorial provides a minimal example on how to evaluate a simultaneous speech-to-text translation system.
 
 ### Agent
 
-The speech-to-speech agent ([english_counter_agent.py](english_counter_agent.py)) in this example is a counter, which generates number of seconds in text, after waiting for `self.wait_seconds` seconds. The policy finishes when the source is finished.
+The speech-to-text agent ([english_counter_agent.py](english_counter_agent.py)) in this example is a counter, which generates number of seconds in text, after waiting for `self.wait_seconds` seconds. The policy finishes when the source is finished.
 
 ```python
 def policy(self):
