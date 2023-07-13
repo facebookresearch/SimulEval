@@ -17,17 +17,18 @@ ROOT_PATH = Path(__file__).parents[2]
 
 
 def test_s2t(root_path=ROOT_PATH):
-    print(root_path)
+    args_path = Path.joinpath(root_path, "examples", "speech_to_text")
+    os.chdir(args_path)
     with tempfile.TemporaryDirectory() as tmpdirname:
         cli.sys.argv[1:] = [
             "--agent",
-            os.path.join(root_path, "examples", "speech_to_text", "english_counter_agent.py"),
+            os.path.join("english_counter_agent.py"),
             "--source-segment-size",
             "1000",
             "--source",
-            os.path.join(root_path, "examples", "speech_to_text", "source.txt"),
+            os.path.join("source.txt"),
             "--target",
-            os.path.join(root_path, "examples", "speech_to_text", "reference/en.txt"),
+            os.path.join("reference/en.txt"),
             "--output",
             tmpdirname,
         ]
