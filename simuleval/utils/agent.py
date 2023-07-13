@@ -32,9 +32,8 @@ def get_agent_class(config_dict: Optional[dict] = None) -> GenericAgent:
     class_name = check_argument("agent_class", config_dict)
 
     if class_name is not None:
-        if check_argument("agent"):
-            raise RuntimeError("Use either --agent or --agent-class, not both.")
-        EVALUATION_SYSTEM_LIST.append(get_agent_class_from_string(class_name))
+        if not check_argument("agent"):
+            EVALUATION_SYSTEM_LIST.append(get_agent_class_from_string(class_name))
 
     system_dir = check_argument("system_dir")
     config_name = check_argument("system_config")
@@ -51,7 +50,17 @@ def get_agent_class(config_dict: Optional[dict] = None) -> GenericAgent:
             "Please use @entrypoint decorator to indicate the system you want to evaluate."
         )
     if len(EVALUATION_SYSTEM_LIST) > 1:
-        raise RuntimeError("More than one system is not supported right now.")
+        if class_name is None:
+            raise RuntimeError(
+                "--agent-class must be specified if more than one system."
+            )
+        # if both --agent-class and --agent:
+        for system in EVALUATION_SYSTEM_LIST:
+            if f"{system.__module__}.{system.__name__}" == class_name:
+                return system
+        raise RuntimeError(
+            f"--agent-class {class_name} not found in system list: {EVALUATION_SYSTEM_LIST}"
+        )
     return EVALUATION_SYSTEM_LIST[0]
 
 
@@ -72,7 +81,7 @@ def get_agent_class_from_string(class_name: str) -> GenericAgent:
         agent_module = importlib.import_module(".".join(class_name.split(".")[:-1]))
         agent_class = getattr(agent_module, class_name.split(".")[-1])
     except Exception as e:
-        logger.error(f"Not able to load {class_name}.")
+        logger.error(f"Not able to load {class_name}. Try setting --user-dir?")
         raise e
     return agent_class
 
