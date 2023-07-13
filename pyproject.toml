@@ -1,0 +1,46 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "SimulEval_Testing_Package_1"
+version = "1.1.0"
+authors = [
+  { name="Facebook Team", email="mubbysani@gmail.com" },
+]
+description = "A test deployment of the SimulEval package"
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved",
+    "Operating System :: OS Independent",
+    "Development Status :: 4 - Beta",
+]
+
+keywords = [
+    "SimulEval",
+    "Machine Translation",
+    "Evaluation",
+    "Metrics",
+    "BLEU",
+    "TER",
+    "METEOR",
+    "chrF",
+    "RIBES",
+    "WMD",
+    "Embedding Average",
+    "Embedding Extrema",
+    "Embedding Greedy",
+    "Embedding Average",
+    "SimulEval",
+    "SimulEval_Testing_Package_1",
+    "facebookresearch",
+    "facebook",
+    "Meta-Evaluation"]
+
+
+[project.urls]
+"Homepage" = "https://github.com/facebookresearch/SimulEval.git"
+"Documentation" = "https://simuleval.readthedocs.io/en/v1.1.0/quick_start.html"
+# "Bug Tracker" = "https://github.com/pypa/sampleproject/issues"
