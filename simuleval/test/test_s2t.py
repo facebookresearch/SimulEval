@@ -22,13 +22,17 @@ def test_s2t(root_path=ROOT_PATH):
     with tempfile.TemporaryDirectory() as tmpdirname:
         cli.sys.argv[1:] = [
             "--agent",
-            os.path.join("english_counter_agent.py"),
+            os.path.join(root_path, "examples", "speech_to_text", "english_counter_agent.py"),
+            "--user-dir", 
+            os.path.join(root_path, "examples"),
+            "--agent-class",
+            "agents.EnglishSpeechCounter",
             "--source-segment-size",
             "1000",
             "--source",
-            os.path.join("source.txt"),
+            os.path.join(root_path, "examples", "speech_to_text", "source.txt"),
             "--target",
-            os.path.join("reference/en.txt"),
+            os.path.join(root_path, "examples", "speech_to_text", "reference/en.txt"),
             "--output",
             tmpdirname,
         ]
