@@ -110,7 +110,9 @@ SimulEval introduces the agent pipeline to support this function.
 The following is a minimal example.
 We concatenate two wait-k systems with different rates (:code:`k=2` and :code:`k=3`)
 Note that if there are more than one agent class define,
-the :code:`@entrypoint` decorator has to be used to determine the entry point
+the :code:`@entrypoint` decorator has to be used to determine the entry point,
+or `--user-dir` and `--agent-class` must be specified. See `simuleval/test/first_agent.py`
+for an example.
 
 .. literalinclude:: ../../examples/quick_start/agent_pipeline.py
    :language: python
