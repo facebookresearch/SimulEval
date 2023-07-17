@@ -69,3 +69,4 @@ def test_statelss_agent(root_path=ROOT_PATH):
         output_1 = agent_stateless.pushpop(segment, agent_state)
         output_2 = agent_stateful.pushpop(segment)
         assert output_1.content == output_2.content
+        
