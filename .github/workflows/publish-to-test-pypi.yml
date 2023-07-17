@@ -9,7 +9,7 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Set up SimulEval
-      uses: actions/setup-simuleval@v4
+      uses: actions/setup-SimulEval
       with:
         python-version: "3.x"
         
