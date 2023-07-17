@@ -1,5 +1,8 @@
-name: Publisj SimulEval to TestPyPI
+name: Publish SimulEval to TestPyPI
 on: push
+#     branches:
+#       - main # Change this to the branch you want to trigger the action on
+#       # Optionally, you can add other branch filters here as well
 
 jobs:
   build-n-publish:
@@ -7,25 +10,19 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v3
-    - name: Set up SimulEval
-      uses: actions/setup-SimulEval
+    - name: Checkout code
+      uses: actions/checkout@v2
+      
+    - name: Set up Python
+      uses: actions/setup-python@v2
       with:
         python-version: "3.x"
         
     - name: Install pypa/build
-      run: >-
-        python3 -m
-        pip install
-        build
-        --user
+      run: python -m pip install build --user
+      
     - name: Build a binary wheel and a source tarball
-      run: >-
-        python3 -m
-        build
-        --sdist
-        --wheel
-        --outdir dist/
+      run: python -m build --sdist --wheel --outdir dist/
         
     - name: Publish Distribution to Test PyPi
       if: startsWith(github.ref, 'refs/tags')
@@ -33,4 +30,3 @@ jobs:
       with:
         password: ${{ secrets.TEST_PYPI_API_TOKEN }}
         repository-url: https://github.com/SamDewriter/SimulEval
-        
