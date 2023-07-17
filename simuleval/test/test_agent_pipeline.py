@@ -16,7 +16,7 @@ ROOT_PATH = Path(__file__).parents[2]
 
 
 def test_pipeline_cmd(root_path=ROOT_PATH):
-    # NOTE: When importing --agent we use import_file, thus need to specify 
+    # NOTE: When importing --agent we use import_file, thus need to specify
     # --agent-class as agents.DummyPipeline
     cli.sys.argv[1:] = [
         "--agent",

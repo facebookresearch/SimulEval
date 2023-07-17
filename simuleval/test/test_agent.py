@@ -19,7 +19,7 @@ ROOT_PATH = Path(__file__).parents[2]
 def test_agent(root_path=ROOT_PATH):
     with tempfile.TemporaryDirectory() as tmpdirname:
         cli.sys.argv[1:] = [
-            "--user-dir", 
+            "--user-dir",
             os.path.join(root_path, "examples"),
             "--agent-class",
             "examples.quick_start.first_agent.DummyWaitkTextAgent",
