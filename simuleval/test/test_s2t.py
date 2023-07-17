@@ -55,7 +55,10 @@ def test_statelss_agent(root_path=ROOT_PATH):
 
             prediction = f"{length_in_seconds} second"
 
-            return WriteAction(content=prediction, finished=states.source_finished,)
+            return WriteAction(
+                content=prediction,
+                finished=states.source_finished,
+            )
 
     args = None
     agent_stateless = EnglishSpeechCounter.from_args(args)
