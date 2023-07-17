@@ -127,7 +127,7 @@ def general_parser():
     parser.add_argument(
         "--user-dir",
         default=None,
-        help="path to a python module containing custom agents"
+        help="path to a python module containing custom agents",
     )
     args, _ = parser.parse_known_args()
     if args.user_dir is not None:
