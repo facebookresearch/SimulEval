@@ -22,8 +22,10 @@ def test_s2t(root_path=ROOT_PATH):
     with tempfile.TemporaryDirectory() as tmpdirname:
         cli.sys.argv[1:] = [
             "--agent",
-            os.path.join(root_path, "examples", "speech_to_text", "english_counter_agent.py"),
-            "--user-dir", 
+            os.path.join(
+                root_path, "examples", "speech_to_text", "english_counter_agent.py"
+            ),
+            "--user-dir",
             os.path.join(root_path, "examples"),
             "--agent-class",
             "agents.EnglishSpeechCounter",
@@ -42,22 +44,18 @@ def test_s2t(root_path=ROOT_PATH):
 def test_statelss_agent(root_path=ROOT_PATH):
     class EnglishSpeechCounter(SpeechToTextAgent):
         wait_seconds = 3
+
         def policy(self, states=None):
             if states is None:
                 states = self.states
 
-            length_in_seconds = round(
-                len(states.source) / states.source_sample_rate
-            )
+            length_in_seconds = round(len(states.source) / states.source_sample_rate)
             if not states.source_finished and length_in_seconds < self.wait_seconds:
                 return ReadAction()
 
             prediction = f"{length_in_seconds} second"
 
-            return WriteAction(
-                content=prediction,
-                finished=states.source_finished,
-            )
+            return WriteAction(content=prediction, finished=states.source_finished,)
 
     args = None
     agent_stateless = EnglishSpeechCounter.from_args(args)
@@ -68,4 +66,4 @@ def test_statelss_agent(root_path=ROOT_PATH):
         segment = SpeechSegment(0, "A")
         output_1 = agent_stateless.pushpop(segment, agent_state)
         output_2 = agent_stateful.pushpop(segment)
-        assert output_1.content == output_2.content    
+        assert output_1.content == output_2.content
