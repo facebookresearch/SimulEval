@@ -29,7 +29,10 @@ def add_dataloader_args(
 
 def add_evaluator_args(parser: argparse.ArgumentParser):
     parser.add_argument(
-        "--quality-metrics", nargs="+", default=["BLEU"], help="Quality metrics",
+        "--quality-metrics",
+        nargs="+",
+        default=["BLEU"],
+        help="Quality metrics",
     )
     parser.add_argument(
         "--latency-metrics",
@@ -64,10 +67,14 @@ def add_evaluator_args(parser: argparse.ArgumentParser):
         "words (detokenized) and characters.",
     )
     parser.add_argument(
-        "--remote-address", default="localhost", help="Address to client backend",
+        "--remote-address",
+        default="localhost",
+        help="Address to client backend",
     )
     parser.add_argument(
-        "--remote-port", default=12321, help="Port to client backend",
+        "--remote-port",
+        default=12321,
+        help="Port to client backend",
     )
     parser.add_argument(
         "--no-progress-bar",
@@ -76,10 +83,16 @@ def add_evaluator_args(parser: argparse.ArgumentParser):
         help="Do not use progress bar",
     )
     parser.add_argument(
-        "--start-index", type=int, default=0, help="Start index for evaluation.",
+        "--start-index",
+        type=int,
+        default=0,
+        help="Start index for evaluation.",
     )
     parser.add_argument(
-        "--end-index", type=int, default=-1, help="The last index for evaluation.",
+        "--end-index",
+        type=int,
+        default=-1,
+        help="The last index for evaluation.",
     )
     parser.add_argument("--output", type=str, default=None, help="Output directory")
 
@@ -120,17 +133,23 @@ def general_parser():
     if args.user_dir is not None:
         import_user_module(args.user_dir)
     parser.add_argument(
-        "--remote-eval", action="store_true", help="Evaluate a standalone agent",
+        "--remote-eval",
+        action="store_true",
+        help="Evaluate a standalone agent",
     )
     parser.add_argument(
-        "--standalone", action="store_true", help="",
+        "--standalone",
+        action="store_true",
+        help="",
     )
     parser.add_argument(
         "--slurm", action="store_true", default=False, help="Use slurm."
     )
     parser.add_argument("--agent", default=None, help="Agent file")
     parser.add_argument(
-        "--agent-class", default=None, help="The full string of class of the agent.",
+        "--agent-class",
+        default=None,
+        help="The full string of class of the agent.",
     )
     parser.add_argument(
         "--system-dir",
