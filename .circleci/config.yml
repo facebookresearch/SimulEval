@@ -1,0 +1,43 @@
+version: 2.1
+jobs:
+  # build_test:
+  #   docker:
+  #     - image: cimg/python:3.11.0
+  #     - run:
+  #         name: Install dependencies
+  #         command: | # create whl and install dependencies
+  #           python3 setup.py sdist bdist_wheel
+  #           sudo add-apt-repository universe -y
+  #           sudo apt-get update
+  #           sudo apt install -y python3-pip
+  #           sudo pip install pipenv
+  #           sudo apt-get install -y python3-pip
+  #           sudo pip3 install pytest
+  #     - run:
+  #         name: Run tests
+  #         command: |
+  #           pytest
+  test_pypi_publish:
+    docker:
+      - image: cimg/python:3.11.0
+    steps:
+      - checkout
+      - run:
+        command: |
+          python3 setup.py sdist bdist_wheel
+          sudo add-apt-repository universe -y
+          sudo apt-get update
+          sudo apt-get install -y python3-pip
+          sudo pip install pipenv
+          pipenv install twine
+          pipenv run twine upload --repository-url testpypi dist/*
+workflows:
+  version: 2
+  build_test_publish:
+    jobs:
+      - test_pypi_publish:
+          # requires:
+          #   - build_test
+          filters:
+            branches:
+              only: contrib
