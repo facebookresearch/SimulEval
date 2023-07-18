@@ -35,15 +35,15 @@ class TTSModel:
 
 
 @entrypoint
-class SpanishSpeechCounter(SpeechToSpeechAgent):
+class EnglishSpeechAlternate(SpeechToSpeechAgent):
     """
     Incrementally feed text to this offline Fastspeech2 TTS model,
-    with a minimum numbers of phonemes every chunk.
+    with an alternating speech pattern that is decrementing.
     """
 
     def __init__(self, args):
         super().__init__(args)
-        self.wait_seconds = args.wait_seconds
+        self.wait_seconds = args.wait_seconds 
         self.tts_model = TTSModel()
 
     @staticmethod
@@ -56,7 +56,10 @@ class SpanishSpeechCounter(SpeechToSpeechAgent):
         )
         if not self.states.source_finished and length_in_seconds < self.wait_seconds:
             return ReadAction()
-        samples, fs = self.tts_model.synthesize(f"{length_in_seconds} misisipí")
+        if length_in_seconds % 2 == 0:
+            samples, fs = self.tts_model.synthesize(f"{8 - length_in_seconds} even even")
+        else:
+            samples, fs = self.tts_model.synthesize(f"{8 - length_in_seconds} odd odd")
 
         # A SpeechSegment has to be returned for speech-to-speech translation system
         return WriteAction(
