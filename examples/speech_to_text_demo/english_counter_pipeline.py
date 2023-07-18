@@ -8,20 +8,3 @@ class EnglishCounterAgentPipeline(AgentPipeline):
         SileroVADAgent,
         EnglishSpeechCounter,
     ]
-
-    # @classmethod
-    # def add_args(cls, parser: ArgumentParser):
-    #     super().add_args(parser)
-    #     parser.add_argument(
-    #         "--checkpoint",
-    #         type=str,
-    #         required=True,
-    #         help="Path to the model checkpoint.",
-    #     )
-    #     parser.add_argument(
-    #         "--config-yaml", type=str, default=None, help="Path to config yaml"
-    #     )
-
-    # @classmethod
-    # def from_args(cls, args):
-    #     return cls(args)
