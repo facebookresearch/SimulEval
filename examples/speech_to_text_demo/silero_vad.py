@@ -231,6 +231,7 @@ class SileroVADAgent(SpeechToSpeechAgent):
             segment = SpeechSegment(
                 content=content.tolist(),
                 finished=is_finished,
+                sample_rate=states.sample_rate,
             )
 
         return WriteAction(segment, finished=is_finished)
