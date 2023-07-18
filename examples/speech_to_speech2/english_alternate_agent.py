@@ -43,7 +43,7 @@ class EnglishSpeechAlternate(SpeechToSpeechAgent):
 
     def __init__(self, args):
         super().__init__(args)
-        self.wait_seconds = args.wait_seconds 
+        self.wait_seconds = args.wait_seconds
         self.tts_model = TTSModel()
 
     @staticmethod
@@ -57,7 +57,9 @@ class EnglishSpeechAlternate(SpeechToSpeechAgent):
         if not self.states.source_finished and length_in_seconds < self.wait_seconds:
             return ReadAction()
         if length_in_seconds % 2 == 0:
-            samples, fs = self.tts_model.synthesize(f"{8 - length_in_seconds} even even")
+            samples, fs = self.tts_model.synthesize(
+                f"{8 - length_in_seconds} even even"
+            )
         else:
             samples, fs = self.tts_model.synthesize(f"{8 - length_in_seconds} odd odd")
 
