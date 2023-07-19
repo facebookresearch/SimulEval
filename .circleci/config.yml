@@ -23,6 +23,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Build and publish to TestPyPI
+      - with:
+          username: __token__
+          password: ${{ secrets.TEST_PYPI_TOKEN }}
+          repository_url: https://test.pypi.org/legacy/
       - run:
           python3 setup.py sdist bdist_wheel
           sudo add-apt-repository universe -y
