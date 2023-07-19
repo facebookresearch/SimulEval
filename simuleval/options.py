@@ -4,6 +4,9 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
+import os
+import importlib
+import sys
 import logging
 import argparse
 from typing import List, Optional
@@ -109,8 +112,26 @@ def add_scorer_args(
         get_scorer_class("quality", metric).add_args(parser)
 
 
+def import_user_module(module_path):
+    module_path = os.path.abspath(module_path)
+    module_parent, module_name = os.path.split(module_path)
+
+    sys.path.insert(0, module_parent)
+    importlib.import_module(module_name)
+    sys.path.pop(0)
+
+
 def general_parser():
     parser = argparse.ArgumentParser()
+
+    parser.add_argument(
+        "--user-dir",
+        default=None,
+        help="path to a python module containing custom agents",
+    )
+    args, _ = parser.parse_known_args()
+    if args.user_dir is not None:
+        import_user_module(args.user_dir)
     parser.add_argument(
         "--remote-eval",
         action="store_true",
