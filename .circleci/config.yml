@@ -18,10 +18,13 @@ jobs:
   #         command: |
   #           pytest
   test_pypi_publish:
+    runs-on: ubuntu-latest
     docker:
       - image: cimg/python:3.11.0
     steps:
-      - checkout
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Build and publish to TestPyPI
       - run:
         command: |
           python3 setup.py sdist bdist_wheel
