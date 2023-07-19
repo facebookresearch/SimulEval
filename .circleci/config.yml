@@ -1,31 +1,13 @@
 version: 2.1
 jobs:
-  # build_test:
-  #   docker:
-  #     - image: cimg/python:3.11.0
-  #     - run:
-  #         name: Install dependencies
-  #         command: | # create whl and install dependencies
-  #           python3 setup.py sdist bdist_wheel
-  #           sudo add-apt-repository universe -y
-  #           sudo apt-get update
-  #           sudo apt install -y python3-pip
-  #           sudo pip install pipenv
-  #           sudo apt-get install -y python3-pip
-  #           sudo pip3 install pytest
-  #     - run:
-  #         name: Run tests
-  #         command: |
-  #           pytest
-  test_pypi_publish:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
       - name: Build and publish to TestPyPI
-      - with:
-          username: __token__
-          password: ${{ secrets.TEST_PYPI_TOKEN }}
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.TEST_PYPI_TOKEN }}
           repository_url: https://test.pypi.org/legacy/
       - run:
           python3 setup.py sdist bdist_wheel
