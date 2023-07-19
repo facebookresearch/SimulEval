@@ -40,4 +40,4 @@ workflows:
           #   - build_test
           filters:
             branches:
-              only: contrib
+              only: main
