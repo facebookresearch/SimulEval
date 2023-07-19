@@ -1,3 +1,5 @@
+from typing import Optional
+from simuleval.agents.states import AgentStates
 from simuleval.utils import entrypoint
 from simuleval.data.segments import SpeechSegment
 from simuleval.agents import SpeechToTextAgent
@@ -18,16 +20,22 @@ class EnglishSpeechCounter(SpeechToTextAgent):
     def add_args(parser):
         parser.add_argument("--wait-seconds", default=1, type=int)
 
-    def policy(self):
-        length_in_seconds = round(
-            len(self.states.source) / self.states.source_sample_rate
-        )
-        if not self.states.source_finished and length_in_seconds < self.wait_seconds:
+    def policy(self, states: Optional[AgentStates] = None):
+        if states is None:
+            states = self.states
+        if states.source_sample_rate == 0:
+            # empty source, source_sample_rate not set yet
+            length_in_seconds = 0
+        else:
+            length_in_seconds = round(
+                len(states.source) / states.source_sample_rate
+            )
+        if not states.source_finished and length_in_seconds < self.wait_seconds:
             return ReadAction()
 
         prediction = f"{length_in_seconds} second"
 
         return WriteAction(
             content=prediction,
-            finished=self.states.source_finished,
+            finished=states.source_finished,
         )
