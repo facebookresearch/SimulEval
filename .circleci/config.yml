@@ -1,29 +1,33 @@
-version: 2.1
+name: Build and Publish to TestPyPI
+on:
+  push:
+    branches:
+      - main
+
 jobs:
+  build_test_publish:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-      - name: Build and publish to TestPyPI
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.x
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-pip
+          pip install pipenv
+          pipenv install twine
+
+      - name: Build and Publish
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.TEST_PYPI_TOKEN }}
-          repository_url: https://test.pypi.org/legacy/
-      - run:
-          python3 setup.py sdist bdist_wheel
-          sudo add-apt-repository universe -y
-          sudo apt-get update
-          sudo apt-get install -y python3-pip
-          sudo pip install pipenv
-          pipenv install twine
-          pipenv run twine upload --repository-url testpypi dist/*
-workflows:
-  version: 2
-  build_test_publish:
-    jobs:
-      - test_pypi_publish:
-          # requires:
-          #   - build_test
-          filters:
-            branches:
-              only: main
+          REPOSITORY_URL: https://test.pypi.org/legacy/
+        run: |
+          python setup.py sdist bdist_wheel
+          pipenv run twine upload --repository-url $REPOSITORY_URL dist/*
