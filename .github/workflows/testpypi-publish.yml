@@ -19,7 +19,7 @@ jobs:
           python-version: 3.x
 
       - name: Install dependencies
-        run: pip install --upgrade pip twine
+        run: pip install --upgrade pip twine setuptools wheel
 
       - name: Build and Publish to TestPyPI
         env:
