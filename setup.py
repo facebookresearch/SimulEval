@@ -11,7 +11,7 @@ with open("README.md", "r") as readme_file:
 
 setup(
     python_requires=">3.7.0",
-    name="test-simuleval-6",
+    name="test-simuleval-5",
     version="1.1.5",
     author="Xutai Ma",
     author_email="mubbysani@gmail.com",
