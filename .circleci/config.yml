@@ -1,14 +1,14 @@
 test_pypi_publish:
-    docker:
-      - image: cimg/python:3.11.0
-    steps:
-      - checkout # checkout source code to working directory
-      - run:
-          command: | # create whl, install twine and publish to Test PyPI
-            python3 setup.py sdist bdist_wheel
-            sudo add-apt-repository universe -y
-            sudo apt-get update
-            sudo apt install -y python3-pip
-            sudo pip install pipenv
-            pipenv install twine
-            pipenv run twine upload --repository testpypi dist/*
+  docker:
+    - image: cimg/python:3.11.0
+  steps:
+    - checkout
+    - run: 
+        command: |
+          python3 setup.py sdist bdist_wheel
+          sudo add-apt-repository universe -y
+          sudo apt-get update
+          sudo apt install -y python3-pip
+          sudo pip install pipenv
+          pipenv install twine
+          pipenv run twine upload --repository testpypi dist/*
