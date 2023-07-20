@@ -3,7 +3,7 @@ name: TestPyPI Publish
 on:
   push:
     branches:
-      - main
+      - contrib
 
 jobs:
   test_pypi_publish:
