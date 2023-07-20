@@ -1,43 +1,34 @@
-version: 2.1
+name: TestPyPI Publish
+
+on:
+  push:
+    branches:
+      - main
+
 jobs:
-  # build_test:
-  #   docker:
-  #     - image: cimg/python:3.11.0
-  #     - run:
-  #         name: Install dependencies
-  #         command: | # create whl and install dependencies
-  #           python3 setup.py sdist bdist_wheel
-  #           sudo add-apt-repository universe -y
-  #           sudo apt-get update
-  #           sudo apt install -y python3-pip
-  #           sudo pip install pipenv
-  #           sudo apt-get install -y python3-pip
-  #           sudo pip3 install pytest
-  #     - run:
-  #         name: Run tests
-  #         command: |
-  #           pytest
   test_pypi_publish:
-    docker:
-      - image: cimg/python:3.11.0
+    runs-on: ubuntu-latest
     steps:
-      - checkout
-      - run:
-        command: |
-          python3 setup.py sdist bdist_wheel
-          sudo add-apt-repository universe -y
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.x
+
+      - name: Install dependencies
+        run: |
           sudo apt-get update
           sudo apt-get install -y python3-pip
-          sudo pip install pipenv
+          pip install pipenv
           pipenv install twine
-          pipenv run twine upload --repository-url testpypi dist/*
-workflows:
-  version: 2
-  build_test_publish:
-    jobs:
-      - test_pypi_publish:
-          # requires:
-          #   - build_test
-          filters:
-            branches:
-              only: contrib
+
+      - name: Build and Publish
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.TEST_PYPI_TOKEN }}
+          REPOSITORY_URL: https://test.pypi.org/legacy/
+        run: |
+          python setup.py sdist bdist_wheel
+          pipenv run twine upload --repository-url $REPOSITORY_URL dist/*
