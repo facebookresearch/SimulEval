@@ -64,7 +64,7 @@ class EnglishSpeechAlternate(SpeechToSpeechAgent):
             samples, fs = self.tts_model.synthesize(f"{8 - length_in_seconds} odd odd")
 
         # A SpeechSegment has to be returned for speech-to-speech translation system
-        return WriteAction(
+        return WriteAction( 
             SpeechSegment(
                 content=samples,
                 sample_rate=fs,
