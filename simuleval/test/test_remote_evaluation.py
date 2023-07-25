@@ -21,8 +21,10 @@ def p1(port, root_path):
         "--standalone",
         "--remote-port",
         str(port),
-        "--agent",
-        os.path.join(root_path, "examples", "quick_start", "first_agent.py"),
+        "--user-dir",
+        os.path.join(root_path, "examples"),
+        "--agent-class",
+        "examples.quick_start.first_agent.DummyWaitkTextAgent",
     ]
     cli.main()
     time.sleep(5)
