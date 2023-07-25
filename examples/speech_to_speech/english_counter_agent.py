@@ -59,9 +59,7 @@ class EnglishSpeechCounter(SpeechToSpeechAgent):
             # empty source, source_sample_rate not set yet
             length_in_seconds = 0
         else:
-            length_in_seconds = round(
-                len(states.source) / states.source_sample_rate
-            )
+            length_in_seconds = round(len(states.source) / states.source_sample_rate)
         if not states.source_finished and length_in_seconds < self.wait_seconds:
             return ReadAction()
         samples, fs = self.tts_model.synthesize(f"{length_in_seconds} mississippi")
