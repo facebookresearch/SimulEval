@@ -45,7 +45,7 @@ setup(
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
-        "License :: OSI Approved",
+        "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",
         "Development Status :: 4 - Beta",
     ],
@@ -78,4 +78,6 @@ setup(
             "docs.*",
         ]
     ),
+    setup_requires=["setuptools_scm"],
+    use_scm_version=True,
 )
