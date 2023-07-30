@@ -6,10 +6,15 @@ on:
       - main
     tags:
       - v*
-
 jobs:
   pypi_publish:
+    name: Upload release to PyPI
     runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/simuleval
+    permissions:
+      id-token: write
 
     steps:
       - name: Checkout code
@@ -23,10 +28,10 @@ jobs:
       - name: Install dependencies
         run: pip install --upgrade pip twine setuptools wheel
 
-      - name: Build and Publish to TestPyPI
-        env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.TEST_PYPI_API_TOKEN }}
-        run: |
-          python setup.py sdist bdist_wheel
-          twine upload --repository-url https://upload.pypi.org/legacy/ dist/*
+      - name: Build package
+        run: python setup.py sdist bdist_wheel
+
+      - name: Publish package distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          args: "--use-feature=fast-deploy"
