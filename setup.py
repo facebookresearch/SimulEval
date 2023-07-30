@@ -21,7 +21,6 @@ setup(
     homepage="https://github.com/facebookresearch/SimulEval.git",
     documentation="https://simuleval.readthedocs.io/en/v1.1.0/quick_start.html",
     license="LICENSE",
-
     entry_points={
         "console_scripts": [
             "simuleval = simuleval.cli:main",
@@ -68,7 +67,7 @@ setup(
         "SimulEval_Testing_Package_1",
         "facebookresearch",
         "facebook",
-        "Meta-Evaluation"
+        "Meta-Evaluation",
     ],
     packages=find_packages(
         exclude=[
