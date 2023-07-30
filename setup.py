@@ -11,8 +11,8 @@ with open("README.md", "r") as readme_file:
 
 setup(
     python_requires=">3.7.0",
-    name="test-simuleval-5",
-    version="1.1.5",
+    name="simuleval",
+    version="1.1.0",
     author="Xutai Ma",
     author_email="mubbysani@gmail.com",
     description="SimulEval: A Flexible Toolkit for Automated Machine Translation Evaluation",
