@@ -44,20 +44,40 @@ def test_s2s(root_path=ROOT_PATH):
 def test_statelss_agent(root_path=ROOT_PATH):
     class EnglishAlternateAgent(SpeechToSpeechAgent):
         waitk = 0
+        wait_seconds = 3
         vocab = [chr(i) for i in range(ord("A"), ord("Z") + 1)]
 
         def policy(self, states=None):
             if states is None:
                 states = self.states
 
-            lagging = len(states.source) - len(states.target)
-
-            if lagging >= self.waitk or states.source_finished:
-                prediction = self.vocab[len(states.source)]
-
-                return WriteAction(prediction, finished=(lagging <= 1))
-            else:
+            length_in_seconds = round(len(states.source) / states.source_sample_rate)
+            if (
+                not self.states.source_finished
+                and length_in_seconds < self.wait_seconds
+            ):
                 return ReadAction()
+
+            if length_in_seconds % 2 == 0:
+                samples, fs = self.tts_model.synthesize(
+                    f"{8 - length_in_seconds} even even"
+                )
+            else:
+                samples, fs = self.tts_model.synthesize(
+                    f"{8 - length_in_seconds} odd odd"
+                )
+
+            prediction = f"{length_in_seconds} second"
+
+            return WriteAction(
+                SpeechSegment(
+                    content=samples,
+                    sample_rate=fs,
+                    finished=self.states.source_finished,
+                ),
+                content=prediction,
+                finished=self.states.source_finished,
+            )
 
     args = None
     agent_stateless = EnglishAlternateAgent.from_args(args)
