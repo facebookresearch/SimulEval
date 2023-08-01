@@ -38,6 +38,8 @@ setuptools.setup(
             "examples.*",
             "docs",
             "docs.*",
+            "tests",
+            "tests.*",
         ]
     ),
 )

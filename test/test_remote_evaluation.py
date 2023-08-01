@@ -13,7 +13,7 @@ from pathlib import Path
 import simuleval.cli as cli
 from simuleval.utils.functional import find_free_port
 
-ROOT_PATH = Path(__file__).parents[2]
+ROOT_PATH = Path(__file__).parents[1]
 
 
 def p1(port, root_path):
