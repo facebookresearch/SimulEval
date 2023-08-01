@@ -49,7 +49,7 @@ def test_stateless_agent(root_path=ROOT_PATH):
         wait_seconds = 3
         vocab = [chr(i) for i in range(ord("A"), ord("Z") + 1)]
 
-        def policy(self, states: Optional[AgentStates]=None):
+        def policy(self, states: Optional[AgentStates] = None):
             if states is None:
                 states = states
 
