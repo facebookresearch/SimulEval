@@ -30,7 +30,7 @@ def test_s2s(root_path=ROOT_PATH):
             "--user-dir",
             os.path.join(root_path, "examples"),
             "--agent-class",
-            "agents.EnglishSpeechCounter",
+            "agents.EnglishAlternateAgent",
             "--source-segment-size",
             "1000",
             "--source",

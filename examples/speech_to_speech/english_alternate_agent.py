@@ -35,7 +35,7 @@ class TTSModel:
 
 
 @entrypoint
-class EnglishSpeechAlternate(SpeechToSpeechAgent):
+class EnglishAlternateAgent(SpeechToSpeechAgent):
     """
     Incrementally feed text to this offline Fastspeech2 TTS model,
     with an alternating speech pattern that is decrementing.
