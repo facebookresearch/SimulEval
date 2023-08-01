@@ -7,6 +7,8 @@
 import os
 import tempfile
 from pathlib import Path
+from typing import Optional
+from simuleval.agents.states import AgentStates
 
 import simuleval.cli as cli
 from simuleval.agents import SpeechToSpeechAgent
@@ -41,15 +43,15 @@ def test_s2s(root_path=ROOT_PATH):
         cli.main()
 
 
-def test_statelss_agent(root_path=ROOT_PATH):
+def test_stateless_agent(root_path=ROOT_PATH):
     class EnglishAlternateAgent(SpeechToSpeechAgent):
         waitk = 0
         wait_seconds = 3
         vocab = [chr(i) for i in range(ord("A"), ord("Z") + 1)]
 
-        def policy(self, states=None):
+        def policy(self, states: Optional[AgentStates]=None):
             if states is None:
-                states = self.states
+                states = states
 
             length_in_seconds = round(len(states.source) / states.source_sample_rate)
             if (
