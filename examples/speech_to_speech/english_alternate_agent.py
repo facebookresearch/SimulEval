@@ -1,5 +1,3 @@
-from typing import Optional
-from simuleval.agents.states import AgentStates
 from simuleval.utils import entrypoint
 from simuleval.data.segments import SpeechSegment
 from simuleval.agents import SpeechToSpeechAgent
@@ -37,10 +35,10 @@ class TTSModel:
 
 
 @entrypoint
-class EnglishSpeechCounter(SpeechToSpeechAgent):
+class EnglishAlternateAgent(SpeechToSpeechAgent):
     """
     Incrementally feed text to this offline Fastspeech2 TTS model,
-    with a minimum numbers of phonemes every chunk.
+    with an alternating speech pattern that is decrementing.
     """
 
     def __init__(self, args):
@@ -52,24 +50,25 @@ class EnglishSpeechCounter(SpeechToSpeechAgent):
     def add_args(parser):
         parser.add_argument("--wait-seconds", default=1, type=int)
 
-    def policy(self, states: Optional[AgentStates] = None):
-        if states is None:
-            states = self.states
-        if states.source_sample_rate == 0:
-            # empty source, source_sample_rate not set yet
-            length_in_seconds = 0
-        else:
-            length_in_seconds = round(len(states.source) / states.source_sample_rate)
-        if not states.source_finished and length_in_seconds < self.wait_seconds:
+    def policy(self):
+        length_in_seconds = round(
+            len(self.states.source) / self.states.source_sample_rate
+        )
+        if not self.states.source_finished and length_in_seconds < self.wait_seconds:
             return ReadAction()
-        samples, fs = self.tts_model.synthesize(f"{length_in_seconds} mississippi")
+        if length_in_seconds % 2 == 0:
+            samples, fs = self.tts_model.synthesize(
+                f"{8 - length_in_seconds} even even"
+            )
+        else:
+            samples, fs = self.tts_model.synthesize(f"{8 - length_in_seconds} odd odd")
 
         # A SpeechSegment has to be returned for speech-to-speech translation system
         return WriteAction(
             SpeechSegment(
                 content=samples,
                 sample_rate=fs,
-                finished=states.source_finished,
+                finished=self.states.source_finished,
             ),
-            finished=states.source_finished,
+            finished=self.states.source_finished,
         )
