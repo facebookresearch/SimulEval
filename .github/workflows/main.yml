@@ -43,8 +43,8 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with pytest
       run: |
-        pytest simuleval/test/test_agent.py
-        pytest simuleval/test/test_agent_pipeline.py
-        pytest simuleval/test/test_evaluator.py
-        pytest simuleval/test/test_remote_evaluation.py
-        pytest simuleval/test/test_s2s.py
+        pytest test/test_agent.py
+        pytest test/test_agent_pipeline.py
+        pytest test/test_evaluator.py
+        pytest test/test_remote_evaluation.py
+        pytest test/test_s2s.py
