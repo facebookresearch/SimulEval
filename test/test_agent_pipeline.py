@@ -12,7 +12,7 @@ from simuleval.agents import AgentPipeline, TextToTextAgent
 from simuleval.agents.actions import ReadAction, WriteAction
 from simuleval.data.segments import TextSegment
 
-ROOT_PATH = Path(__file__).parents[2]
+ROOT_PATH = Path(__file__).parents[1]
 
 
 def test_pipeline_cmd(root_path=ROOT_PATH):

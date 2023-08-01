@@ -10,7 +10,7 @@ from pathlib import Path
 
 import simuleval.cli as cli
 
-ROOT_PATH = Path(__file__).parents[2]
+ROOT_PATH = Path(__file__).parents[1]
 
 
 def test_score_only(root_path=ROOT_PATH):

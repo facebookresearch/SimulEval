@@ -13,7 +13,7 @@ from simuleval.agents import SpeechToTextAgent
 from simuleval.agents.actions import ReadAction, WriteAction
 from simuleval.data.segments import SpeechSegment
 
-ROOT_PATH = Path(__file__).parents[2]
+ROOT_PATH = Path(__file__).parents[1]
 
 
 def test_s2t(root_path=ROOT_PATH):
