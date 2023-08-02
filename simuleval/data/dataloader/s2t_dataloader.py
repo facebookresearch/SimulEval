@@ -11,8 +11,12 @@ from .dataloader import GenericDataloader
 from simuleval.data.dataloader import register_dataloader
 from argparse import Namespace
 from urllib.parse import urlparse, parse_qs
-import yt_dlp as youtube_dl
-from pydub import AudioSegment
+
+try:
+    import yt_dlp as youtube_dl
+    from pydub import AudioSegment
+except ImportError:
+    yt_dlp = AudioSegment = None
 
 try:
     import soundfile
@@ -117,6 +121,8 @@ class YoutubeToTextDataloader(SpeechToTextDataloader):
     def from_youtube(
         cls, source: Union[Path, str], target: Union[Path, str]
     ) -> YoutubeToTextDataloader:
+        assert AudioSegment is not None
+        assert youtube_dl is not None
         source_list = [download_youtube_video(source)]
         target_list = [target]
         dataloader = cls(source_list, target_list)

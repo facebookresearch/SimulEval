@@ -6,13 +6,23 @@
 
 from inspect import signature
 from argparse import Namespace, ArgumentParser
-from simuleval.data.segments import Segment, TextSegment, SpeechSegment, EmptySegment
+from simuleval.data.segments import (
+    Segment,
+    SpeechTextSegment,
+    TextSegment,
+    SpeechSegment,
+    EmptySegment,
+)
 from typing import Optional
 from .states import AgentStates
 from .actions import Action
 
 
-SEGMENT_TYPE_DICT = {"text": TextSegment, "speech": SpeechSegment}
+SEGMENT_TYPE_DICT = {
+    "text": TextSegment,
+    "speech": SpeechSegment,
+    "speech_text": SpeechTextSegment,
+}
 
 
 class GenericAgent:
@@ -45,6 +55,7 @@ class GenericAgent:
     def reset(self) -> None:
         """
         Reset agent, called every time when a new sentence coming in.
+        Applies for stateful agents.
         """
         self.states.reset()
 

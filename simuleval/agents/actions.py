@@ -4,7 +4,7 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Union, List
+from typing import Tuple, Union, List
 from dataclasses import dataclass
 from simuleval.data.segments import Segment
 
@@ -43,14 +43,16 @@ class WriteAction(Action):
     Action to return when policy decide to generate a prediction
 
     Args:
-        content (Union[str, List[float]]): The prediction.
+        content (Union[str, List[float], Tuple[List[float], str]]): The prediction.
         finished (bool): Indicates if current sentence is finished.
 
-    .. note:: For text the prediction a str; for speech, it's a list.
+    .. note::
+        For text the prediction a str; for speech, it's a list.
+        For speech_text, it's a tuple[list, str]
 
     """
 
-    content: Union[str, List[float], Segment]
+    content: Union[str, List[float], Tuple[List[float], str]]
     finished: bool
 
     def is_read(self) -> bool:

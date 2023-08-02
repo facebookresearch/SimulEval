@@ -6,6 +6,7 @@
 
 import json
 from dataclasses import dataclass, field
+from typing import Union
 
 
 @dataclass
@@ -42,11 +43,20 @@ class SpeechSegment(Segment):
     data_type: str = "speech"
 
 
+@dataclass
+class SpeechTextSegment:
+    text_segment: Union[EmptySegment, TextSegment]
+    speech_segment: Union[EmptySegment, SpeechSegment]
+    data_type: str = "speech_text"
+
+
 def segment_from_json_string(string: str):
     info_dict = json.loads(string)
     if info_dict["data_type"] == "text":
         return TextSegment.from_json(string)
     elif info_dict["data_type"] == "speech":
         return SpeechSegment.from_json(string)
+    elif info_dict["data_type"] == "speech_text":
+        return SpeechTextSegment.from_json(string)
     else:
         return EmptySegment.from_json(string)
