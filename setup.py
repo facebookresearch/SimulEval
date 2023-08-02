@@ -14,7 +14,6 @@ setup(
     name="simuleval",
     version="1.1.0",
     author="Xutai Ma",
-    author_email="mubbysani@gmail.com",
     description="SimulEval: A Flexible Toolkit for Automated Machine Translation Evaluation",
     long_description=long_description,
     long_description_content_type="text/markdown",
