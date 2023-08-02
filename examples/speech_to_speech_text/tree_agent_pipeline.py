@@ -1,17 +1,10 @@
-from typing import Optional
 from simuleval.agents import TreeAgentPipeline
 from examples.speech_to_speech.english_counter_agent import (
     EnglishSpeechCounter as EnglishSpeechToSpeech,
 )
-from examples.speech_to_speech.english_counter_agent import TTSModel
 from examples.speech_to_text.english_counter_agent import (
     EnglishSpeechCounter as EnglishSpeechToText,
 )
-from simuleval.agents import TextToSpeechAgent
-from simuleval.agents.actions import ReadAction, WriteAction
-from simuleval.agents import AgentPipeline
-from simuleval.agents.states import AgentStates
-from simuleval.data.segments import SpeechSegment
 
 
 class EnglishWait2SpeechToText(EnglishSpeechToText):
