@@ -55,6 +55,29 @@ def test_tree_pipeline_cmd(root_path=ROOT_PATH):
         cli.main()
 
 
+def test_instantiated_tree_pipeline_cmd(root_path=ROOT_PATH):
+    args_path = Path.joinpath(root_path, "examples", "speech_to_speech")
+    os.chdir(args_path)
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        cli.sys.argv[1:] = [
+            "--agent-class",
+            "examples.speech_to_speech_text.tree_agent_pipeline.AnotherInstantiatedTreeAgentPipeline",
+            "--source",
+            os.path.join(root_path, "examples", "speech_to_speech", "source.txt"),
+            "--target",
+            os.path.join(
+                root_path, "examples", "speech_to_text", "reference", "en.txt"
+            ),
+            "--source-segment-size",
+            "320",
+            "--output-index",
+            "0",
+            "--output",
+            tmpdirname,
+        ]
+        cli.main()
+
+
 def test_pipeline():
     class DummyWaitkTextAgent(TextToTextAgent):
         waitk = 0

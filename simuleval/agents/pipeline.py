@@ -5,7 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 from argparse import ArgumentParser
-from typing import List, Optional, Dict, Type
+from typing import List, Optional, Dict, Set, Type, Union
 from simuleval.data.segments import Segment
 from .agent import GenericAgent, AgentStates
 
@@ -91,11 +91,26 @@ class AgentPipeline(GenericAgent):
         return self.__repr__()
 
 
+GenericAgentClass = Type[GenericAgent]
+
+
 class TreeAgentPipeline(AgentPipeline):
-    """A pipeline which passes intermediate outputs in a directed acyclic graph
+    """
+    A pipeline which passes intermediate outputs in a directed acyclic graph
     Note: the target_type will be a "_"-concatenated list of types. If the
         argument --output-index is specified, `pop` will return the result
         corresponding to this index.
+
+    Arguments:
+        module_dict (dict): a dict mapping instantiated agent to downstream class(es)
+            or downstream instance(s). If the downtream objects are classes,
+            they will be replaced with the corresponding agent instance from the
+            module_dict's keys using `get_instance_from_class`
+        args: optionally, args.output_index is used to set the output index
+
+    Attributes:
+        pipeline (dict): a dict mapping agent class to the downstream class(es).
+            pipeline is only used to initialize the class using `from_args`
 
     Examples:
         ```
@@ -120,23 +135,40 @@ class TreeAgentPipeline(AgentPipeline):
         Note: currently does not support multiple inputs to a node or
             multiple root nodes
 
-    Attributes:
-        pipeline (dict): a dict mapping agent class to the downstream class(es).
-            pipeline is only used to initialize the class using `from_args`
+        ```
+        class InstantiatedAgentTreePipeline(TreeAgentPipeline):
+            pipeline = {ClassOne, ClassTwo, ClassThree}
+            def __init__(self, args) -> None:
+                one = ClassOne()
+                two = ClassTwo()
+                three = ClassThree()
+
+                module_dict = {
+                    one: [two, three],
+                    two: [],
+                    three: [],
+                }
+
+                super().__init__(module_dict, args)
+
+            @classmethod
+            def from_args(cls, args):
+                return cls(args)
+        ```
+        In this example, the downstream children in module_dict are
+        already instantiated.
     """
 
-    pipeline: dict = {}
+    pipeline: Union[
+        Dict[GenericAgentClass, List[GenericAgentClass]], List[GenericAgentClass]
+    ] = {}
 
     def __init__(
         self,
-        module_dict: Dict[GenericAgent, List[Type[GenericAgent]]],
+        module_dict: Dict[GenericAgent, List[Union[GenericAgent, GenericAgentClass]]],
         args,
     ) -> None:
-        (
-            self.source_module,
-            self.target_modules,
-            self.module_dict,
-        ) = TreeAgentPipeline.check_pipeline_types(module_dict)
+        self.check_pipeline_types(module_dict)
 
         self.output_index = args.output_index
         if self.output_index is not None:
@@ -158,8 +190,7 @@ class TreeAgentPipeline(AgentPipeline):
         assert len(ins_list) == 1, f"Instances of {klass}: {ins_list}"
         return ins_list[0]
 
-    @classmethod
-    def check_pipeline_types(cls, module_dict):
+    def check_pipeline_types(self, module_dict):
         output_dict = {}
         root_instance = list(module_dict.keys())
         leaf_instances = []
@@ -168,8 +199,9 @@ class TreeAgentPipeline(AgentPipeline):
             if len(children) == 0:
                 leaf_instances.append(parent)
                 continue
-            for child_class in children:
-                child = cls.get_instance_from_class(child_class, module_dict)
+            for child in children:
+                if isinstance(child, type):
+                    child = self.get_instance_from_class(child, module_dict)
                 if child.source_type != parent.target_type:
                     raise RuntimeError(
                         f"{child}.source_type({child.source_type}) != {parent}.target_type({parent.target_type}"  # noqa F401
@@ -180,7 +212,9 @@ class TreeAgentPipeline(AgentPipeline):
 
         assert len(root_instance) == 1
         assert len(leaf_instances) > 0
-        return (root_instance[0], leaf_instances, output_dict)
+        self.source_module = root_instance[0]
+        self.target_modules = leaf_instances
+        self.module_dict = output_dict
 
     @property
     def source_type(self) -> Optional[str]:
@@ -228,11 +262,8 @@ class TreeAgentPipeline(AgentPipeline):
 
         outputs = self.push_impl(self.source_module, segment, states)
         return outputs
-        # for index, module in enumerate(self.module_dict[:-1]):
-        #     segment = module.pushpop(segment, states[index])
-        # self.module_dict[-1].push(segment, states[-1])
 
-    def pop(self, states: Optional[Dict[GenericAgent, AgentStates]] = None) -> Segment:
+    def pop(self, states: Optional[Dict[GenericAgent, AgentStates]] = None) -> List[Segment]:
         outputs = []
         for module in self.target_modules:
             if states is None:
