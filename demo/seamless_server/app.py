@@ -1,7 +1,10 @@
 from logging.config import dictConfig
 from flask import Flask
 from flask_sockets import Sockets
-from SimulevalAgentDirectory import SimulevalAgentDirectory, NoAvailableAgentException
+from SimulevalAgentDirectory import (
+    SimulevalAgentDirectory,
+    NoAvailableAgentException,
+)
 
 
 from SimulevalAgentDirectory import SimulevalAgentDirectory
@@ -40,6 +43,7 @@ app.logger.setLevel(logging.INFO)
 available_agents = SimulevalAgentDirectory()
 
 connection_tracker = ConnectionTracker(app.logger)
+
 
 def start_seamless_stream_s2t(ws):
     app.logger.info("WS Connection accepted")
@@ -129,7 +133,9 @@ def start_seamless_stream_s2t(ws):
 
                 try:
                     agent = available_agents.get_agent_or_throw(
-                        model_type, source_language_2_letter, target_language_2_letter
+                        model_type,
+                        source_language_2_letter,
+                        target_language_2_letter,
                     )
                 except NoAvailableAgentException as e:
                     app.logger.warn(f"Error while getting agent: {e}")
@@ -184,14 +190,40 @@ sockets.url_map.add(
 if __name__ == "__main__":
     # Build all the agents before starting the server
     # s2t:
-    available_agents.add_agent(SimulevalTranscoder.build_agent(SimulevalAgentDirectory.s2t_es_en_emma_agent), SimulevalAgentDirectory.s2t_es_en_emma_agent, "s2t", "es", "en")
-    available_agents.add_agent(SimulevalTranscoder.build_agent(SimulevalAgentDirectory.s2t_en_es_emma_agent), SimulevalAgentDirectory.s2t_en_es_emma_agent, "s2t", "en", "es")
+    available_agents.add_agent(
+        SimulevalTranscoder.build_agent(
+            SimulevalAgentDirectory.s2t_es_en_emma_agent
+        ),
+        SimulevalAgentDirectory.s2t_es_en_emma_agent,
+        "s2t",
+        "es",
+        "en",
+    )
+    available_agents.add_agent(
+        SimulevalTranscoder.build_agent(
+            SimulevalAgentDirectory.s2t_en_es_emma_agent
+        ),
+        SimulevalAgentDirectory.s2t_en_es_emma_agent,
+        "s2t",
+        "en",
+        "es",
+    )
     # s2s:
-    available_agents.add_agent(SimulevalTranscoder.build_agent(SimulevalAgentDirectory.s2s_es_en_emma_agent), SimulevalAgentDirectory.s2s_es_en_emma_agent, "s2s", "es", "en")
+    available_agents.add_agent(
+        SimulevalTranscoder.build_agent(
+            SimulevalAgentDirectory.s2s_es_en_emma_agent
+        ),
+        SimulevalAgentDirectory.s2s_es_en_emma_agent,
+        "s2s",
+        "es",
+        "en",
+    )
 
     from gevent import pywsgi
     from geventwebsocket.handler import WebSocketHandler
 
-    server = pywsgi.WSGIServer(("0.0.0.0", 8000), app, handler_class=WebSocketHandler)
+    server = pywsgi.WSGIServer(
+        ("0.0.0.0", 8000), app, handler_class=WebSocketHandler
+    )
     app.logger.info("Starting server on port 8000...")
     server.serve_forever()
