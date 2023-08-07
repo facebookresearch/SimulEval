@@ -133,9 +133,7 @@ def start_seamless_stream_s2t(ws):
 
                 try:
                     agent = available_agents.get_agent_or_throw(
-                        model_type,
-                        source_language_2_letter,
-                        target_language_2_letter,
+                        model_type, source_language_2_letter, target_language_2_letter,
                     )
                 except NoAvailableAgentException as e:
                     app.logger.warn(f"Error while getting agent: {e}")
@@ -191,18 +189,14 @@ if __name__ == "__main__":
     # Build all the agents before starting the server
     # s2t:
     available_agents.add_agent(
-        SimulevalTranscoder.build_agent(
-            SimulevalAgentDirectory.s2t_es_en_emma_agent
-        ),
+        SimulevalTranscoder.build_agent(SimulevalAgentDirectory.s2t_es_en_emma_agent),
         SimulevalAgentDirectory.s2t_es_en_emma_agent,
         "s2t",
         "es",
         "en",
     )
     available_agents.add_agent(
-        SimulevalTranscoder.build_agent(
-            SimulevalAgentDirectory.s2t_en_es_emma_agent
-        ),
+        SimulevalTranscoder.build_agent(SimulevalAgentDirectory.s2t_en_es_emma_agent),
         SimulevalAgentDirectory.s2t_en_es_emma_agent,
         "s2t",
         "en",
@@ -210,9 +204,7 @@ if __name__ == "__main__":
     )
     # s2s:
     available_agents.add_agent(
-        SimulevalTranscoder.build_agent(
-            SimulevalAgentDirectory.s2s_es_en_emma_agent
-        ),
+        SimulevalTranscoder.build_agent(SimulevalAgentDirectory.s2s_es_en_emma_agent),
         SimulevalAgentDirectory.s2s_es_en_emma_agent,
         "s2s",
         "es",
@@ -222,8 +214,6 @@ if __name__ == "__main__":
     from gevent import pywsgi
     from geventwebsocket.handler import WebSocketHandler
 
-    server = pywsgi.WSGIServer(
-        ("0.0.0.0", 8000), app, handler_class=WebSocketHandler
-    )
+    server = pywsgi.WSGIServer(("0.0.0.0", 8000), app, handler_class=WebSocketHandler)
     app.logger.info("Starting server on port 8000...")
     server.serve_forever()

@@ -206,9 +206,7 @@ class SimulevalTranscoder:
 
     def get_buffered_output(self) -> SpeechAndTextOutput:
         now = time.time() * 1000
-        self.debug_log(
-            f"get_buffered_output queue size: {self.output_queue.qsize()}"
-        )
+        self.debug_log(f"get_buffered_output queue size: {self.output_queue.qsize()}")
         while not self.output_queue.empty():
             tmp_out = self.get_output_segment()
             if tmp_out and len(tmp_out.content) > 0:
@@ -242,9 +240,7 @@ class SimulevalTranscoder:
 
     def _gather_output_buffer_data(self, final):
         if self.output_data_type == "text":
-            return SpeechAndTextOutput(
-                text=" ".join(self.output_buffer), final=final
-            )
+            return SpeechAndTextOutput(text=" ".join(self.output_buffer), final=final)
         elif self.output_data_type == "speech":
             return SpeechAndTextOutput(
                 speech_samples=self.output_buffer,
@@ -258,9 +254,7 @@ class SimulevalTranscoder:
 
     def _increment_output_buffer_size(self, segment):
         if segment.data_type == "text":
-            self.output_buffer_cur_size += self._compute_phoneme_count(
-                segment.content
-            )
+            self.output_buffer_cur_size += self._compute_phoneme_count(segment.content)
         elif segment.data_type == "speech":
             self.output_buffer_cur_size += (
                 len(segment.content) / MODEL_SAMPLE_RATE

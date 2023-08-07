@@ -3,14 +3,10 @@ import time
 
 
 class StreamingConnectionInfo:
-    def __init__(
-        self, address, active_connections, latest_message_received_timestamp
-    ):
+    def __init__(self, address, active_connections, latest_message_received_timestamp):
         self.address = address
         self.active_connections = active_connections
-        self.latest_message_received_timestamp = (
-            latest_message_received_timestamp
-        )
+        self.latest_message_received_timestamp = latest_message_received_timestamp
 
     def __repr__(self):
         return str(self)
@@ -35,20 +31,14 @@ class ConnectionTracker:
 
     def add_connection(self, address):
         if address not in self.connections:
-            self.connections[address] = StreamingConnectionInfo(
-                address, 1, time.time()
-            )
+            self.connections[address] = StreamingConnectionInfo(address, 1, time.time())
         else:
             self.connections[address].active_connections += 1
-            self.connections[
-                address
-            ].latest_message_received_timestamp = time.time()
+            self.connections[address].latest_message_received_timestamp = time.time()
 
     def log_recent_message(self, address):
         if address in self.connections:
-            self.connections[
-                address
-            ].latest_message_received_timestamp = time.time()
+            self.connections[address].latest_message_received_timestamp = time.time()
         else:
             self.logger.warning(
                 f"Address {address} not found in connection tracker when attempting to log recent message"
@@ -70,8 +60,5 @@ class ConnectionTracker:
 
     def get_active_connection_count(self):
         return sum(
-            [
-                connection.active_connections
-                for connection in self.connections.values()
-            ]
+            [connection.active_connections for connection in self.connections.values()]
         )
