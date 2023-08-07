@@ -133,7 +133,9 @@ def start_seamless_stream_s2t(ws):
 
                 try:
                     agent = available_agents.get_agent_or_throw(
-                        model_type, source_language_2_letter, target_language_2_letter,
+                        model_type,
+                        source_language_2_letter,
+                        target_language_2_letter,
                     )
                 except NoAvailableAgentException as e:
                     app.logger.warn(f"Error while getting agent: {e}")
