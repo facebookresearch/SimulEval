@@ -67,9 +67,7 @@ def start_seamless_stream_s2t(ws):
         log_to_send = to_send
         if "sample_rate" in to_send:
             # don't log the speech payload
-            log_to_send = json.dumps(
-                {k: v for k, v in obj.items() if k != "payload"}
-            )
+            log_to_send = json.dumps({k: v for k, v in obj.items() if k != "payload"})
         log_debug(f"Gonna send to client: {log_to_send}")
         ws.send(to_send)
 
@@ -133,9 +131,7 @@ def start_seamless_stream_s2t(ws):
 
                 try:
                     agent = available_agents.get_agent_or_throw(
-                        model_type,
-                        source_language_2_letter,
-                        target_language_2_letter,
+                        model_type, source_language_2_letter, target_language_2_letter,
                     )
                 except NoAvailableAgentException as e:
                     app.logger.warn(f"Error while getting agent: {e}")
