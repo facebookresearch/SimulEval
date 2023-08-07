@@ -68,7 +68,7 @@ def start_seamless_stream_s2t(ws):
         if "sample_rate" in to_send:
             # don't log the speech payload
             log_to_send = json.dumps(
-                {k: v for k, v in obj.items() if k is not "payload"}
+                {k: v for k, v in obj.items() if k != "payload"}
             )
         log_debug(f"Gonna send to client: {log_to_send}")
         ws.send(to_send)
