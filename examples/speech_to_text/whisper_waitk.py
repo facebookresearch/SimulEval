@@ -52,6 +52,7 @@ class WaitkWhipser(SpeechToTextAgent):
             prefix=previous_translation,
             language=self.target_language,
             without_timestamps=True,
+            fp16=False,
         )
         audio = whisper.pad_or_trim(numpy.array(states.source).astype("float32"))
         mel = whisper.log_mel_spectrogram(audio).to(self.model.device)
