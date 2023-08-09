@@ -21,13 +21,15 @@ class WaitkWhipser(SpeechToTextAgent):
         self.source_segment_size = args.source_segment_size
         self.target_language = args.target_language
         self.continuous_write = args.continuous_write
-        self.model = whisper.load_model("tiny")
+        self.model_size = args.model_size
+        self.model = whisper.load_model(self.model_size)
 
     @staticmethod
     def add_args(parser):
         parser.add_argument("--waitk-lagging", default=1, type=int)
         parser.add_argument("--target-language", default="en", type=str)
         parser.add_argument("--continuous-write", default=1, type=int)
+        parser.add_argument("--model-size", default="tiny", type=str)
 
     def policy(self, states: Optional[AgentStates] = None):
         if states is None:
