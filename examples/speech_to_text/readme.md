@@ -40,3 +40,23 @@ The results of the evaluation should be as following. The detailed results can b
   BLEU     LAAL       AL     AP       DAL       ATD
  100.0  822.018  822.018  0.581  1061.271  2028.555
 ```
+
+### Example Streaming ASR: Whipser Wait-K model
+
+This section provide a more realistic model. [whisper_waitk.py](whisper_waitk.py) is a streaming ASR agent running [wait-k](https://aclanthology.org/P19-1289/) policy on the [Whispser](https://github.com/openai/whisper) ASR model
+
+```bash
+simuleval \
+    --agent whisper_waitk.py \
+    --source-segment-size 500 \
+    --waitk-lagging 3 \
+    --source source.txt --target reference/transcript.txt \
+    --output output --quality-metrics WER
+```
+
+The results of the evaluation should be as following. The detailed results can be found in the `output` directory.
+
+```
+WER     LAAL    AL      AP      DAL     ATD
+25.0    2353.772        2353.772        0.721   2491.04 2457.847
+```
