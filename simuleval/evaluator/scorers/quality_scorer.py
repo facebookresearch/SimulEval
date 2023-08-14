@@ -47,6 +47,45 @@ def add_sacrebleu_args(parser):
     )
 
 
+@register_quality_scorer("WER")
+class WERScorer(QualityScorer):
+    """
+    Compute Word Error Rate (WER)
+
+    Usage:
+        :code:`--quality-metrics WER`
+    """
+
+    def __init__(self, args) -> None:
+        super().__init__()
+        try:
+            import editdistance as ed
+        except ImportError:
+            raise ImportError("Please install editdistance to use WER scorer")
+        self.logger = logging.getLogger("simuleval.scorer.wer")
+        self.logger.warning("WER scorer only support language with spaces.")
+        self.logger.warning(
+            "Current WER scorer is on raw text (un-tokenized with punctuations)."
+        )
+        self.ed = ed
+
+    def __call__(self, instances: Dict) -> float:
+        distance = 0
+        ref_length = 0
+        for ins in instances.values():
+            distance += self.ed.eval(ins.prediction.split(), ins.reference.split())
+            ref_length += len(ins.reference.split())
+            if ref_length == 0:
+                self.logger.warning("Reference length is 0. Return WER as 0.")
+                return 0
+
+        return 100.0 * distance / ref_length
+
+    @classmethod
+    def from_args(cls, args):
+        return cls(args)
+
+
 @register_quality_scorer("BLEU")
 class SacreBLEUScorer(QualityScorer):
     """
