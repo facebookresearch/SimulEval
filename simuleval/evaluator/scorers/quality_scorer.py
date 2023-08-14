@@ -75,8 +75,11 @@ class WERScorer(QualityScorer):
         for ins in instances.values():
             distance += self.ed.eval(ins.prediction.split(), ins.reference.split())
             ref_length += len(ins.reference.split())
+            if ref_length == 0:
+                self.logger.warning("Reference length is 0. Return WER as 0.")
+                return 0
 
-        return 100.0 * distance / ref_length if ref_length > 0 else 0
+        return 100.0 * distance / ref_length
 
     @classmethod
     def from_args(cls, args):
