@@ -15,6 +15,7 @@ class Segment:
     finished: bool = False
     is_empty: bool = False
     data_type: str = None
+    tgt_lang: str = ""
 
     def json(self) -> str:
         info_dict = {attribute: value for attribute, value in self.__dict__.items()}
@@ -34,12 +35,14 @@ class EmptySegment(Segment):
 class TextSegment(Segment):
     content: str = ""
     data_type: str = "text"
+    tgt_lang: str = ""
 
 
 @dataclass
 class SpeechSegment(Segment):
     sample_rate: int = -1
     data_type: str = "speech"
+    tgt_lang: str = ""
 
 
 def segment_from_json_string(string: str):
@@ -50,3 +53,13 @@ def segment_from_json_string(string: str):
         return SpeechSegment.from_json(string)
     else:
         return EmptySegment.from_json(string)
+
+# Create a TextSegment from a string
+
+# output = segment_from_json_string('{"index": 0, "content": "hello world", "finished": false, "is_empty": false, "data_type": "speech", "tgt_lang": ["en", "es", "fr"]}')
+# print(output)
+
+# txt = text_segment_from_string("hello world", "en")
+# print(txt)
+
+# txt = text_segment_from_string("hello world")
