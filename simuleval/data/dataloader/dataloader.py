@@ -37,10 +37,12 @@ class GenericDataloader:
     """
 
     def __init__(
-        self, source_list: List[str], target_list: Union[List[str], List[None]]
+        self, source_list: List[str], target_list: Union[List[str], List[None]],
+        tgt_lang: str
     ) -> None:
         self.source_list = source_list
         self.target_list = target_list
+        self.tgt_lang = tgt_lang
         assert len(self.source_list) == len(self.target_list)
 
     def __len__(self):
@@ -53,7 +55,9 @@ class GenericDataloader:
         return self.preprocess_target(self.target_list[index])
 
     def __getitem__(self, index: int) -> Dict[str, Any]:
-        return {"source": self.get_source(index), "target": self.get_target(index)}
+        return {"source": self.get_source(index), 
+                "target": self.get_target(index),
+                "tgt_lang": self.tgt_lang}
 
     def preprocess_source(self, source: Any) -> Any:
         raise NotImplementedError
@@ -95,3 +99,21 @@ class GenericDataloader:
             default=1,
             help="Source segment size, For text the unit is # token, for speech is ms",
         )
+
+# Create an instance of the dataloader with target language
+
+
+args = Namespace(
+    source="/home/mubarak/SimulEval/examples/speech_to_text/source.txt",
+    target="/home/mubarak/SimulEval/examples/speech_to_text/reference/en.txt",
+    source_type="speech",
+    target_type="text",
+    target_language="en"
+)
+
+dataloader = GenericDataloader(args.source,
+                                args.target)
+                            
+
+print(dataloader.__getitem__(0))
+

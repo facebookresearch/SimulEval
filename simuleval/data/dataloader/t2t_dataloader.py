@@ -11,6 +11,7 @@ from .dataloader import GenericDataloader
 from simuleval.data.dataloader import register_dataloader
 from argparse import Namespace
 
+tgt_lang = "en"
 
 @register_dataloader("text-to-text")
 class TextToTextDataloader(GenericDataloader):
@@ -33,7 +34,7 @@ class TextToTextDataloader(GenericDataloader):
 
     @classmethod
     def from_files(
-        cls, source: Union[Path, str], target: Optional[Union[Path, str]]
+        cls, source: Union[Path, str], target: Optional[Union[Path, str]], tgt_lang
     ) -> TextToTextDataloader:
         assert source
         with open(source) as f:
@@ -43,11 +44,12 @@ class TextToTextDataloader(GenericDataloader):
                 target_list = f.readlines()
         else:
             target_list = [None for _ in source_list]
-        dataloader = cls(source_list, target_list)
+        dataloader = cls(source_list, target_list, tgt_lang)
         return dataloader
 
     @classmethod
     def from_args(cls, args: Namespace):
         args.source_type = "text"
         args.target_type = "text"
-        return cls.from_files(args.source, args.target)
+        tgt_lang = tgt_lang
+        return cls.from_files(args.source, args.target, tgt_lang)
