@@ -235,11 +235,12 @@ class SpeechInputInstance(Instance):
         args: Optional[Namespace],
     ):
         super().__init__(index, dataloader, args)
+        self.args = args
+        # self.tgt_lang = dataloader.tgt_lang
         self.sample_rate_value = None
         self.sample_list = None
         self.source_finished_reading = False
         self.dataloader: SpeechToTextDataloader
-        self.tgt_lang = args.tgt_lang
 
     @property
     def sample_rate(self):
@@ -283,7 +284,7 @@ class SpeechInputInstance(Instance):
                 content=samples,
                 sample_rate=self.audio_info.samplerate,
                 finished=is_finished,
-                tgt_lang=self.tgt_lang
+                # tgt_lang=self.tgt_lang
             )
 
         else:
@@ -456,3 +457,10 @@ class LogInstance:
         self.source_length = self.info.get("source_length")  # just for testing!
         self.finish_prediction = True
         self.metrics = {}
+
+
+# source_path = "path/to/source.txt"
+# target_path = "path/to/target.txt"
+# tgt_lang_path = "path/to/tgt-lang.txt"
+
+# data = SpeechToTextDataloader.from_files(source=source_path, target=target_path, tgt_lang=tgt_lang_path)
