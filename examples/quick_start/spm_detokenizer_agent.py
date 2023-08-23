@@ -51,7 +51,10 @@ class SentencePieceModelDetokenizerAgent(TextToTextAgent):
         if states.source_finished:
             return WriteAction(possible_full_words, True)
         elif len(possible_full_words.split()) > 1:
-            full_words, last_word = possible_full_words.split()[:-1], possible_full_words.split()[-1]
+            full_words, last_word = (
+                possible_full_words.split()[:-1],
+                possible_full_words.split()[-1],
+            )
             states.source = [self.spm_processor.encode(last_word)]
             return WriteAction(" ".join(full_words), finished=False)
         else:
