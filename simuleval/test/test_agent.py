@@ -86,4 +86,5 @@ def test_spm_detokenizer_agent():
             if not output_segment.is_empty:
                 output.append(output_segment.content)
                 delays += [i] * len(output_segment.content.split())
-        return output, delays
+        assert output == ["Let's do it", 'without hesitation.']
+        assert delays == [1, 1, 1, 2, 2]
