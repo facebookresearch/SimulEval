@@ -232,7 +232,7 @@ class SpeechInputInstance(Instance):
         self,
         index: int,
         dataloader: Optional[SpeechToTextDataloader],
-        args: Optional[Namespace],
+        args: Optional[Namespace], 
     ):
         super().__init__(index, dataloader, args)
         self.args = args
@@ -457,10 +457,4 @@ class LogInstance:
         self.source_length = self.info.get("source_length")  # just for testing!
         self.finish_prediction = True
         self.metrics = {}
-
-
-# source_path = "path/to/source.txt"
-# target_path = "path/to/target.txt"
-# tgt_lang_path = "path/to/tgt-lang.txt"
-
-# data = SpeechToTextDataloader.from_files(source=source_path, target=target_path, tgt_lang=tgt_lang_path)
+        
