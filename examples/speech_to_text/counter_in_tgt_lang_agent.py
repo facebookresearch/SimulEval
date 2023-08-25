@@ -14,10 +14,10 @@ class CounterInTargetLanguage(SpeechToTextAgent):
     def __init__(self, args):
         super().__init__(args)
         self.wait_seconds = args.wait_seconds
-        if args is not None:
-            with open(args.tgt_lang, "r") as file:
-                tgt_lang = file.read()
-        self.tgt_lang = tgt_lang
+        # if args is not None:
+        #     with open(args.tgt_lang, "r") as file:
+        #         tgt_lang = file.read()
+        # self.tgt_lang = tgt_lang
 
     @staticmethod
     def add_args(parser):
@@ -38,11 +38,12 @@ class CounterInTargetLanguage(SpeechToTextAgent):
             return ReadAction()
 
         prediction = f"{length_in_seconds} "
-        if self.tgt_lang == "en":
+        tgt_lang = states.tgt_lang
+        if tgt_lang == "en":
             prediction += "seconds"
-        elif self.tgt_lang == "es":
+        elif tgt_lang == "es":
             prediction += "segundos"
-        elif self.tgt_lang == "de":
+        elif tgt_lang == "de":
             prediction += "sekunden"
         else:
             prediction += "<unknown>"
