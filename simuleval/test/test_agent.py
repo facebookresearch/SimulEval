@@ -7,11 +7,18 @@
 import os
 import tempfile
 from pathlib import Path
+import urllib.request
+from argparse import Namespace
+
+import pytest
 
 import simuleval.cli as cli
 from simuleval.agents import TextToTextAgent
 from simuleval.agents.actions import ReadAction, WriteAction
 from simuleval.data.segments import TextSegment
+from examples.quick_start.spm_detokenizer_agent import (
+    SentencePieceModelDetokenizerAgent,
+)
 
 ROOT_PATH = Path(__file__).parents[2]
 
@@ -61,3 +68,36 @@ def test_statelss_agent(root_path=ROOT_PATH):
         output_1 = agent_stateless.pushpop(segment, agent_state)
         output_2 = agent_stateful.pushpop(segment)
         assert output_1.content == output_2.content
+
+
+@pytest.mark.parametrize("detokenize_only", [True, False])
+def test_spm_detokenizer_agent(detokenize_only):
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        tokenizer_file = f"{tmpdirname}/tokenizer.model"
+        tokenizer_url = "https://huggingface.co/facebook/seamless-m4t-large/resolve/main/tokenizer.model"
+        urllib.request.urlretrieve(tokenizer_url, tokenizer_file)
+
+        args = Namespace()
+        args.sentencepiece_model = tokenizer_file
+        args.detokenize_only = detokenize_only
+
+        output = []
+        delays = []
+        agent = SentencePieceModelDetokenizerAgent.from_args(args)
+        agent_state = agent.build_states()
+        segments = [
+            TextSegment(0, "▁Let ' s"),
+            TextSegment(1, "▁do ▁it ▁with"),
+            TextSegment(2, "out ▁hesitation .", finished=True),
+        ]
+        for i, segment in enumerate(segments):
+            output_segment = agent.pushpop(segment, agent_state)
+            if not output_segment.is_empty:
+                output.append(output_segment.content)
+                delays += [i] * len(output_segment.content.split())
+        if detokenize_only:
+            assert output == ["Let's", "do it with", "out hesitation."]
+            assert delays == [0, 1, 1, 1, 2, 2]
+        else:
+            assert output == ["Let's do it", "without hesitation."]
+            assert delays == [1, 1, 1, 2, 2]
