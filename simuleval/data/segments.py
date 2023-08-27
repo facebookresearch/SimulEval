@@ -34,6 +34,7 @@ class EmptySegment(Segment):
 class TextSegment(Segment):
     content: str = ""
     data_type: str = "text"
+    word_boundary: bool = None
 
 
 @dataclass

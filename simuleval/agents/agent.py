@@ -127,6 +127,10 @@ class GenericAgent:
             segment = SEGMENT_TYPE_DICT[self.target_type](
                 index=0, content=action.content, finished=action.finished
             )
+
+            if isinstance(segment, TextSegment) and action.word_boundary is not None:
+                segment.word_boundary = action.word_boundary
+
             states.update_target(segment)
             return segment
 
