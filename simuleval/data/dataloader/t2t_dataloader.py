@@ -33,7 +33,7 @@ class TextToTextDataloader(GenericDataloader):
 
     @classmethod
     def from_files(
-        cls, source: Union[Path, str], target: Optional[Union[Path, str]], tgt_lang
+        cls, source: Union[Path, str], target: Optional[Union[Path, str]]
     ) -> TextToTextDataloader:
         assert source
         with open(source) as f:
@@ -43,12 +43,11 @@ class TextToTextDataloader(GenericDataloader):
                 target_list = f.readlines()
         else:
             target_list = [None for _ in source_list]
-        dataloader = cls(source_list, target_list, tgt_lang)
+        dataloader = cls(source_list, target_list)
         return dataloader
 
     @classmethod
     def from_args(cls, args: Namespace):
         args.source_type = "text"
         args.target_type = "text"
-        tgt_lang = tgt_lang
-        return cls.from_files(args.source, args.target, tgt_lang)
+        return cls.from_files(args.source, args.target)
