@@ -58,9 +58,7 @@ def download_youtube_video(url):
 
 @register_dataloader("speech-to-text")
 class SpeechToTextDataloader(GenericDataloader):
-    def __init__(
-        self, source_list: List[str], target_list: List[str], tgt_lang: str
-    ) -> None:
+    def __init__(self, source_list: List[str], target_list: List[str], tgt_lang: str) -> None:
         super().__init__(source_list, target_list)
         self.tgt_lang = tgt_lang
 
@@ -109,7 +107,9 @@ class SpeechToSpeechDataloader(SpeechToTextDataloader):
             source_list = [line.strip() for line in f]
         with open(target) as f:
             target_list = [line.strip() for line in f]
-        dataloader = cls(source_list, target_list)
+        with open(tgt_lang, "r") as f:
+            tgt_lang = f.read()
+        dataloader = cls(source_list, target_list, tgt_lang)
         return dataloader
 
     @classmethod
