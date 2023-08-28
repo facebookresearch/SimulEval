@@ -87,8 +87,6 @@ class SpeechToTextDataloader(GenericDataloader):
             target_list = [line.strip() for line in f]
         with open(tgt_lang, "r") as f:
             tgt_lang = f.read()
-        print(type(tgt_lang))
-        print(tgt_lang)
         dataloader = cls(source_list, target_list, tgt_lang)
         return dataloader
 
@@ -110,7 +108,7 @@ class SpeechToSpeechDataloader(SpeechToTextDataloader):
         with open(target) as f:
             target_list = [line.strip() for line in f]
         with open(tgt_lang) as f:
-            tgt_lang = [line.strip() for line in f]
+            tgt_lang = f.read()
         dataloader = cls(source_list, target_list, tgt_lang)
         return dataloader
 
