@@ -232,7 +232,7 @@ class SpeechInputInstance(Instance):
         self,
         index: int,
         dataloader: Optional[SpeechToTextDataloader],
-        args: Optional[Namespace], 
+        args: Optional[Namespace],
     ):
         super().__init__(index, dataloader, args)
         self.args = args
@@ -284,7 +284,7 @@ class SpeechInputInstance(Instance):
                 content=samples,
                 sample_rate=self.audio_info.samplerate,
                 finished=is_finished,
-                tgt_lang=self.tgt_lang
+                tgt_lang=self.tgt_lang,
             )
 
         else:
@@ -457,4 +457,3 @@ class LogInstance:
         self.source_length = self.info.get("source_length")  # just for testing!
         self.finish_prediction = True
         self.metrics = {}
-        

@@ -37,7 +37,9 @@ class GenericDataloader:
     """
 
     def __init__(
-        self, source_list: List[str], target_list: Union[List[str], List[None]],
+        self,
+        source_list: List[str],
+        target_list: Union[List[str], List[None]],
     ) -> None:
         self.source_list = source_list
         self.target_list = target_list
@@ -53,9 +55,10 @@ class GenericDataloader:
         return self.preprocess_target(self.target_list[index])
 
     def __getitem__(self, index: int) -> Dict[str, Any]:
-        return {"source": self.get_source(index), 
-                "target": self.get_target(index),
-            }
+        return {
+            "source": self.get_source(index),
+            "target": self.get_target(index),
+        }
 
     def preprocess_source(self, source: Any) -> Any:
         raise NotImplementedError
@@ -97,4 +100,3 @@ class GenericDataloader:
             default=1,
             help="Source segment size, For text the unit is # token, for speech is ms",
         )
-        

@@ -14,17 +14,11 @@ class CounterInTargetLanguage(SpeechToTextAgent):
     def __init__(self, args):
         super().__init__(args)
         self.wait_seconds = args.wait_seconds
-        # if args is not None:
-        #     with open(args.tgt_lang, "r") as file:
-        #         tgt_lang = file.read()
-        # self.tgt_lang = tgt_lang
 
     @staticmethod
     def add_args(parser):
         parser.add_argument("--wait-seconds", default=1, type=int)
-        parser.add_argument(
-            "--tgt-lang"
-        )
+        parser.add_argument("--tgt-lang")
 
     def policy(self, states: Optional[AgentStates] = None):
         if states is None:
