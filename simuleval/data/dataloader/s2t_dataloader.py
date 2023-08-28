@@ -107,34 +107,32 @@ class SpeechToSpeechDataloader(SpeechToTextDataloader):
             source_list = [line.strip() for line in f]
         with open(target) as f:
             target_list = [line.strip() for line in f]
-        with open(tgt_lang) as f:
-            tgt_lang = f.read()
-        dataloader = cls(source_list, target_list, tgt_lang)
+        dataloader = cls(source_list, target_list)
         return dataloader
 
     @classmethod
     def from_args(cls, args: Namespace):
         args.source_type = "speech"
         args.target_type = "speech"
-        return cls.from_files(args.source, args.target, args.tgt_lang)
+        return cls.from_files(args.source, args.target)
 
 
 @register_dataloader("youtube-to-text")
 class YoutubeToTextDataloader(SpeechToTextDataloader):
     @classmethod
     def from_youtube(
-        cls, source: Union[Path, str], target: Union[Path, str], tgt_lang: str
+        cls, source: Union[Path, str], target: Union[Path, str]
     ) -> YoutubeToTextDataloader:
         source_list = [download_youtube_video(source)]
         target_list = [target]
-        dataloader = cls(source_list, target_list, tgt_lang)
+        dataloader = cls(source_list, target_list)
         return dataloader
 
     @classmethod
     def from_args(cls, args: Namespace):
         args.source_type = "youtube"
         args.target_type = "text"
-        return cls.from_youtube(args.source, args.target, args.tgt_lang)
+        return cls.from_youtube(args.source, args.target)
 
 
 @register_dataloader("youtube-to-speech")
@@ -143,4 +141,4 @@ class YoutubeToSpeechDataloader(YoutubeToTextDataloader):
     def from_args(cls, args: Namespace):
         args.source_type = "youtube"
         args.target_type = "speech"
-        return cls.from_youtube(args.source, args.target, args.tgt_lang)
+        return cls.from_youtube(args.source, args.target)
