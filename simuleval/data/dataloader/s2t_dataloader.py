@@ -103,7 +103,7 @@ class SpeechToTextDataloader(GenericDataloader):
 class SpeechToSpeechDataloader(SpeechToTextDataloader):
     @classmethod
     def from_files(
-        cls, source: Union[Path, str], target: Union[Path, str]
+        cls, source: Union[Path, str], target: Union[Path, str], tgt_lang: str
     ) -> SpeechToSpeechDataloader:
         with open(source) as f:
             source_list = [line.strip() for line in f]
