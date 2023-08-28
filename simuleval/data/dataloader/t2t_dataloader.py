@@ -11,8 +11,6 @@ from .dataloader import GenericDataloader
 from simuleval.data.dataloader import register_dataloader
 from argparse import Namespace
 
-tgt_lang = "en"
-
 
 @register_dataloader("text-to-text")
 class TextToTextDataloader(GenericDataloader):
