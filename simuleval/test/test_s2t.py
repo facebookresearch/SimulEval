@@ -39,7 +39,9 @@ def test_s2t(root_path=ROOT_PATH):
             "--output",
             tmpdirname,
             "--tgt-lang",
-            os.path.join(root_path, "examples", "speech_to_text", "reference/tgt_lang.txt"),
+            os.path.join(
+                root_path, "examples", "speech_to_text", "reference/tgt_lang.txt"
+            ),
         ]
         cli.main()
 
