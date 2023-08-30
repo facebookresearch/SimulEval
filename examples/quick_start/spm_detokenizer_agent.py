@@ -12,6 +12,7 @@ class DummySegmentAgent(TextToTextAgent):
     """
     This agent just splits on space
     """
+
     def __init__(self, args):
         super().__init__(args)
         self.segment_k = args.segment_k
