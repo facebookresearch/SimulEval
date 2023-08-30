@@ -47,4 +47,4 @@ jobs:
         pytest simuleval/test/test_agent_pipeline.py
         pytest simuleval/test/test_evaluator.py
         pytest simuleval/test/test_remote_evaluation.py
-        pytest simuleval/test/test_s2s.py --tgt-lang reference/tgt_lang.txt
+        pytest simuleval/test/test_s2s.py
