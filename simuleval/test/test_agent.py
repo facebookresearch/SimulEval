@@ -101,3 +101,31 @@ def test_spm_detokenizer_agent(detokenize_only):
         else:
             assert output == ["Let's do it", "without hesitation."]
             assert delays == [1, 1, 1, 2, 2]
+
+
+@pytest.mark.parametrize("detokenize_only", [True, False])
+def test_spm_detokenizer_agent_pipeline(detokenize_only, root_path=ROOT_PATH):
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        tokenizer_file = f"{tmpdirname}/tokenizer.model"
+        tokenizer_url = "https://huggingface.co/facebook/seamless-m4t-large/resolve/main/tokenizer.model"
+        urllib.request.urlretrieve(tokenizer_url, tokenizer_file)
+
+        cli.sys.argv[1:] = [
+            "--user-dir",
+            os.path.join(root_path, "examples"),
+            "--agent-class",
+            "examples.quick_start.spm_detokenizer_agent.DummyPipeline",
+            "--source",
+            os.path.join(root_path, "examples", "quick_start", "spm_source.txt"),
+            "--target",
+            os.path.join(root_path, "examples", "quick_start", "spm_target.txt"),
+            "--output",
+            tmpdirname,
+            "--segment-k",
+            "3",
+            "--sentencepiece-model",
+            tokenizer_file,
+        ]
+        if detokenize_only:
+            cli.sys.argv.append("--detokenize-only")
+        cli.main()

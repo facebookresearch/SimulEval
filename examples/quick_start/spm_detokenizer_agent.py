@@ -4,7 +4,36 @@ from fairseq.data.encoders import build_bpe
 
 from simuleval.agents import TextToTextAgent
 from simuleval.agents.actions import ReadAction, WriteAction
+from simuleval.agents.pipeline import AgentPipeline
 from simuleval.agents.states import AgentStates
+
+
+class DummySegmentAgent(TextToTextAgent):
+    """
+    This agent just splits on space
+    """
+    def __init__(self, args):
+        super().__init__(args)
+        self.segment_k = args.segment_k
+
+    @classmethod
+    def from_args(cls, args, **kwargs):
+        return cls(args)
+
+    def add_args(parser: ArgumentParser):
+        parser.add_argument(
+            "--segment-k",
+            type=int,
+            help="Output segments with this many words",
+            required=True,
+        )
+
+    def policy(self, states: AgentStates):
+        if len(states.source) == self.segment_k or states.source_finished:
+            out = " ".join(states.source)
+            states.source = []
+            return WriteAction(out, finished=states.source_finished)
+        return ReadAction()
 
 
 class SentencePieceModelDetokenizerAgent(TextToTextAgent):
@@ -59,3 +88,7 @@ class SentencePieceModelDetokenizerAgent(TextToTextAgent):
             return WriteAction(" ".join(full_words), finished=False)
         else:
             return ReadAction()
+
+
+class DummyPipeline(AgentPipeline):
+    pipeline = [DummySegmentAgent, SentencePieceModelDetokenizerAgent]
