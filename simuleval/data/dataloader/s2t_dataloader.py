@@ -118,7 +118,7 @@ class SpeechToSpeechDataloader(SpeechToTextDataloader):
     def from_args(cls, args: Namespace):
         args.source_type = "speech"
         args.target_type = "speech"
-        return cls.from_files(args.source, args.target)
+        return cls.from_files(args.source, args.target, args.tgt_lang)
 
 
 @register_dataloader("youtube-to-text")
