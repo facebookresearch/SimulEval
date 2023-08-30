@@ -161,6 +161,12 @@ def general_parser():
         default="main.yaml",
         help="Name of the config yaml of the system configs.",
     )
+    parser.add_argument(
+        "--tgt-lang",
+        type=str,
+        default=None,
+        help="Path to the Target language file.",
+    )
     parser.add_argument("--dataloader", default=None, help="Dataloader to use")
     parser.add_argument(
         "--log-level",
