@@ -296,7 +296,8 @@ class SpeechInputInstance(Instance):
         else:
             # Finish reading this audio
             segment = EmptySegment(
-                index=self.len_sample_to_ms(self.step), finished=True,
+                index=self.len_sample_to_ms(self.step),
+                finished=True,
             )
             self.source_finished_reading = True
 
