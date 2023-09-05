@@ -200,22 +200,17 @@ class TextOutputInstance(Instance):
             prediction_list = list(prediction.content.replace(" ", ""))
         else:
             raise NotImplementedError
+        
+        if prediction.word_boundary: 
+            first_half = self.prediction_list[-1]
+            second_half = prediction_list[0]
+            complete_word = first_half + second_half
+            self.prediction_list.pop()
+            self.delays.pop()
+            prediction_list.pop(0)
+            prediction_list.insert(0, complete_word)
+
         self.prediction_list += prediction_list
-        #print(self.prediction_list)
-        #print(self.prediction_list[-1])
-        # if source.finished = True and firstword boundary = true, store it somewhere
-        # if first word and source.finished = False and first word boundary = false 
-        # how to get previous segment
-        first_word = ""
-        if prediction.finished and prediction.word_boundary:
-            first_word = self.prediction_list[-1]
-            print("incomplete word:")
-            print(first_word)
-        if len(self.prediction_list) == 1 and not prediction.finished and not prediction.word_boundary:
-            print("to combine with previous:")
-            print(self.prediction_list)
-            self.prediction_list.remove(self.prediction_list[0])
-        print(self.prediction_list)
         
         self.elapsed += [self.step_to_elapsed(self.step, current_time)] * len(
             prediction_list

@@ -102,7 +102,6 @@ def test_spm_detokenizer_agent(detokenize_only):
             assert output == ["Let's do it", "without hesitation."]
             assert delays == [1, 1, 1, 2, 2]
 
-
 @pytest.mark.parametrize("detokenize_only", [True, False])
 def test_spm_detokenizer_agent_pipeline(detokenize_only, root_path=ROOT_PATH):
     with tempfile.TemporaryDirectory() as tmpdirname:
@@ -129,3 +128,5 @@ def test_spm_detokenizer_agent_pipeline(detokenize_only, root_path=ROOT_PATH):
         if detokenize_only:
             cli.sys.argv.append("--detokenize-only")
         cli.main()
+
+test_spm_detokenizer_agent_pipeline(True, root_path=ROOT_PATH)

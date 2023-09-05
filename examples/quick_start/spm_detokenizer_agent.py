@@ -2,12 +2,13 @@ from argparse import ArgumentParser
 
 from fairseq.data.encoders import build_bpe
 
+from simuleval.utils import entrypoint
 from simuleval.agents import TextToTextAgent
 from simuleval.agents.actions import ReadAction, WriteAction
 from simuleval.agents.pipeline import AgentPipeline
 from simuleval.agents.states import AgentStates
 
-
+@entrypoint
 class DummySegmentAgent(TextToTextAgent):
     """
     This agent just splits on space
@@ -79,10 +80,8 @@ class SentencePieceModelDetokenizerAgent(TextToTextAgent):
                 return ReadAction()
             else:
                 word_boundary = False
-                if start_word in source_text: 
+                if start_word not in source_text[0]: 
                     word_boundary = True
-                #print(word_boundary)
-                #print(possible_full_words)
                 return WriteAction(possible_full_words, states.source_finished, word_boundary)
 
         if states.source_finished:
