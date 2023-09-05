@@ -8,6 +8,7 @@ from simuleval.agents.actions import ReadAction, WriteAction
 from simuleval.agents.pipeline import AgentPipeline
 from simuleval.agents.states import AgentStates
 
+
 @entrypoint
 class DummySegmentAgent(TextToTextAgent):
     """
@@ -71,7 +72,7 @@ class SentencePieceModelDetokenizerAgent(TextToTextAgent):
         possible_full_words = self.spm_processor.decode(
             " ".join([x for x in states.source])
         )
-        # issue is when the starting word is in the previous segment 
+        # issue is when the starting word is in the previous segment
         if self.detokenize_only and len(states.source) > 0:
             start_word = "▁"
             source_text = states.source[0]
@@ -79,10 +80,12 @@ class SentencePieceModelDetokenizerAgent(TextToTextAgent):
             if len(possible_full_words) == 0 and not states.source_finished:
                 return ReadAction()
             else:
-                word_boundary = False
-                if start_word not in source_text[0]: 
-                    word_boundary = True
-                return WriteAction(possible_full_words, states.source_finished, word_boundary)
+                incomplete_word = False
+                if start_word not in source_text[0]:
+                    incomplete_word = True
+                return WriteAction(
+                    possible_full_words, states.source_finished, incomplete_word
+                )
 
         if states.source_finished:
             return WriteAction(possible_full_words, True)

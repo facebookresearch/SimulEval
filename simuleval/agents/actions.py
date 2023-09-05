@@ -52,7 +52,7 @@ class WriteAction(Action):
 
     content: Union[str, List[float], Segment]
     finished: bool
-    word_boundary: Optional[bool] = None
+    incomplete_word: Optional[bool] = None
 
     def is_read(self) -> bool:
         return False

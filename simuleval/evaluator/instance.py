@@ -200,8 +200,8 @@ class TextOutputInstance(Instance):
             prediction_list = list(prediction.content.replace(" ", ""))
         else:
             raise NotImplementedError
-        
-        if prediction.word_boundary: 
+
+        if prediction.incomplete_word:
             first_half = self.prediction_list[-1]
             second_half = prediction_list[0]
             complete_word = first_half + second_half
@@ -211,7 +211,7 @@ class TextOutputInstance(Instance):
             prediction_list.insert(0, complete_word)
 
         self.prediction_list += prediction_list
-        
+
         self.elapsed += [self.step_to_elapsed(self.step, current_time)] * len(
             prediction_list
         )
@@ -296,8 +296,7 @@ class SpeechInputInstance(Instance):
         else:
             # Finish reading this audio
             segment = EmptySegment(
-                index=self.len_sample_to_ms(self.step),
-                finished=True,
+                index=self.len_sample_to_ms(self.step), finished=True,
             )
             self.source_finished_reading = True
 
