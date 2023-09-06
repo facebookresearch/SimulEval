@@ -240,7 +240,15 @@ class SpeechInputInstance(Instance):
         self.sample_list = None
         self.source_finished_reading = False
         self.dataloader: SpeechToTextDataloader
-        self.tgt_lang = self.dataloader.tgt_lang
+        if self.dataloader is not None:
+            self.tgt_lang = self.dataloader.tgt_lang
+            if isinstance(self.tgt_lang, list):
+                if index < len(self.tgt_lang):
+                    self.tgt_lang = self.tgt_lang[self.index]
+                else:
+                    self.tgt_lang = None
+        else:
+            self.tgt_lang = None
 
     @property
     def sample_rate(self):
