@@ -210,7 +210,7 @@ class TextOutputInstance(Instance):
             self.elapsed.pop()
             prediction_list.pop(0)
             prediction_list.insert(0, complete_word)
-        
+
         self.prediction_list += prediction_list
 
         self.elapsed += [self.step_to_elapsed(self.step, current_time)] * len(
