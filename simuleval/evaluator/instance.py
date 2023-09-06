@@ -200,7 +200,7 @@ class TextOutputInstance(Instance):
             prediction_list = list(prediction.content.replace(" ", ""))
         else:
             raise NotImplementedError
-        
+
         if prediction.incomplete_word:
             first_half = self.prediction_list[-1]
             second_half = prediction_list[0]
