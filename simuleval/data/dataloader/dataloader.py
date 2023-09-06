@@ -100,3 +100,9 @@ class GenericDataloader:
             default=1,
             help="Source segment size, For text the unit is # token, for speech is ms",
         )
+        parser.add_argument(
+            "--tgt-lang",
+            type=str,
+            default=None,
+            help="Target language",
+        )
