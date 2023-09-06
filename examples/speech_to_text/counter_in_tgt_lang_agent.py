@@ -18,7 +18,6 @@ class CounterInTargetLanguage(SpeechToTextAgent):
     @staticmethod
     def add_args(parser):
         parser.add_argument("--wait-seconds", default=1, type=int)
-        parser.add_argument("--tgt-lang")
 
     def policy(self, states: Optional[AgentStates] = None):
         if states is None:
