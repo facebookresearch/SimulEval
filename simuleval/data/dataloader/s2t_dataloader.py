@@ -81,7 +81,10 @@ class SpeechToTextDataloader(GenericDataloader):
 
     @classmethod
     def from_files(
-        cls, source: Union[Path, str], target: Union[Path, str], tgt_lang: Union[Path, str]
+        cls,
+        source: Union[Path, str],
+        target: Union[Path, str],
+        tgt_lang: Union[Path, str],
     ) -> SpeechToTextDataloader:
         with open(source) as f:
             source_list = [line.strip() for line in f]
@@ -98,14 +101,16 @@ class SpeechToTextDataloader(GenericDataloader):
         args.source_type = "speech"
         args.target_type = "text"
         return cls.from_files(args.source, args.target, args.tgt_lang)
-    
 
 
 @register_dataloader("speech-to-speech")
 class SpeechToSpeechDataloader(SpeechToTextDataloader):
     @classmethod
     def from_files(
-        cls, source: Union[Path, str], target: Union[Path, str], tgt_lang: Union[Path, str]
+        cls,
+        source: Union[Path, str],
+        target: Union[Path, str],
+        tgt_lang: Union[Path, str],
     ) -> SpeechToSpeechDataloader:
         with open(source) as f:
             source_list = [line.strip() for line in f]
@@ -121,7 +126,7 @@ class SpeechToSpeechDataloader(SpeechToTextDataloader):
         args.source_type = "speech"
         args.target_type = "speech"
         return cls.from_files(args.source, args.target, args.tgt_lang)
-    
+
 
 @register_dataloader("youtube-to-text")
 class YoutubeToTextDataloader(SpeechToTextDataloader):
