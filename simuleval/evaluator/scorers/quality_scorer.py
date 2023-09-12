@@ -85,7 +85,9 @@ class WERScorer(QualityScorer):
         if self.wer_whisper_en_norm:
             self.normalizer = WhisperNormalizer(True, False)
         else:
-            self.logger.warning("Current WER scorer is on raw text (un-tokenized with punctuations).")
+            self.logger.warning(
+                "Current WER scorer is on raw text (un-tokenized with punctuations)."
+            )
 
     def __call__(self, instances: Dict) -> float:
         distance = 0
