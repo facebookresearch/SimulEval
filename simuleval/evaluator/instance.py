@@ -46,6 +46,13 @@ class Instance(object):
         if self.dataloader is not None:
             self.source = self.dataloader[self.index]["source"]
             self.reference = self.dataloader[self.index]["target"]
+
+            # Handle when tgt_lang is not provided
+            if self.dataloader.tgt_lang_list is not None:
+                self.tgt_lang = self.dataloader[self.index]["tgt_lang"]
+            else:
+                self.tgt_lang = None
+                
         self.reset()
         if args is not None:
             self.args = args
@@ -240,15 +247,6 @@ class SpeechInputInstance(Instance):
         self.sample_list = None
         self.source_finished_reading = False
         self.dataloader: SpeechToTextDataloader
-        if self.dataloader is not None:
-            self.tgt_lang = self.dataloader.tgt_lang
-            if isinstance(self.tgt_lang, list):
-                if index < len(self.tgt_lang):
-                    self.tgt_lang = self.tgt_lang[self.index]
-                else:
-                    self.tgt_lang = None
-        else:
-            self.tgt_lang = None
 
     @property
     def sample_rate(self):
