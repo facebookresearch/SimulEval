@@ -57,7 +57,10 @@ class GenericDataloader:
         return self.preprocess_target(self.target_list[index])
 
     def get_tgt_lang(self, index: int) -> Any:
-        return self.preprocess_tgt_lang(self.tgt_lang_list[index])
+        if self.tgt_lang_list is not None and index < len(self.tgt_lang_list):
+            return self.preprocess_tgt_lang(self.tgt_lang_list[index])
+        else:
+            return None
 
     def __getitem__(self, index: int) -> Dict[str, Any]:
         return {
