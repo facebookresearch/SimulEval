@@ -6,7 +6,7 @@
 
 from __future__ import annotations
 from pathlib import Path
-from typing import List, Union
+from typing import List, Union, Optional
 from .dataloader import GenericDataloader
 from simuleval.data.dataloader import register_dataloader
 from argparse import Namespace
@@ -59,16 +59,21 @@ def download_youtube_video(url):
 @register_dataloader("speech-to-text")
 class SpeechToTextDataloader(GenericDataloader):
     def __init__(
-        self, source_list: List[str], target_list: List[str], tgt_lang: str
+        self,
+        source_list: List[str],
+        target_list: List[str],
+        tgt_lang_list: Optional[List[str]] = None,
     ) -> None:
-        super().__init__(source_list, target_list)
-        self.tgt_lang = tgt_lang
+        super().__init__(source_list, target_list, tgt_lang_list)
 
     def preprocess_source(self, source: Union[Path, str]) -> List[float]:
         assert IS_IMPORT_SOUNDFILE, "Please make sure soundfile is properly installed."
         samples, _ = soundfile.read(source, dtype="float32")
         samples = samples.tolist()
         return samples
+    
+    def preprocess_tgt_lang(self, tgt_lang: Union[Path, str]) -> str:
+        return tgt_lang
 
     def preprocess_target(self, target: str) -> str:
         return target
@@ -90,7 +95,7 @@ class SpeechToTextDataloader(GenericDataloader):
             source_list = [line.strip() for line in f]
         with open(target) as f:
             target_list = [line.strip() for line in f]
-        with open(tgt_lang, "r") as f:
+        with open(tgt_lang) as f:
             tgt_lang_list = [line.strip() for line in f]
             print(tgt_lang_list)
         dataloader = cls(source_list, target_list, tgt_lang_list)
