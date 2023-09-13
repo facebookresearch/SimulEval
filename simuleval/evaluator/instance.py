@@ -52,7 +52,7 @@ class Instance(object):
                 self.tgt_lang = self.dataloader[self.index]["tgt_lang"]
             else:
                 self.tgt_lang = None
-                
+
         self.reset()
         if args is not None:
             self.args = args

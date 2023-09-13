@@ -55,7 +55,7 @@ class GenericDataloader:
 
     def get_target(self, index: int) -> Any:
         return self.preprocess_target(self.target_list[index])
-    
+
     def get_tgt_lang(self, index: int) -> Any:
         return self.preprocess_tgt_lang(self.tgt_lang_list[index])
 
@@ -71,7 +71,7 @@ class GenericDataloader:
 
     def preprocess_target(self, target: Any) -> Any:
         raise NotImplementedError
-    
+
     def preprocess_tgt_lang(self, tgt_lang: Any) -> Any:
         raise NotImplementedError
 

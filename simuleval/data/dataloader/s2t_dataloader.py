@@ -71,7 +71,7 @@ class SpeechToTextDataloader(GenericDataloader):
         samples, _ = soundfile.read(source, dtype="float32")
         samples = samples.tolist()
         return samples
-    
+
     def preprocess_tgt_lang(self, tgt_lang: Union[Path, str]) -> str:
         return tgt_lang
 
