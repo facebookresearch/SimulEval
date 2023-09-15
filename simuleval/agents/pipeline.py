@@ -269,7 +269,9 @@ class TreeAgentPipeline(AgentPipeline):
         return outputs
 
     def push(
-        self, segment: Segment, states: Optional[Dict[GenericAgent, AgentStates]] = None
+        self,
+        segment: Segment, states: Optional[Dict[GenericAgent, AgentStates]] = None,
+        upstream_states: Optional[List[AgentStates]] = None,
     ) -> None:
         if states is None:
             states = {module: None for module in self.module_dict}
