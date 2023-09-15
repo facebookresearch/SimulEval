@@ -51,16 +51,32 @@ class AgentPipeline(GenericAgent):
         return [module.build_states() for module in self.module_list]
 
     def push(
-        self, segment: Segment, states: Optional[List[Optional[AgentStates]]] = None
+        self,
+        segment: Segment,
+        states: Optional[List[Optional[AgentStates]]] = None,
+        upstream_states: Optional[List[Optional[AgentStates]]] = None,
     ) -> None:
         if states is None:
+            # stateful agent
             states = [None for _ in self.module_list]
+            states_list = [module.states for module in self.module_list]
         else:
+            # stateless agent
             assert len(states) == len(self.module_list)
+            states_list = states
+
+        if upstream_states is None:
+            upstream_states = []
 
         for index, module in enumerate(self.module_list[:-1]):
-            segment = module.pushpop(segment, states[index])
-        self.module_list[-1].push(segment, states[-1])
+            segment = module.pushpop(
+                segment,
+                states[index],
+                upstream_states=upstream_states + states_list[:index],
+            )
+        self.module_list[-1].push(
+            segment, states[-1], upstream_states=upstream_states + states_list[:index]
+        )
 
     def pop(self, states: Optional[List[Optional[AgentStates]]] = None) -> Segment:
         if states is None:

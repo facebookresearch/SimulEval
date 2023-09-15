@@ -29,6 +29,7 @@ class AgentStates:
         self.target_finished = False
         self.source_sample_rate = 0
         self.target_sample_rate = 0
+        self.upstream_states = []
 
     def update_source(self, segment: Segment):
         """
