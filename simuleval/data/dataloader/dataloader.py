@@ -56,11 +56,11 @@ class GenericDataloader:
     def get_target(self, index: int) -> Any:
         return self.preprocess_target(self.target_list[index])
 
-    def get_tgt_lang(self, index: int) -> Any:
-        if self.tgt_lang_list is not None and index < len(self.tgt_lang_list):
-            return self.preprocess_tgt_lang(self.tgt_lang_list[index])
-        else:
+    def get_tgt_lang(self, index: int) -> Optional[str]:
+        if self.tgt_lang_list is None or index >= len(self.tgt_lang_list):
             return None
+        else:
+            return self.tgt_lang_list[index]
 
     def __getitem__(self, index: int) -> Dict[str, Any]:
         return {
@@ -73,9 +73,6 @@ class GenericDataloader:
         raise NotImplementedError
 
     def preprocess_target(self, target: Any) -> Any:
-        raise NotImplementedError
-
-    def preprocess_tgt_lang(self, tgt_lang: Any) -> Any:
         raise NotImplementedError
 
     @classmethod

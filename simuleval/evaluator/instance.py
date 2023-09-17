@@ -47,8 +47,9 @@ class Instance(object):
             self.source = self.dataloader[self.index]["source"]
             self.reference = self.dataloader[self.index]["target"]
 
-            # Handle when tgt_lang is not provided
-            if self.dataloader.tgt_lang_list is not None:
+            if self.dataloader.tgt_lang_list is not None and self.index < len(
+                self.dataloader.tgt_lang_list
+            ):
                 self.tgt_lang = self.dataloader[self.index]["tgt_lang"]
             else:
                 self.tgt_lang = None

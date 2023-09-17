@@ -6,6 +6,7 @@
 
 import json
 from dataclasses import dataclass, field
+from typing import Optional
 
 
 @dataclass
@@ -35,14 +36,14 @@ class EmptySegment(Segment):
 class TextSegment(Segment):
     content: str = ""
     data_type: str = "text"
-    tgt_lang: str = ""
+    tgt_lang: str = Optional[str]
 
 
 @dataclass
 class SpeechSegment(Segment):
     sample_rate: int = -1
     data_type: str = "speech"
-    tgt_lang: str = ""
+    tgt_lang: str = Optional[str]
 
 
 def segment_from_json_string(string: str):

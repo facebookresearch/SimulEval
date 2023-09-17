@@ -43,6 +43,7 @@ class AgentStates:
             return
         elif isinstance(segment, TextSegment):
             self.source.append(segment.content)
+            self.tgt_lang = segment.tgt_lang
         elif isinstance(segment, SpeechSegment):
             self.source += segment.content
             self.source_sample_rate = segment.sample_rate

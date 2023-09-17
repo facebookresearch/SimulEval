@@ -72,9 +72,6 @@ class SpeechToTextDataloader(GenericDataloader):
         samples = samples.tolist()
         return samples
 
-    def preprocess_tgt_lang(self, tgt_lang: Union[Path, str]) -> str:
-        return tgt_lang
-
     def preprocess_target(self, target: str) -> str:
         return target
 
@@ -97,7 +94,6 @@ class SpeechToTextDataloader(GenericDataloader):
             target_list = [line.strip() for line in f]
         with open(tgt_lang) as f:
             tgt_lang_list = [line.strip() for line in f]
-            print(tgt_lang_list)
         dataloader = cls(source_list, target_list, tgt_lang_list)
         return dataloader
 
