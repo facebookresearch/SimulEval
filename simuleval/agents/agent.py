@@ -7,7 +7,7 @@
 from inspect import signature
 from argparse import Namespace, ArgumentParser
 from simuleval.data.segments import Segment, TextSegment, SpeechSegment, EmptySegment
-from typing import Optional
+from typing import Optional, List
 from .states import AgentStates
 from .actions import Action
 
@@ -69,7 +69,10 @@ class GenericAgent:
         assert NotImplementedError
 
     def push(
-        self, source_segment: Segment, states: Optional[AgentStates] = None
+        self,
+        source_segment: Segment,
+        states: Optional[AgentStates] = None,
+        upstream_states: Optional[List[AgentStates]] = None,
     ) -> None:
         """
         The function to process the incoming information.
@@ -80,6 +83,12 @@ class GenericAgent:
         """
         if states is None:
             states = self.states
+
+        if upstream_states is None:
+            upstream_states = []
+
+        states.upstream_states = upstream_states
+
         states.update_source(source_segment)
 
     def pop(self, states: Optional[AgentStates] = None) -> Segment:
@@ -131,7 +140,10 @@ class GenericAgent:
             return segment
 
     def pushpop(
-        self, segment: Segment, states: Optional[AgentStates] = None
+        self,
+        segment: Segment,
+        states: Optional[AgentStates] = None,
+        upstream_states: Optional[List[AgentStates]] = None,
     ) -> Segment:
         """
         Operate pop immediately after push.
@@ -142,7 +154,7 @@ class GenericAgent:
         Returns:
             Segment: output segment
         """
-        self.push(segment, states)
+        self.push(segment, states, upstream_states)
         return self.pop(states)
 
     @staticmethod
