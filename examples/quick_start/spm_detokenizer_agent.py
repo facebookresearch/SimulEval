@@ -2,12 +2,14 @@ from argparse import ArgumentParser
 
 from fairseq.data.encoders import build_bpe
 
+from simuleval.utils import entrypoint
 from simuleval.agents import TextToTextAgent
 from simuleval.agents.actions import ReadAction, WriteAction
 from simuleval.agents.pipeline import AgentPipeline
 from simuleval.agents.states import AgentStates
 
 
+@entrypoint
 class DummySegmentAgent(TextToTextAgent):
     """
     This agent just splits on space
@@ -70,13 +72,20 @@ class SentencePieceModelDetokenizerAgent(TextToTextAgent):
         possible_full_words = self.spm_processor.decode(
             " ".join([x for x in states.source])
         )
-
+        # issue is when the starting word is in the previous segment
         if self.detokenize_only and len(states.source) > 0:
+            start_word = "▁"
+            source_text = states.source[0]
             states.source = []
             if len(possible_full_words) == 0 and not states.source_finished:
                 return ReadAction()
             else:
-                return WriteAction(possible_full_words, states.source_finished)
+                incomplete_word = False
+                if start_word not in source_text[0]:
+                    incomplete_word = True
+                return WriteAction(
+                    possible_full_words, states.source_finished, incomplete_word
+                )
 
         if states.source_finished:
             return WriteAction(possible_full_words, True)

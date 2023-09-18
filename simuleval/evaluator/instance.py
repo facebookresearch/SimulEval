@@ -201,6 +201,16 @@ class TextOutputInstance(Instance):
         else:
             raise NotImplementedError
 
+        if prediction.incomplete_word:
+            first_half = self.prediction_list[-1]
+            second_half = prediction_list[0]
+            complete_word = first_half + second_half
+            self.prediction_list.pop()
+            self.delays.pop()
+            self.elapsed.pop()
+            prediction_list.pop(0)
+            prediction_list.insert(0, complete_word)
+
         self.prediction_list += prediction_list
 
         self.elapsed += [self.step_to_elapsed(self.step, current_time)] * len(

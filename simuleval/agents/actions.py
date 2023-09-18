@@ -4,7 +4,7 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Union, List
+from typing import Optional, Union, List
 from dataclasses import dataclass
 from simuleval.data.segments import Segment
 
@@ -52,6 +52,7 @@ class WriteAction(Action):
 
     content: Union[str, List[float], Segment]
     finished: bool
+    incomplete_word: Optional[bool] = None
 
     def is_read(self) -> bool:
         return False

@@ -136,6 +136,10 @@ class GenericAgent:
             segment = SEGMENT_TYPE_DICT[self.target_type](
                 index=0, content=action.content, finished=action.finished
             )
+
+            if isinstance(segment, TextSegment) and action.incomplete_word is not None:
+                segment.incomplete_word = action.incomplete_word
+
             states.update_target(segment)
             return segment
 
