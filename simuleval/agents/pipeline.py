@@ -152,7 +152,7 @@ class TreeAgentPipeline(AgentPipeline):
             multiple root nodes
 
         ```
-        class InstantiatedAgentTreePipeline(TreeAgentPipeline):
+        class InstantiatedTreeAgentPipeline(TreeAgentPipeline):
             pipeline = {ClassOne, ClassTwo, ClassThree}
             def __init__(self, args) -> None:
                 one = ClassOne()
@@ -185,6 +185,8 @@ class TreeAgentPipeline(AgentPipeline):
         args,
     ) -> None:
         self.check_pipeline_types(module_dict)
+        self.set_pipeline_tree(module_dict)
+        self.check_cycle(set(), self.source_module)
 
         self.output_index = args.output_index
         if self.output_index is not None:
@@ -202,14 +204,24 @@ class TreeAgentPipeline(AgentPipeline):
 
     @classmethod
     def get_instance_from_class(cls, klass, module_dict):
-        ins_list = [ins for ins in module_dict.keys() if isinstance(ins, klass)]
+        ins_list = [ins for ins in module_dict.keys() if type(ins) == klass]
         assert len(ins_list) == 1, f"Instances of {klass}: {ins_list}"
         return ins_list[0]
 
     def check_pipeline_types(self, module_dict):
-        output_dict = {}
+        for parent, children in module_dict.items():
+            for child in children:
+                if isinstance(child, type):
+                    child = self.get_instance_from_class(child, module_dict)
+                if child.source_type != parent.target_type:
+                    raise RuntimeError(
+                        f"{child}.source_type({child.source_type}) != {parent}.target_type({parent.target_type}"  # noqa F401
+                    )
+
+    def set_pipeline_tree(self, module_dict):
         root_instance = list(module_dict.keys())
         leaf_instances = []
+        output_dict = {}
         for parent, children in module_dict.items():
             output_dict[parent] = []
             if len(children) == 0:
@@ -218,10 +230,6 @@ class TreeAgentPipeline(AgentPipeline):
             for child in children:
                 if isinstance(child, type):
                     child = self.get_instance_from_class(child, module_dict)
-                if child.source_type != parent.target_type:
-                    raise RuntimeError(
-                        f"{child}.source_type({child.source_type}) != {parent}.target_type({parent.target_type}"  # noqa F401
-                    )
                 if child in root_instance:
                     root_instance.remove(child)
                 output_dict[parent].append(child)
@@ -231,6 +239,14 @@ class TreeAgentPipeline(AgentPipeline):
         self.source_module = root_instance[0]
         self.target_modules = leaf_instances
         self.module_dict = output_dict
+
+    def check_cycle(self, visited, ins):
+        if ins in visited:
+            raise ValueError(f"cycle in graph: {ins}")
+        for child in self.module_dict[ins]:
+            visited.add(ins)
+            self.check_cycle(visited, child)
+
 
     @property
     def source_type(self) -> Optional[str]:
@@ -267,6 +283,15 @@ class TreeAgentPipeline(AgentPipeline):
         for child in children:
             outputs += self.push_impl(child, segment, states)
         return outputs
+
+    def pushpop(
+        self,
+        segment: Segment,
+        states: Optional[Dict[GenericAgent, AgentStates]] = None,
+        upstream_states: Optional[List[AgentStates]] = None,
+    ) -> Segment:
+        self.push(segment, states, upstream_states)
+        return self.pop(states)
 
     def push(
         self,

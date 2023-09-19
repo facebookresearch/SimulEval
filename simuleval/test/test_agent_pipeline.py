@@ -22,6 +22,8 @@ def test_pipeline_cmd(root_path=ROOT_PATH):
     cli.sys.argv[1:] = [
         "--agent",
         os.path.join(root_path, "examples", "quick_start", "agent_pipeline.py"),
+        "--user-dir",
+        os.path.join(root_path, "examples"),
         "--agent-class",
         "agents.DummyPipeline",
         "--source",
@@ -39,6 +41,8 @@ def test_tree_pipeline_cmd(root_path=ROOT_PATH):
         cli.sys.argv[1:] = [
             "--agent-class",
             "examples.speech_to_speech_text.tree_agent_pipeline.DummyTreePipeline",
+            "--user-dir",
+            os.path.join(root_path, "examples"),
             "--source",
             os.path.join(root_path, "examples", "speech_to_speech", "source.txt"),
             "--target",
@@ -62,6 +66,8 @@ def test_instantiated_tree_pipeline_cmd(root_path=ROOT_PATH):
         cli.sys.argv[1:] = [
             "--agent-class",
             "examples.speech_to_speech_text.tree_agent_pipeline.AnotherInstantiatedTreeAgentPipeline",
+            "--user-dir",
+            os.path.join(root_path, "examples"),
             "--source",
             os.path.join(root_path, "examples", "speech_to_speech", "source.txt"),
             "--target",
