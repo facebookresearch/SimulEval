@@ -59,6 +59,7 @@ def download_youtube_video(url):
     sound.export(name, format="wav")
     return name
 
+
 def load_list_from_file(file_path: Union[Path, str]) -> List[str]:
     with open(file_path) as f:
         return [line.strip() for line in f]
