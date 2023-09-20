@@ -59,6 +59,10 @@ def download_youtube_video(url):
     sound.export(name, format="wav")
     return name
 
+def load_list_from_file(file_path: Union[Path, str]) -> List[str]:
+    with open(file_path) as f:
+        return [line.strip() for line in f]
+
 
 @register_dataloader("speech-to-text")
 class SpeechToTextDataloader(GenericDataloader):
@@ -92,12 +96,11 @@ class SpeechToTextDataloader(GenericDataloader):
         target: Union[Path, str],
         tgt_lang: Union[Path, str],
     ) -> SpeechToTextDataloader:
-        with open(source) as f:
-            source_list = [line.strip() for line in f]
-        with open(target) as f:
-            target_list = [line.strip() for line in f]
-        with open(tgt_lang) as f:
-            tgt_lang_list = [line.strip() for line in f]
+        source_list = load_list_from_file(source)
+        target_list = load_list_from_file(target)
+        tgt_lang_list = []
+        if tgt_lang is not None:
+            tgt_lang_list = load_list_from_file(tgt_lang)
         dataloader = cls(source_list, target_list, tgt_lang_list)
         return dataloader
 
@@ -117,14 +120,11 @@ class SpeechToSpeechDataloader(SpeechToTextDataloader):
         target: Union[Path, str],
         tgt_lang: Union[Path, str, None] = None,
     ) -> SpeechToSpeechDataloader:
-        with open(source) as f:
-            source_list = [line.strip() for line in f]
-        with open(target) as f:
-            target_list = [line.strip() for line in f]
+        source_list = load_list_from_file(source)
+        target_list = load_list_from_file(target)
         tgt_lang_list = []
         if tgt_lang is not None:
-            with open(tgt_lang) as f:
-                tgt_lang_list = [line.strip() for line in f]
+            tgt_lang_list = load_list_from_file(tgt_lang)
         dataloader = cls(source_list, target_list, tgt_lang_list)
         return dataloader
 
