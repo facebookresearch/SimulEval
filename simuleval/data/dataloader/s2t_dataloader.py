@@ -115,14 +115,16 @@ class SpeechToSpeechDataloader(SpeechToTextDataloader):
         cls,
         source: Union[Path, str],
         target: Union[Path, str],
-        tgt_lang: Union[Path, str],
+        tgt_lang: Union[Path, str, None] = None,
     ) -> SpeechToSpeechDataloader:
         with open(source) as f:
             source_list = [line.strip() for line in f]
         with open(target) as f:
             target_list = [line.strip() for line in f]
-        with open(tgt_lang, "r") as f:
-            tgt_lang_list = [line.strip() for line in f]
+        tgt_lang_list = []
+        if tgt_lang is not None:
+            with open(tgt_lang) as f:
+                tgt_lang_list = [line.strip() for line in f]
         dataloader = cls(source_list, target_list, tgt_lang_list)
         return dataloader
 
