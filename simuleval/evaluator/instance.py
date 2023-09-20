@@ -47,7 +47,7 @@ class Instance(object):
             self.source = self.dataloader[self.index]["source"]
             self.reference = self.dataloader[self.index]["target"]
             self.tgt_lang = self.dataloader[self.index]["tgt_lang"]
-            
+
         self.reset()
         if args is not None:
             self.args = args
