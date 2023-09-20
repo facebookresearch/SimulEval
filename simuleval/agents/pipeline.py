@@ -279,10 +279,8 @@ class TreeAgentPipeline(AgentPipeline):
 
         segment = module.pushpop(segment, states[module])
 
-        outputs = []
         for child in children:
-            outputs += self.push_impl(child, segment, states)
-        return outputs
+            self.push_impl(child, segment, states)
 
     def pushpop(
         self,
@@ -303,8 +301,7 @@ class TreeAgentPipeline(AgentPipeline):
         else:
             assert len(states) == len(self.module_dict)
 
-        outputs = self.push_impl(self.source_module, segment, states)
-        return outputs
+        self.push_impl(self.source_module, segment, states)
 
     def pop(self, states: Optional[Dict[GenericAgent, AgentStates]] = None) -> List[Segment]:
         outputs = []
