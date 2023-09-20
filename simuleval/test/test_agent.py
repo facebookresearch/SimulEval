@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import os
+import sys
 import tempfile
 from pathlib import Path
 import urllib.request
@@ -16,11 +17,17 @@ import simuleval.cli as cli
 from simuleval.agents import TextToTextAgent
 from simuleval.agents.actions import ReadAction, WriteAction
 from simuleval.data.segments import TextSegment
+import logging
+
+logger = logging.getLogger()
+
+
+ROOT_PATH = Path(__file__).parents[2]
+sys.path.insert(0, str(ROOT_PATH))  # may be needed for import from `examples`
+
 from examples.quick_start.spm_detokenizer_agent import (
     SentencePieceModelDetokenizerAgent,
 )
-
-ROOT_PATH = Path(__file__).parents[2]
 
 
 def test_agent(root_path=ROOT_PATH):

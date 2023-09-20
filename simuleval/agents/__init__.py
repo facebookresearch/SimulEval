@@ -13,4 +13,4 @@ from .agent import (  # noqa
 )
 from .states import AgentStates  # noqa
 from .actions import Action, ReadAction, WriteAction  # noqa
-from .pipeline import AgentPipeline  # noqa
+from .pipeline import AgentPipeline, TreeAgentPipeline  # noqa
