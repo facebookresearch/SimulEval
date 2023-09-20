@@ -46,14 +46,8 @@ class Instance(object):
         if self.dataloader is not None:
             self.source = self.dataloader[self.index]["source"]
             self.reference = self.dataloader[self.index]["target"]
-
-            if self.dataloader.tgt_lang_list is not None and self.index < len(
-                self.dataloader.tgt_lang_list
-            ):
-                self.tgt_lang = self.dataloader[self.index]["tgt_lang"]
-            else:
-                self.tgt_lang = None
-
+            self.tgt_lang = self.dataloader[self.index]["tgt_lang"]
+            
         self.reset()
         if args is not None:
             self.args = args
