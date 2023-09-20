@@ -185,8 +185,6 @@ class TreeAgentPipeline(AgentPipeline):
         args,
     ) -> None:
         self.check_pipeline_types(module_dict)
-        self.set_pipeline_tree(module_dict)
-        self.check_cycle(set(), self.source_module)
 
         self.output_index = args.output_index
         if self.output_index is not None:
@@ -217,6 +215,8 @@ class TreeAgentPipeline(AgentPipeline):
                     raise RuntimeError(
                         f"{child}.source_type({child.source_type}) != {parent}.target_type({parent.target_type}"  # noqa F401
                     )
+        self.set_pipeline_tree(module_dict)
+        self.check_cycle(set(), self.source_module)
 
     def set_pipeline_tree(self, module_dict):
         root_instance = list(module_dict.keys())
