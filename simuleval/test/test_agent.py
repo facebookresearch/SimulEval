@@ -18,6 +18,7 @@ from simuleval.agents import TextToTextAgent
 from simuleval.agents.actions import ReadAction, WriteAction
 from simuleval.data.segments import TextSegment
 import logging
+
 logger = logging.getLogger()
 
 

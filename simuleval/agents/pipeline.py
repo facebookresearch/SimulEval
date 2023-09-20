@@ -247,7 +247,6 @@ class TreeAgentPipeline(AgentPipeline):
             visited.add(ins)
             self.check_cycle(visited, child)
 
-
     @property
     def source_type(self) -> Optional[str]:
         return self.source_module.source_type
@@ -293,7 +292,8 @@ class TreeAgentPipeline(AgentPipeline):
 
     def push(
         self,
-        segment: Segment, states: Optional[Dict[GenericAgent, AgentStates]] = None,
+        segment: Segment,
+        states: Optional[Dict[GenericAgent, AgentStates]] = None,
         upstream_states: Optional[List[AgentStates]] = None,
     ) -> None:
         if states is None:
@@ -303,7 +303,9 @@ class TreeAgentPipeline(AgentPipeline):
 
         self.push_impl(self.source_module, segment, states)
 
-    def pop(self, states: Optional[Dict[GenericAgent, AgentStates]] = None) -> List[Segment]:
+    def pop(
+        self, states: Optional[Dict[GenericAgent, AgentStates]] = None
+    ) -> List[Segment]:
         outputs = []
         for module in self.target_modules:
             if states is None:

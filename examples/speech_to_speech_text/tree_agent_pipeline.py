@@ -28,6 +28,7 @@ class DotSpeechToText(SpeechToTextAgent):
             finished=states.source_finished,
         )
 
+
 class EnglishWait2SpeechToSpeech(EnglishSpeechToSpeech):
     def __init__(self, args):
         super().__init__(args)
@@ -52,7 +53,7 @@ class TemplateTreeAgentPipeline(TreeAgentPipeline):
         speech_speech = self.pipeline[0](args)
         speech_speech_wait2 = self.pipeline[1](args)
         speech_text = self.pipeline[2](args)
-        
+
         module_dict = {
             speech_speech: [speech_text, speech_speech_wait2],
             speech_speech_wait2: [],
