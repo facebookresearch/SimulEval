@@ -207,6 +207,7 @@ class SpeechToTextAgent(GenericAgent):
 
     source_type: str = "speech"
     target_type: str = "text"
+    tgt_lang: Optional[str] = None
 
 
 class SpeechToSpeechAgent(GenericAgent):

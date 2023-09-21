@@ -6,7 +6,7 @@
 
 import json
 from dataclasses import dataclass, field
-from typing import Union
+from typing import Union, Optional
 
 
 @dataclass
@@ -16,6 +16,7 @@ class Segment:
     finished: bool = False
     is_empty: bool = False
     data_type: str = None
+    tgt_lang: str = None
 
     def json(self) -> str:
         info_dict = {attribute: value for attribute, value in self.__dict__.items()}
@@ -35,12 +36,14 @@ class EmptySegment(Segment):
 class TextSegment(Segment):
     content: str = ""
     data_type: str = "text"
+    tgt_lang: str = Optional[str]
 
 
 @dataclass
 class SpeechSegment(Segment):
     sample_rate: int = -1
     data_type: str = "speech"
+    tgt_lang: str = Optional[str]
 
 
 @dataclass

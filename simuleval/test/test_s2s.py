@@ -39,6 +39,10 @@ def test_s2s(root_path=ROOT_PATH):
             os.path.join(root_path, "examples", "speech_to_speech", "reference/en.txt"),
             "--output",
             tmpdirname,
+            "--tgt-lang",
+            os.path.join(
+                root_path, "examples", "speech_to_speech", "reference/tgt_lang.txt"
+            ),
         ]
         cli.main()
 

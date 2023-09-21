@@ -46,6 +46,8 @@ class Instance(object):
         if self.dataloader is not None:
             self.source = self.dataloader[self.index]["source"]
             self.reference = self.dataloader[self.index]["target"]
+            self.tgt_lang = self.dataloader[self.index]["tgt_lang"]
+
         self.reset()
         if args is not None:
             self.args = args
@@ -235,6 +237,7 @@ class SpeechInputInstance(Instance):
         args: Optional[Namespace],
     ):
         super().__init__(index, dataloader, args)
+        self.args = args
         self.sample_rate_value = None
         self.sample_list = None
         self.source_finished_reading = False
@@ -282,6 +285,7 @@ class SpeechInputInstance(Instance):
                 content=samples,
                 sample_rate=self.audio_info.samplerate,
                 finished=is_finished,
+                tgt_lang=self.tgt_lang,
             )
 
         else:
