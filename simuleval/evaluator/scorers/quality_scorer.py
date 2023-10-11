@@ -266,6 +266,7 @@ class WhisperASRSacreBLEUScorer(QualityScorer):
         tokenizer: str = "13a",
         target_lang: str = "en",
         model_size: str = "base",
+        temperature: float = 0.0,
         lowercase: bool = False,
         remove_punctuations: bool = False,
     ) -> None:
@@ -274,6 +275,7 @@ class WhisperASRSacreBLEUScorer(QualityScorer):
         self.tokenizer = tokenizer
         self.target_lang = target_lang
         self.model_size = model_size
+        self.temperature = temperature
         self.lowercase = lowercase
         self.remove_punctuations = remove_punctuations
 
@@ -297,6 +299,7 @@ class WhisperASRSacreBLEUScorer(QualityScorer):
         self.logger.info(f"tokenizer = {self.tokenizer}")
         self.logger.info(f"target_lang = {self.target_lang}")
         self.logger.info(f"model_size = {self.model_size}")
+        self.logger.info(f"temperature = {self.temperature}")
         self.logger.info(f"lowercase = {self.lowercase}")
         self.logger.info(f"remove_punctuations = {self.remove_punctuations}")
         try:
@@ -313,7 +316,7 @@ class WhisperASRSacreBLEUScorer(QualityScorer):
             wav_path = wav_dir / f"{index}_pred.wav"
             if wav_path.exists():
                 result = model.transcribe(
-                    wav_path.as_posix(), language=self.target_lang, temperature=0.0
+                    wav_path.as_posix(), language=self.target_lang, temperature=self.temperature
                 )
                 text = result["text"]
                 assert type(text) == str
@@ -349,6 +352,12 @@ class WhisperASRSacreBLEUScorer(QualityScorer):
             help="The size of whisper asr model",
         )
         parser.add_argument(
+            "--whisper-model-temperature",
+            type=float,
+            default=0.0,
+            help="If temperature > 0.0, the decoding will perform sampling",
+        )
+        parser.add_argument(
             "--transcript-lowercase",
             action="store_true",
             help="Lowercase the whisper output",
@@ -365,6 +374,7 @@ class WhisperASRSacreBLEUScorer(QualityScorer):
             args.sacrebleu_tokenizer,
             args.target_speech_lang,
             args.whisper_model_size,
+            args.whisper_model_temperature,
             args.transcript_lowercase,
             args.transcript_non_punctuation,
         )
