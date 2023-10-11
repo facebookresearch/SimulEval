@@ -303,7 +303,7 @@ class TreeAgentPipeline(AgentPipeline):
             states = {module: None for module in self.module_dict}
         else:
             assert len(states) == len(self.module_dict)
-    
+
         if upstream_states is None:
             upstream_states = {}
 
