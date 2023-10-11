@@ -269,6 +269,7 @@ class TreeAgentPipeline(AgentPipeline):
         module: GenericAgent,
         segment: Segment,
         states: Optional[Dict[GenericAgent, AgentStates]],
+        upstream_states: Dict[int, AgentStates],
     ):
         # DFS over the tree
         children = self.module_dict[module]
@@ -276,10 +277,12 @@ class TreeAgentPipeline(AgentPipeline):
             module.push(segment, states[module])
             return []
 
-        segment = module.pushpop(segment, states[module])
+        segment = module.pushpop(segment, states[module], upstream_states)
+        assert len(upstream_states) not in upstream_states
+        upstream_states[len(upstream_states)] = states[module]
 
         for child in children:
-            self.push_impl(child, segment, states)
+            self.push_impl(child, segment, states, upstream_states)
 
     def pushpop(
         self,
@@ -300,8 +303,11 @@ class TreeAgentPipeline(AgentPipeline):
             states = {module: None for module in self.module_dict}
         else:
             assert len(states) == len(self.module_dict)
+    
+        if upstream_states is None:
+            upstream_states = {}
 
-        self.push_impl(self.source_module, segment, states)
+        self.push_impl(self.source_module, segment, states, upstream_states)
 
     def pop(
         self, states: Optional[Dict[GenericAgent, AgentStates]] = None
