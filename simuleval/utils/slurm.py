@@ -97,7 +97,7 @@ def submit_slurm_job(config_dict: Optional[Dict] = None) -> None:
         sweep_command = "${JobArrayConfigs[$SLURM_ARRAY_TASK_ID]}"
         sbatch_job_array_head = f"#SBATCH --array=0-{len(sweep_config_dict_list) - 1}"
         output_dir = f"{args.output}" + "/results/${JobArrayString[$SLURM_ARRAY_TASK_ID]}"
-        log_path = f"{output_dir}/slurm-%A_%a.log"
+        log_path = f"{args.output}/logs/slurm-%A_%a.log"
 
     else:
         output_dir = args.output
@@ -115,7 +115,7 @@ def submit_slurm_job(config_dict: Optional[Dict] = None) -> None:
 #SBATCH --nodes=1
 #SBATCH --gpus-per-node=1
 #SBATCH --ntasks-per-node=8
-#SBATCH --output="{args.output}/logs/slurm-%j.log"
+#SBATCH --output="{log_path}"
 #SBATCH --job-name="{args.slurm_job_name}"
 {sbatch_job_array_head}
 
