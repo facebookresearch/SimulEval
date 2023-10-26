@@ -184,6 +184,7 @@ def general_parser():
     parser.add_argument(
         "--device", type=str, default="cpu", help="Device to run the model."
     )
+    parser.add_argument("--fp16", action="store_true", default=False, help="Use fp16.")
     return parser
 
 
