@@ -34,18 +34,18 @@ def submit_slurm_job(config_dict: Optional[Dict] = None) -> None:
         raise RuntimeError("--slurm is only available as a CLI argument")
 
     sweep_options = [
-        [[key, v] for v in value] 
+        [[key, v] for v in value]
         for key, value in config_dict.items() if isinstance(value, list)
-    ] 
+    ]
     sweep_config_dict_list = []
     if len(sweep_options) > 0:
         for option_list in itertools.product(*sweep_options):
             sweep_config_dict_list.append({k: v for k, v in option_list})
-        
+
         for x in sweep_options:
             if x[0][0] in config_dict:
                 del config_dict[x[0][0]]
-        
+
     cli_arguments = cli_argument_list(config_dict)
     parser = options.general_parser()
     options.add_evaluator_args(parser)
@@ -82,18 +82,19 @@ def submit_slurm_job(config_dict: Optional[Dict] = None) -> None:
 
     sweep_command = ""
     sbatch_job_array_head = ""
+    job_array_configs = ""
 
     if len(sweep_config_dict_list) > 0:
         job_array_configs="declare -A JobArrayConfigs\n"
         for i, sub_config_dict in enumerate(sweep_config_dict_list):
             sub_config_string = " ".join([f"--{k.replace('_', '-')} {v}" for k, v in sub_config_dict.items()])
             job_array_configs += f'JobArrayConfigs[{i}]="{sub_config_string}"\n'
-        
+
         job_array_configs += "\ndeclare -A JobArrayString\n"
         for i, sub_config_dict in enumerate(sweep_config_dict_list):
             sub_config_string = ".".join([str(v) for k, v in sub_config_dict.items()])
             job_array_configs += f'JobArrayString[{i}]="{sub_config_string}"\n'
-        
+
         sweep_command = "${JobArrayConfigs[$SLURM_ARRAY_TASK_ID]}"
         sbatch_job_array_head = f"#SBATCH --array=0-{len(sweep_config_dict_list) - 1}"
         output_dir = f"{args.output}" + "/results/${JobArrayString[$SLURM_ARRAY_TASK_ID]}"
