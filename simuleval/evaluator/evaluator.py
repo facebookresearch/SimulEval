@@ -84,7 +84,9 @@ class SentenceLevelEvaluator(object):
         if args.eval_latency_unit == "spm":
             assert args.eval_latency_spm_model
             assert IS_IMPORT_SPM
-            self.target_spm_model = sentencepiece.SentencePieceProcessor(model_file=args.eval_latency_spm_model)
+            self.target_spm_model = sentencepiece.SentencePieceProcessor(
+                model_file=args.eval_latency_spm_model
+            )
 
         if (
             self.source_type is None
@@ -163,7 +165,9 @@ class SentenceLevelEvaluator(object):
                 for line in f:
                     instance = LogInstance(line.strip())
                     self.instances[instance.index] = instance
-                    self.instances[instance.index].set_target_spm_model(self.target_spm_model)
+                    self.instances[instance.index].set_target_spm_model(
+                        self.target_spm_model
+                    )
 
     def build_instances_from_dataloader(self):
         for i in self.get_indices():

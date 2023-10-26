@@ -35,7 +35,8 @@ def submit_slurm_job(config_dict: Optional[Dict] = None) -> None:
 
     sweep_options = [
         [[key, v] for v in value]
-        for key, value in config_dict.items() if isinstance(value, list)
+        for key, value in config_dict.items()
+        if isinstance(value, list)
     ]
     sweep_config_dict_list = []
     if len(sweep_options) > 0:
@@ -85,9 +86,11 @@ def submit_slurm_job(config_dict: Optional[Dict] = None) -> None:
     job_array_configs = ""
 
     if len(sweep_config_dict_list) > 0:
-        job_array_configs="declare -A JobArrayConfigs\n"
+        job_array_configs = "declare -A JobArrayConfigs\n"
         for i, sub_config_dict in enumerate(sweep_config_dict_list):
-            sub_config_string = " ".join([f"--{k.replace('_', '-')} {v}" for k, v in sub_config_dict.items()])
+            sub_config_string = " ".join(
+                [f"--{k.replace('_', '-')} {v}" for k, v in sub_config_dict.items()]
+            )
             job_array_configs += f'JobArrayConfigs[{i}]="{sub_config_string}"\n'
 
         job_array_configs += "\ndeclare -A JobArrayString\n"
@@ -97,7 +100,9 @@ def submit_slurm_job(config_dict: Optional[Dict] = None) -> None:
 
         sweep_command = "${JobArrayConfigs[$SLURM_ARRAY_TASK_ID]}"
         sbatch_job_array_head = f"#SBATCH --array=0-{len(sweep_config_dict_list) - 1}"
-        output_dir = f"{args.output}" + "/results/${JobArrayString[$SLURM_ARRAY_TASK_ID]}"
+        output_dir = (
+            f"{args.output}" + "/results/${JobArrayString[$SLURM_ARRAY_TASK_ID]}"
+        )
         log_path = f"{args.output}/logs/slurm-%A_%a.log"
 
     else:

@@ -70,7 +70,7 @@ def add_evaluator_args(parser: argparse.ArgumentParser):
         "--eval-latency-spm-model",
         type=str,
         default=None,
-        help="Pass the spm model path if the eval_latency_unit is spm."
+        help="Pass the spm model path if the eval_latency_unit is spm.",
     )
     parser.add_argument(
         "--remote-address",
@@ -188,8 +188,6 @@ def general_parser():
 
 
 def add_slurm_args(parser):
-    parser.add_argument(
-        "--slurm-partition", default="", help="Slurm partition."
-    )
+    parser.add_argument("--slurm-partition", default="", help="Slurm partition.")
     parser.add_argument("--slurm-job-name", default="simuleval", help="Slurm job name.")
     parser.add_argument("--slurm-time", default="2:00:00", help="Slurm partition.")

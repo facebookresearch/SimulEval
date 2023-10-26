@@ -52,9 +52,9 @@ class Instance(object):
         if args is not None:
             self.args = args
             self.latency_unit = args.eval_latency_unit
-        
+
         self.target_spm_model = None
-    
+
     def set_target_spm_model(self, spm_model):
         self.target_spm_model = spm_model
 
@@ -131,7 +131,7 @@ class Instance(object):
             raise NotImplementedError
 
     def summarize(self):
-        return_dict =  {
+        return_dict = {
             "index": self.index,
             "prediction": self.prediction,
             "delays": self.delays,
@@ -142,7 +142,7 @@ class Instance(object):
             "source_length": self.source_length,
         }
         if self.latency_unit == "spm":
-            return_dict["prediction_spm"] = self.prediction_list 
+            return_dict["prediction_spm"] = self.prediction_list
         return return_dict
 
     @classmethod
