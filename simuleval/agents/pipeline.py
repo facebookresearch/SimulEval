@@ -8,6 +8,10 @@ from argparse import ArgumentParser
 from typing import List, Optional, Dict, Set, Type, Union
 from simuleval.data.segments import Segment
 from .agent import GenericAgent, AgentStates
+import time
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class AgentPipeline(GenericAgent):
@@ -69,11 +73,13 @@ class AgentPipeline(GenericAgent):
             upstream_states = []
 
         for index, module in enumerate(self.module_list[:-1]):
+            config = segment.config
             segment = module.pushpop(
                 segment,
                 states[index],
                 upstream_states=upstream_states + states_list[:index],
             )
+            segment.config = config
         self.module_list[-1].push(
             segment,
             states[-1],
@@ -276,12 +282,18 @@ class TreeAgentPipeline(AgentPipeline):
         # DFS over the tree
         children = self.module_dict[module]
         if len(children) == 0:  # leaf node
-            module.push(segment, states[module])
+            module.push(segment, states[module])  # , upstream_states)
+            # upstream_states[len(upstream_states)] = states[module]
+            # TODO: ?
             return []
 
+        config = segment.config
         segment = module.pushpop(segment, states[module], upstream_states)
+        segment.config = config
         assert len(upstream_states) not in upstream_states
-        upstream_states[len(upstream_states)] = states[module]
+        upstream_states[len(upstream_states)] = (
+            states[module] if states[module] is not None else module.states
+        )
 
         for child in children:
             self.push_impl(child, segment, states, upstream_states)

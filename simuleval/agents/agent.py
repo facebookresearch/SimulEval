@@ -100,6 +100,7 @@ class GenericAgent:
 
         states.upstream_states = upstream_states
 
+        states.update_config(source_segment.config)
         states.update_source(source_segment)
 
     def pop(self, states: Optional[AgentStates] = None) -> Segment:
