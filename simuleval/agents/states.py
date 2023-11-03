@@ -31,6 +31,13 @@ class AgentStates:
         self.target_sample_rate = 0
         self.tgt_lang = None
         self.upstream_states = []
+        self.config = {}
+
+    def update_config(self, config: dict):
+        for k in config.keys():
+            if k not in self.config:
+                # only update with new keys within each utterance
+                self.config[k] = config[k]
 
     def update_source(self, segment: Segment):
         """

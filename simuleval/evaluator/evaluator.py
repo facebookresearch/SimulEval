@@ -12,6 +12,7 @@ from typing import Dict, Generator, Optional
 from .scorers import get_scorer_class
 from .scorers.latency_scorer import LatencyScorer
 from .scorers.quality_scorer import QualityScorer
+from simuleval.data.segments import Segment
 
 from .instance import INSTANCE_TYPE_DICT, LogInstance
 import yaml
@@ -236,7 +237,12 @@ class SentenceLevelEvaluator(object):
         system.reset()
         for instance in self.instance_iterator:
             while not self.is_finished(instance):
-                input_segment = instance.send_source(self.source_segment_size)
+                input_segment: Segment = instance.send_source(self.source_segment_size)
+                # TODO: cleanup after testing
+                # TODO: test behavior of changing from non-expr --> expr mid-utterance
+                #       it should be a no-op, and not take effect until the next utterance
+                # @xutaima: uncomment this to test dual agent w/expr
+                # input_segment.config["use_expr"] = True
                 output_segment = system.pushpop(input_segment)
                 instance.receive_prediction(output_segment)
                 if instance.finish_prediction:
