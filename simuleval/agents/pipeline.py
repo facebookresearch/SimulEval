@@ -59,20 +59,26 @@ class AgentPipeline(GenericAgent):
         segment: Segment,
         states: Optional[List[Optional[AgentStates]]] = None,
         upstream_states: Optional[List[Optional[AgentStates]]] = None,
+        module_list: Optional[List[GenericAgent]] = None,
     ) -> None:
+        if module_list is None:
+            module_list = self.module_list
+
         if states is None:
             # stateful agent
-            states = [None for _ in self.module_list]
-            states_list = [module.states for module in self.module_list]
+            states = [None for _ in module_list]
+            states_list = [module.states for module in module_list]
         else:
             # stateless agent
-            assert len(states) == len(self.module_list)
+            assert len(states) == len(module_list)
             states_list = states
 
         if upstream_states is None:
             upstream_states = []
 
-        for index, module in enumerate(self.module_list[:-1]):
+        index = 0
+
+        for index, module in enumerate(module_list[:-1]):
             config = segment.config
             segment = module.pushpop(
                 segment,
@@ -80,18 +86,25 @@ class AgentPipeline(GenericAgent):
                 upstream_states=upstream_states + states_list[:index],
             )
             segment.config = config
-        self.module_list[-1].push(
+
+        module_list[-1].push(
             segment, states[-1], upstream_states=upstream_states + states_list[:index]
         )
 
-    def pop(self, states: Optional[List[Optional[AgentStates]]] = None) -> Segment:
+    def pop(
+        self,
+        states: Optional[List[Optional[AgentStates]]] = None,
+        module_list: Optional[List[GenericAgent]] = None,
+    ) -> Segment:
+        if module_list is None:
+            module_list = self.module_list
         if states is None:
             last_states = None
         else:
-            assert len(states) == len(self.module_list)
+            assert len(states) == len(module_list)
             last_states = states[-1]
 
-        return self.module_list[-1].pop(last_states)
+        return module_list[-1].pop(last_states)
 
     @classmethod
     def add_args(cls, parser) -> None:
@@ -103,11 +116,16 @@ class AgentPipeline(GenericAgent):
         assert len(cls.pipeline) > 0
         return cls([module_class.from_args(args) for module_class in cls.pipeline])
 
+    @classmethod
+    def from_pipeline_args(cls, pipeline, args):
+        assert len(pipeline) > 0
+        return cls([module_class.from_args(args) for module_class in pipeline])
+
     def __repr__(self) -> str:
-        pipline_str = "\n\t".join(
+        pipeline_str = "\n\t".join(
             "\t".join(str(module).splitlines(True)) for module in self.module_list
         )
-        return f"{self.__class__.__name__}(\n\t{pipline_str}\n)"
+        return f"{self.__class__.__name__}(\n\t\t{pipeline_str})"
 
     def __str__(self) -> str:
         return self.__repr__()

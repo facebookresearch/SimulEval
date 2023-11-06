@@ -242,7 +242,7 @@ class SentenceLevelEvaluator(object):
                 # TODO: test behavior of changing from non-expr --> expr mid-utterance
                 #       it should be a no-op, and not take effect until the next utterance
                 # @xutaima: uncomment this to test dual agent w/expr
-                # input_segment.config["use_expr"] = True
+                # input_segment.config["synthesizer_mode"] = "expressive"
                 output_segment = system.pushpop(input_segment)
                 instance.receive_prediction(output_segment)
                 if instance.finish_prediction:
