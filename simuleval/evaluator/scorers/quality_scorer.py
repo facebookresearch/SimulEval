@@ -316,7 +316,9 @@ class WhisperASRSacreBLEUScorer(QualityScorer):
             wav_path = wav_dir / f"{index}_pred.wav"
             if wav_path.exists():
                 result = model.transcribe(
-                    wav_path.as_posix(), language=self.target_lang, temperature=self.temperature
+                    wav_path.as_posix(),
+                    language=self.target_lang,
+                    temperature=self.temperature,
                 )
                 text = result["text"]
                 assert type(text) == str

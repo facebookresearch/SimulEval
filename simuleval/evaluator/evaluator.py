@@ -21,6 +21,13 @@ from tqdm import tqdm
 from pathlib import Path
 from simuleval.data.dataloader import GenericDataloader, build_dataloader
 
+try:
+    import sentencepiece
+
+    IS_IMPORT_SPM = True
+except Exception:
+    IS_IMPORT_SPM = False
+
 
 logger = logging.getLogger("simuleval.sentence_level_evaluator")
 
@@ -72,6 +79,14 @@ class SentenceLevelEvaluator(object):
         self.source_segment_size = getattr(args, "source_segment_size", 1)
         self.source_type = getattr(args, "source_type", None)
         self.target_type = getattr(args, "target_type", None)
+
+        self.target_spm_model = None
+        if args.eval_latency_unit == "spm":
+            assert args.eval_latency_spm_model
+            assert IS_IMPORT_SPM
+            self.target_spm_model = sentencepiece.SentencePieceProcessor(
+                model_file=args.eval_latency_spm_model
+            )
 
         if (
             self.source_type is None
@@ -150,10 +165,14 @@ class SentenceLevelEvaluator(object):
                 for line in f:
                     instance = LogInstance(line.strip())
                     self.instances[instance.index] = instance
+                    self.instances[instance.index].set_target_spm_model(
+                        self.target_spm_model
+                    )
 
     def build_instances_from_dataloader(self):
         for i in self.get_indices():
             self.instances[i] = self.instance_class(i, self.dataloader, self.args)
+            self.instances[i].set_target_spm_model(self.target_spm_model)
 
     def __len__(self) -> int:
         return self.end_index - self.start_index

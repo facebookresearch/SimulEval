@@ -57,7 +57,9 @@ class GenericDataloader:
         return self.preprocess_target(self.target_list[index])
 
     def get_tgt_lang(self, index: int) -> Optional[str]:
-        if self.tgt_lang_list is None or index >= len(self.tgt_lang_list):
+        if getattr(self, "tgt_lang_list", None) is None or index >= len(
+            self.tgt_lang_list
+        ):
             return None
         else:
             return self.tgt_lang_list[index]

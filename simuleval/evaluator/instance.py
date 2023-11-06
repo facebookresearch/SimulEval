@@ -53,6 +53,11 @@ class Instance(object):
             self.args = args
             self.latency_unit = args.eval_latency_unit
 
+        self.target_spm_model = None
+
+    def set_target_spm_model(self, spm_model):
+        self.target_spm_model = spm_model
+
     def reset(self):
         self.step = 0
         self.elapsed = []
@@ -119,11 +124,14 @@ class Instance(object):
             return len(self.reference.split(" "))
         elif self.latency_unit == "char":
             return len(self.reference.strip())
+        elif self.latency_unit == "spm":
+            assert self.target_spm_model is not None
+            return len(self.target_spm_model.encode(self.reference, out_type=str))
         else:
             raise NotImplementedError
 
     def summarize(self):
-        return {
+        return_dict = {
             "index": self.index,
             "prediction": self.prediction,
             "delays": self.delays,
@@ -133,6 +141,9 @@ class Instance(object):
             "source": self.source_info,
             "source_length": self.source_length,
         }
+        if self.latency_unit == "spm":
+            return_dict["prediction_spm"] = self.prediction_list
+        return return_dict
 
     @classmethod
     def from_json(cls, json_string):
@@ -196,7 +207,7 @@ class TextOutputInstance(Instance):
 
         current_time = time.time()
 
-        if self.latency_unit == "word":
+        if self.latency_unit in ["word", "spm"]:
             prediction_list = prediction.content.strip().split()
         elif self.latency_unit == "char":
             prediction_list = list(prediction.content.replace(" ", ""))
@@ -212,7 +223,7 @@ class TextOutputInstance(Instance):
 
     @property
     def target_length_latency(self):
-        if self.latency_unit == "word":
+        if self.latency_unit in ["word", "spm"]:
             return len(self.reference.split(" "))
         elif self.latency_unit == "char":
             return len(self.reference)
@@ -225,6 +236,8 @@ class TextOutputInstance(Instance):
             return " ".join(list(self.prediction_list))
         elif self.latency_unit == "char":
             return "".join(list(self.prediction_list))
+        elif self.latency_unit == "spm":
+            return "".join(list(self.prediction_list)).replace("▁", " ").strip()
         else:
             raise NotImplementedError
 
@@ -458,3 +471,7 @@ class LogInstance:
         self.source_length = self.info.get("source_length")  # just for testing!
         self.finish_prediction = True
         self.metrics = {}
+        self.target_spm_model = None
+
+    def set_target_spm_model(self, spm_model):
+        self.target_spm_model = spm_model
