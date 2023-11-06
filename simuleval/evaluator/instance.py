@@ -471,3 +471,7 @@ class LogInstance:
         self.source_length = self.info.get("source_length")  # just for testing!
         self.finish_prediction = True
         self.metrics = {}
+        self.target_spm_model = None
+
+    def set_target_spm_model(self, spm_model):
+        self.target_spm_model = spm_model
