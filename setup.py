@@ -28,7 +28,7 @@ setup(
     install_requires=[
         "pytest",
         "pytest-cov",
-        "sacrebleu==2.3.1",
+        "sacrebleu>=2.3.1",
         "tornado",
         "soundfile",
         "pandas",
