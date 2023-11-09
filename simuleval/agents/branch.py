@@ -17,10 +17,14 @@ class BranchedAgentPipelineStates(AgentStates):
                 s.reset()
 
     def update_source(self, segment: Segment):
-        pass
+        self.source_finished = segment.finished
+        for states in self.states_dict.values():
+            states[0] = segment.finished
 
     def update_target(self, segment: Segment):
-        pass
+        self.target_finished = segment.finished
+        for states in self.states_dict.values():
+            states[1] = segment.finished
 
 
 class BranchedAgentPipeline(AgentPipeline):
@@ -144,7 +148,7 @@ class BranchedAgentPipeline(AgentPipeline):
                 pipeline_class_or_list.add_args(parser)
 
     def __repr__(self) -> str:
-        # TODO, Display here is not correct
+        # TODO, indent here is not correct
         string_list = []
         for branch_name, pipeline in self.pipeline_dict.items():
             string_list.append(f"{branch_name}:\n\t\t{pipeline}")
