@@ -103,7 +103,7 @@ def build_system_from_dir(
     path = Path(path)
     config_dict = get_system_config(path, config_name)
     if overwrite_config_dict is not None:
-        for key, value in overwrite_config_dict:
+        for key, value in overwrite_config_dict.items():
             config_dict[key] = value
     agent_class = get_agent_class_from_dir(path, config_name)
 
