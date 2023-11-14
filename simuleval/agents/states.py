@@ -35,9 +35,7 @@ class AgentStates:
 
     def update_config(self, config: dict):
         for k in config.keys():
-            if k not in self.config:
-                # only update with new keys within each utterance
-                self.config[k] = config[k]
+            self.config[k] = config[k]
 
     def update_source(self, segment: Segment):
         """
@@ -67,13 +65,13 @@ class AgentStates:
             segment (~simuleval.agents.segments.Segment): input segment
         """
         self.target_finished = segment.finished
-        if not self.target_finished:
-            if isinstance(segment, EmptySegment):
-                return
-            elif isinstance(segment, TextSegment):
-                self.target.append(segment.content)
-            elif isinstance(segment, SpeechSegment):
-                self.target += segment.content
-                self.target_sample_rate = segment.sample_rate
-            else:
-                raise NotImplementedError
+        # if not self.target_finished:
+        #     if isinstance(segment, EmptySegment):
+        #         return
+        #     elif isinstance(segment, TextSegment):
+        #         self.target.append(segment.content)
+        #     elif isinstance(segment, SpeechSegment):
+        #         self.target += segment.content
+        #         self.target_sample_rate = segment.sample_rate
+        #     else:
+        #         raise NotImplementedError
