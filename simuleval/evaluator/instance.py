@@ -57,6 +57,7 @@ class Instance(object):
         self.step = 0
         self.elapsed = []
         self.prediction_list = []
+        self.durations = []
         self.delays = []
         self.start_time = None
         self.metrics = {}
@@ -128,6 +129,7 @@ class Instance(object):
             "prediction": self.prediction,
             "delays": self.delays,
             "elapsed": self.elapsed,
+            "durations": self.durations,
             "prediction_length": self.prediction_length,
             "reference": self.reference,
             "source": self.source_info,
@@ -139,6 +141,7 @@ class Instance(object):
         info = json.loads(json_string)
         instance = cls(info["index"], None, None)
         instance.prediction_list = info["prediction"].split()
+        instance.durations = info["durations"]
         instance.delays = info["delays"]
         instance.elapsed = info["elapsed"]
         instance.reference = info["reference"]
@@ -205,6 +208,7 @@ class TextOutputInstance(Instance):
 
         self.prediction_list += prediction_list
 
+        self.durations.append(len(prediction_list))
         self.elapsed += [self.step_to_elapsed(self.step, current_time)] * len(
             prediction_list
         )
