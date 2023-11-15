@@ -281,11 +281,18 @@ class WhisperASRSacreBLEUScorer(QualityScorer):
 
     def __call__(self, instances: Dict) -> float:
         transcripts = self.asr_transcribe(instances)
+        reference = []
+        for ins in instances.values():
+            text = ins.reference
+            text = text.lower()
+            text = remove_punctuations(text)
+            reference.append(text)
+        print(reference)
         score = (
             BLEU(tokenize=self.tokenizer)
             .corpus_score(
                 transcripts,
-                [[ins.reference for ins in instances.values()]],
+                [reference],
             )
             .score
         )
