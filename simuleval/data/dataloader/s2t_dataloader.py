@@ -6,13 +6,17 @@
 
 from __future__ import annotations
 from pathlib import Path
-from typing import List, Union
+from typing import List, Union, Optional
 from .dataloader import GenericDataloader
 from simuleval.data.dataloader import register_dataloader
 from argparse import Namespace
 from urllib.parse import urlparse, parse_qs
-import yt_dlp as youtube_dl
-from pydub import AudioSegment
+
+try:
+    import yt_dlp as youtube_dl
+    from pydub import AudioSegment
+except ImportError:
+    yt_dlp = AudioSegment = None
 
 try:
     import soundfile
@@ -56,8 +60,21 @@ def download_youtube_video(url):
     return name
 
 
+def load_list_from_file(file_path: Union[Path, str]) -> List[str]:
+    with open(file_path) as f:
+        return [line.strip() for line in f]
+
+
 @register_dataloader("speech-to-text")
 class SpeechToTextDataloader(GenericDataloader):
+    def __init__(
+        self,
+        source_list: List[str],
+        target_list: List[str],
+        tgt_lang_list: Optional[List[str]] = None,
+    ) -> None:
+        super().__init__(source_list, target_list, tgt_lang_list)
+
     def preprocess_source(self, source: Union[Path, str]) -> List[float]:
         assert IS_IMPORT_SOUNDFILE, "Please make sure soundfile is properly installed."
         samples, _ = soundfile.read(source, dtype="float32")
@@ -75,40 +92,48 @@ class SpeechToTextDataloader(GenericDataloader):
 
     @classmethod
     def from_files(
-        cls, source: Union[Path, str], target: Union[Path, str]
+        cls,
+        source: Union[Path, str],
+        target: Union[Path, str],
+        tgt_lang: Union[Path, str],
     ) -> SpeechToTextDataloader:
-        with open(source) as f:
-            source_list = [line.strip() for line in f]
-        with open(target) as f:
-            target_list = [line.strip() for line in f]
-        dataloader = cls(source_list, target_list)
+        source_list = load_list_from_file(source)
+        target_list = load_list_from_file(target)
+        tgt_lang_list = []
+        if tgt_lang is not None:
+            tgt_lang_list = load_list_from_file(tgt_lang)
+        dataloader = cls(source_list, target_list, tgt_lang_list)
         return dataloader
 
     @classmethod
     def from_args(cls, args: Namespace):
         args.source_type = "speech"
         args.target_type = "text"
-        return cls.from_files(args.source, args.target)
+        return cls.from_files(args.source, args.target, args.tgt_lang)
 
 
 @register_dataloader("speech-to-speech")
 class SpeechToSpeechDataloader(SpeechToTextDataloader):
     @classmethod
     def from_files(
-        cls, source: Union[Path, str], target: Union[Path, str]
+        cls,
+        source: Union[Path, str],
+        target: Union[Path, str],
+        tgt_lang: Union[Path, str, None] = None,
     ) -> SpeechToSpeechDataloader:
-        with open(source) as f:
-            source_list = [line.strip() for line in f]
-        with open(target) as f:
-            target_list = [line.strip() for line in f]
-        dataloader = cls(source_list, target_list)
+        source_list = load_list_from_file(source)
+        target_list = load_list_from_file(target)
+        tgt_lang_list = []
+        if tgt_lang is not None:
+            tgt_lang_list = load_list_from_file(tgt_lang)
+        dataloader = cls(source_list, target_list, tgt_lang_list)
         return dataloader
 
     @classmethod
     def from_args(cls, args: Namespace):
         args.source_type = "speech"
         args.target_type = "speech"
-        return cls.from_files(args.source, args.target)
+        return cls.from_files(args.source, args.target, args.tgt_lang)
 
 
 @register_dataloader("youtube-to-text")
@@ -117,6 +142,8 @@ class YoutubeToTextDataloader(SpeechToTextDataloader):
     def from_youtube(
         cls, source: Union[Path, str], target: Union[Path, str]
     ) -> YoutubeToTextDataloader:
+        assert AudioSegment is not None
+        assert youtube_dl is not None
         source_list = [download_youtube_video(source)]
         target_list = [target]
         dataloader = cls(source_list, target_list)

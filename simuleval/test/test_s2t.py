@@ -24,7 +24,7 @@ def test_s2t(root_path=ROOT_PATH):
         cli.sys.argv[1:] = [
             "--agent",
             os.path.join(
-                root_path, "examples", "speech_to_text", "english_counter_agent.py"
+                root_path, "examples", "speech_to_text", "counter_in_tgt_lang_agent.py"
             ),
             "--user-dir",
             os.path.join(root_path, "examples"),
@@ -38,6 +38,10 @@ def test_s2t(root_path=ROOT_PATH):
             os.path.join(root_path, "examples", "speech_to_text", "reference/en.txt"),
             "--output",
             tmpdirname,
+            "--tgt-lang",
+            os.path.join(
+                root_path, "examples", "speech_to_text", "reference/tgt_lang.txt"
+            ),
         ]
         cli.main()
 
@@ -46,7 +50,7 @@ def test_s2t(root_path=ROOT_PATH):
                 instance = LogInstance(line.strip())
                 assert (
                     instance.prediction
-                    == "1 second 2 second 3 second 4 second 5 second 6 second 7 second"
+                    == "1 segundos 2 segundos 3 segundos 4 segundos 5 segundos 6 segundos 7 segundos"
                 )
 
 
@@ -103,7 +107,9 @@ def test_s2t_with_tgt_lang(root_path=ROOT_PATH):
             "--output",
             tmpdirname,
             "--tgt-lang",
-            "es",
+            os.path.join(
+                root_path, "examples", "speech_to_text", "reference/tgt_lang.txt"
+            ),
         ]
         cli.main()
 

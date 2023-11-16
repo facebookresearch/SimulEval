@@ -29,6 +29,8 @@ class AgentStates:
         self.target_finished = False
         self.source_sample_rate = 0
         self.target_sample_rate = 0
+        self.tgt_lang = None
+        self.upstream_states = []
 
     def update_source(self, segment: Segment):
         """
@@ -42,9 +44,11 @@ class AgentStates:
             return
         elif isinstance(segment, TextSegment):
             self.source.append(segment.content)
+            self.tgt_lang = segment.tgt_lang
         elif isinstance(segment, SpeechSegment):
             self.source += segment.content
             self.source_sample_rate = segment.sample_rate
+            self.tgt_lang = segment.tgt_lang
         else:
             raise NotImplementedError
 

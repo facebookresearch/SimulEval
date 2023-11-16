@@ -6,6 +6,7 @@
 
 import os
 from pathlib import Path
+import tempfile
 
 import simuleval.cli as cli
 from simuleval.agents import AgentPipeline, TextToTextAgent
@@ -21,6 +22,8 @@ def test_pipeline_cmd(root_path=ROOT_PATH):
     cli.sys.argv[1:] = [
         "--agent",
         os.path.join(root_path, "examples", "quick_start", "agent_pipeline.py"),
+        "--user-dir",
+        os.path.join(root_path, "examples"),
         "--agent-class",
         "agents.DummyPipeline",
         "--source",
@@ -29,6 +32,56 @@ def test_pipeline_cmd(root_path=ROOT_PATH):
         os.path.join(root_path, "examples", "quick_start", "target.txt"),
     ]
     cli.main()
+
+
+def test_tree_pipeline_cmd(root_path=ROOT_PATH):
+    args_path = Path.joinpath(root_path, "examples", "speech_to_speech")
+    os.chdir(args_path)
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        cli.sys.argv[1:] = [
+            "--agent-class",
+            "examples.speech_to_speech_text.tree_agent_pipeline.DummyTreePipeline",
+            "--user-dir",
+            os.path.join(root_path, "examples"),
+            "--source",
+            os.path.join(root_path, "examples", "speech_to_speech", "source.txt"),
+            "--target",
+            os.path.join(
+                root_path, "examples", "speech_to_text", "reference", "en.txt"
+            ),
+            "--source-segment-size",
+            "320",
+            "--output-index",
+            "0",
+            "--output",
+            tmpdirname,
+        ]
+        cli.main()
+
+
+def test_instantiated_tree_pipeline_cmd(root_path=ROOT_PATH):
+    args_path = Path.joinpath(root_path, "examples", "speech_to_speech")
+    os.chdir(args_path)
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        cli.sys.argv[1:] = [
+            "--agent-class",
+            "examples.speech_to_speech_text.tree_agent_pipeline.AnotherInstantiatedTreeAgentPipeline",
+            "--user-dir",
+            os.path.join(root_path, "examples"),
+            "--source",
+            os.path.join(root_path, "examples", "speech_to_speech", "source.txt"),
+            "--target",
+            os.path.join(
+                root_path, "examples", "speech_to_text", "reference", "en.txt"
+            ),
+            "--source-segment-size",
+            "320",
+            "--output-index",
+            "0",
+            "--output",
+            tmpdirname,
+        ]
+        cli.main()
 
 
 def test_pipeline():

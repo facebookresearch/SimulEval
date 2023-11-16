@@ -141,8 +141,8 @@ def build_system_args(
 
     args = parser.parse_args(cli_argument_list(config_dict))
 
-    logger.info(f"System will run on device: {args.device}.")
-    system.to(args.device)
+    logger.info(f"System will run on device: {args.device}. fp16: {args.fp16}")
+    system.to(args.device, fp16=args.fp16)
 
     args.source_type = system.source_type
     args.target_type = system.target_type

@@ -58,8 +58,13 @@ def main():
 
 def evaluate(system_class: GenericAgent, config_dict: dict = {}):
     EVALUATION_SYSTEM_LIST.append(system_class)
-
-    if check_argument("slurm", config_dict):
+    just_for_arg_check = {}
+    for key, value in config_dict.items():
+        if isinstance(value, list):
+            just_for_arg_check[key] = value[0]
+        else:
+            just_for_arg_check[key] = value
+    if check_argument("slurm", just_for_arg_check):
         submit_slurm_job(config_dict)
         return
 
