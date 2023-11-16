@@ -245,11 +245,10 @@ class SentenceLevelEvaluator(object):
         with open(
             self.output / "instances.log", "a"
         ) if self.output else contextlib.nullcontext() as file:
-            idx = 0
             system.reset()
             for sample in self.iterator:
                 instance = (
-                    self.instance_class(idx, self.dataloader, self.args)
+                    self.instance_class(self.dataloader.cur_index, self.dataloader, self.args)
                     if isinstance(self.dataloader, IterableDataloader)
                     else sample
                 )
@@ -267,8 +266,6 @@ class SentenceLevelEvaluator(object):
 
                 if not self.score_only and self.output:
                     file.write(json.dumps(instance.summarize()) + "\n")
-
-                idx += 1
 
         if self.output:
             self.build_instances_from_log()
