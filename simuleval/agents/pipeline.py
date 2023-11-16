@@ -75,7 +75,9 @@ class AgentPipeline(GenericAgent):
                 upstream_states=upstream_states + states_list[:index],
             )
         self.module_list[-1].push(
-            segment, states[-1], upstream_states=upstream_states + states_list[:index]
+            segment,
+            states[-1],
+            upstream_states=upstream_states + states_list[: len(self.module_list[:-1])],
         )
 
     def pop(self, states: Optional[List[Optional[AgentStates]]] = None) -> Segment:
