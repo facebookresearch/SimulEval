@@ -56,12 +56,6 @@ class GenericDataloader:
     def get_target(self, index: int) -> Any:
         return self.preprocess_target(self.target_list[index])
 
-    def get_tgt_lang(self, index: int) -> Optional[str]:
-        if self.tgt_lang_list is None or index >= len(self.tgt_lang_list):
-            return None
-        else:
-            return self.tgt_lang_list[index]
-
     def __getitem__(self, index: int) -> Dict[str, Any]:
         return {
             "source": self.get_source(index),

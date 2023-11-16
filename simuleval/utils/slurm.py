@@ -9,10 +9,11 @@ import re
 import sys
 import logging
 import subprocess
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 from simuleval import options
 from simuleval.utils.arguments import cli_argument_list
 from simuleval.utils.agent import get_agent_class
+import itertools
 
 logger = logging.getLogger("simuleval.slurm")
 
@@ -31,8 +32,23 @@ def mkdir_output_dir(path: str) -> bool:
 def submit_slurm_job(config_dict: Optional[Dict] = None) -> None:
     if config_dict is not None and "slurm" in config_dict:
         raise RuntimeError("--slurm is only available as a CLI argument")
-    parser = options.general_parser()
+
+    sweep_options = [
+        [[key, v] for v in value]
+        for key, value in config_dict.items()
+        if isinstance(value, list)
+    ]
+    sweep_config_dict_list = []
+    if len(sweep_options) > 0:
+        for option_list in itertools.product(*sweep_options):
+            sweep_config_dict_list.append({k: v for k, v in option_list})
+
+        for x in sweep_options:
+            if x[0][0] in config_dict:
+                del config_dict[x[0][0]]
+
     cli_arguments = cli_argument_list(config_dict)
+    parser = options.general_parser()
     options.add_evaluator_args(parser)
     options.add_scorer_args(parser, cli_arguments)
     options.add_slurm_args(parser)
@@ -65,10 +81,38 @@ def submit_slurm_job(config_dict: Optional[Dict] = None) -> None:
             r"[^\"'\s]+\.py", f"{os.path.abspath(args.output)}/agent.py", command
         ).strip()
 
-    if "--output" in command:
-        command = re.sub(r"--output\s+\S+", f"--output {args.output}", command).strip()
+    sweep_command = ""
+    sbatch_job_array_head = ""
+    job_array_configs = ""
+
+    if len(sweep_config_dict_list) > 0:
+        job_array_configs = "declare -A JobArrayConfigs\n"
+        for i, sub_config_dict in enumerate(sweep_config_dict_list):
+            sub_config_string = " ".join(
+                [f"--{k.replace('_', '-')} {v}" for k, v in sub_config_dict.items()]
+            )
+            job_array_configs += f'JobArrayConfigs[{i}]="{sub_config_string}"\n'
+
+        job_array_configs += "\ndeclare -A JobArrayString\n"
+        for i, sub_config_dict in enumerate(sweep_config_dict_list):
+            sub_config_string = ".".join([str(v) for k, v in sub_config_dict.items()])
+            job_array_configs += f'JobArrayString[{i}]="{sub_config_string}"\n'
+
+        sweep_command = "${JobArrayConfigs[$SLURM_ARRAY_TASK_ID]}"
+        sbatch_job_array_head = f"#SBATCH --array=0-{len(sweep_config_dict_list) - 1}"
+        output_dir = (
+            f"{args.output}" + "/results/${JobArrayString[$SLURM_ARRAY_TASK_ID]}"
+        )
+        log_path = f"{args.output}/logs/slurm-%A_%a.log"
+
     else:
-        command += f" --output {args.output}"
+        output_dir = args.output
+        log_path = f"{args.output}/slurm-%j.log"
+
+    if "--output" in command:
+        command = re.sub(r"--output\s+\S+", f"--output {output_dir}", command).strip()
+    else:
+        command += f" --output {output_dir}"
 
     command = command.replace("--", "\\\n\t--")
     script = f"""#!/bin/bash
@@ -77,9 +121,13 @@ def submit_slurm_job(config_dict: Optional[Dict] = None) -> None:
 #SBATCH --nodes=1
 #SBATCH --gpus-per-node=1
 #SBATCH --ntasks-per-node=8
-#SBATCH --output="{args.output}/slurm-%j.log"
+#SBATCH --output="{log_path}"
 #SBATCH --job-name="{args.slurm_job_name}"
+{sbatch_job_array_head}
 
+{job_array_configs}
+
+mkdir -p {args.output}/logs
 cd {os.path.abspath(args.output)}
 
 GPU_ID=$SLURM_LOCALID
@@ -87,8 +135,9 @@ GPU_ID=$SLURM_LOCALID
 # Change to local a gpu id for debugging, e.g.
 # GPU_ID=0
 
-CUDA_VISIBLE_DEVICES=$GPU_ID {command}
-    """
+
+CUDA_VISIBLE_DEVICES=$GPU_ID {command} {sweep_command}
+"""
     script_file = os.path.join(args.output, "script.sh")
     with open(script_file, "w") as f:
         f.writelines(script)
@@ -103,4 +152,4 @@ CUDA_VISIBLE_DEVICES=$GPU_ID {command}
     logger.info(f"sbatch stdout: {stdout.decode('utf-8').strip()}")
     stderr = stderr.decode("utf-8").strip()
     if len(stderr) > 0:
-        logger.info(f"sbatch stderr: {stderr.decode('utf-8').strip()}")
+        logger.info(f"sbatch stderr: {stderr.strip()}")

@@ -29,8 +29,7 @@
 TIMESTAMP=$(date +"%Y%m%d%H%M%S")
 OUTPUT_FILE="results_$TIMESTAMP.txt"
 simuleval \
-    --agent whisper_waitk.py \
-    --source-segment-size 500 \
-    --waitk-lagging 3 \
-    --source source.txt --target reference/transcript.txt \
-    --output output --quality-metrics WER | tee results/$OUTPUT_FILE
+    --agent english_counter_agent.py \
+    --source-segment-size 1000 \
+    --source source.txt --target reference/en.txt \
+    --output output 
