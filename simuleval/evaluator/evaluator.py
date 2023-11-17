@@ -246,17 +246,24 @@ class SentenceLevelEvaluator(object):
             self.output / "instances.log", "a"
         ) if self.output else contextlib.nullcontext() as file:
             idx = 0
+            system.reset()
             for sample in self.iterator:
-                system.reset()
                 instance = (
                     self.instance_class(idx, self.dataloader, self.args)
                     if isinstance(self.dataloader, IterableDataloader)
                     else sample
                 )
-                while not instance.finish_prediction:
+                while not self.is_finished(instance):
                     input_segment = instance.send_source(self.source_segment_size)
                     output_segment = system.pushpop(input_segment)
                     instance.receive_prediction(output_segment)
+                    if instance.finish_prediction:
+                        # if instance.finish_prediction where set by the reader,
+                        # source_finished_reading will be set as well. If it is
+                        # set by any of the intermediate components, then we didn't
+                        # end yet. We are going to clear the state and continue
+                        # processing the rest of the input.
+                        system.reset()
 
                 if not self.score_only and self.output:
                     file.write(json.dumps(instance.summarize()) + "\n")
