@@ -10,7 +10,11 @@ import sys
 import logging
 import argparse
 from typing import List, Optional
-from simuleval.data.dataloader import DATALOADER_DICT, GenericDataloader
+from simuleval.data.dataloader import (
+    DATALOADER_DICT,
+    GenericDataloader,
+    register_dataloader_class,
+)
 from simuleval.evaluator.scorers import get_scorer_class
 
 
@@ -21,6 +25,16 @@ def add_dataloader_args(
         args, _ = parser.parse_known_args()
     else:
         args, _ = parser.parse_known_args(cli_argument_list)
+
+    if args.dataloader_class:
+        dataloader_module = importlib.import_module(
+            ".".join(args.dataloader_class.split(".")[:-1])
+        )
+        dataloader_class = getattr(
+            dataloader_module, args.dataloader_class.split(".")[-1]
+        )
+        register_dataloader_class(args.dataloader, dataloader_class)
+
     dataloader_class = DATALOADER_DICT.get(args.dataloader)
     if dataloader_class is None:
         dataloader_class = GenericDataloader
@@ -168,6 +182,9 @@ def general_parser():
         help="Name of the config yaml of the system configs.",
     )
     parser.add_argument("--dataloader", default=None, help="Dataloader to use")
+    parser.add_argument(
+        "--dataloader-class", default=None, help="Dataloader class to use"
+    )
     parser.add_argument(
         "--log-level",
         type=str,
