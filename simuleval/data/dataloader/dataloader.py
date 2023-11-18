@@ -4,6 +4,7 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
+from abc import abstractmethod
 from typing import Any, Dict, List, Union, Optional
 from argparse import Namespace, ArgumentParser
 
@@ -117,3 +118,13 @@ class GenericDataloader:
             default=None,
             help="Target language",
         )
+
+
+class IterableDataloader:
+    @abstractmethod
+    def __iter__(self):
+        ...
+
+    @abstractmethod
+    def __next__(self):
+        ...

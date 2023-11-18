@@ -4,11 +4,14 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
+import contextlib
 import pandas
 import os
 import numbers
 from argparse import Namespace
 from typing import Dict, Generator, Optional
+
+from simuleval.data.dataloader.dataloader import IterableDataloader
 from .scorers import get_scorer_class
 from .scorers.latency_scorer import LatencyScorer
 from .scorers.quality_scorer import QualityScorer
@@ -138,14 +141,17 @@ class SentenceLevelEvaluator(object):
 
         self.build_instances()
 
+        iterable = self.instances.values()
+        if isinstance(self.dataloader, IterableDataloader):
+            iterable = self.dataloader
+
         if not self.args.no_progress_bar and not self.score_only:
-            self.instance_iterator = tqdm(
-                self.instances.values(),
+            self.iterator = tqdm(
+                iterable,
                 initial=self.start_index,
-                total=len(self.instances.values()),
             )
         else:
-            self.instance_iterator = self.instances.values()
+            self.iterator = iterable
 
     def write_log(self, instance):
         if self.output is not None:
@@ -170,6 +176,9 @@ class SentenceLevelEvaluator(object):
                     )
 
     def build_instances_from_dataloader(self):
+        if isinstance(self.dataloader, IterableDataloader):
+            return
+
         for i in self.get_indices():
             self.instances[i] = self.instance_class(i, self.dataloader, self.args)
             self.instances[i].set_target_spm_model(self.target_spm_model)
@@ -233,23 +242,36 @@ class SentenceLevelEvaluator(object):
         return instance.finish_prediction
 
     def __call__(self, system):
-        system.reset()
-        for instance in self.instance_iterator:
-            while not self.is_finished(instance):
-                input_segment = instance.send_source(self.source_segment_size)
-                output_segment = system.pushpop(input_segment)
-                instance.receive_prediction(output_segment)
-                if instance.finish_prediction:
-                    # if instance.finish_prediction where set by the reader,
-                    # source_finished_reading will be set as well. If it is
-                    # set by any of the intermediate components, then we didn't
-                    # end yet. We are going to clear the state and continue
-                    # processing the rest of the input.
-                    system.reset()
+        with open(
+            self.output / "instances.log", "a"
+        ) if self.output else contextlib.nullcontext() as file:
+            idx = 0
+            system.reset()
+            for sample in self.iterator:
+                instance = (
+                    self.instance_class(idx, self.dataloader, self.args)
+                    if isinstance(self.dataloader, IterableDataloader)
+                    else sample
+                )
+                while not self.is_finished(instance):
+                    input_segment = instance.send_source(self.source_segment_size)
+                    output_segment = system.pushpop(input_segment)
+                    instance.receive_prediction(output_segment)
+                    if instance.finish_prediction:
+                        # if instance.finish_prediction where set by the reader,
+                        # source_finished_reading will be set as well. If it is
+                        # set by any of the intermediate components, then we didn't
+                        # end yet. We are going to clear the state and continue
+                        # processing the rest of the input.
+                        system.reset()
 
-            if not self.score_only:
-                self.write_log(instance)
+                if not self.score_only and self.output:
+                    file.write(json.dumps(instance.summarize()) + "\n")
 
+                idx += 1
+
+        if self.output:
+            self.build_instances_from_log()
         self.dump_results()
         self.dump_metrics()
 

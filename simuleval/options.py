@@ -100,7 +100,12 @@ def add_evaluator_args(parser: argparse.ArgumentParser):
         default=-1,
         help="The last index for evaluation.",
     )
-    parser.add_argument("--output", type=str, default=None, help="Output directory")
+    parser.add_argument(
+        "--output",
+        type=str,
+        default=None,
+        help="Output directory. Required if using iterable dataloader.",
+    )
 
 
 def add_scorer_args(
