@@ -121,6 +121,8 @@ class GenericDataloader:
 
 
 class IterableDataloader:
+    cur_index: int
+
     @abstractmethod
     def __iter__(self):
         ...
