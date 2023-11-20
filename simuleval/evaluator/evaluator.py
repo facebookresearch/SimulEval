@@ -5,24 +5,24 @@
 # LICENSE file in the root directory of this source tree.
 
 import contextlib
-import pandas
-import os
+import json
+import logging
 import numbers
+import os
 from argparse import Namespace
+from pathlib import Path
 from typing import Dict, Generator, Optional
 
+import pandas
+import yaml
+from simuleval.data.dataloader import GenericDataloader, build_dataloader
 from simuleval.data.dataloader.dataloader import IterableDataloader
+from tqdm import tqdm
+
+from .instance import INSTANCE_TYPE_DICT, LogInstance
 from .scorers import get_scorer_class
 from .scorers.latency_scorer import LatencyScorer
 from .scorers.quality_scorer import QualityScorer
-
-from .instance import INSTANCE_TYPE_DICT, LogInstance
-import yaml
-import logging
-import json
-from tqdm import tqdm
-from pathlib import Path
-from simuleval.data.dataloader import GenericDataloader, build_dataloader
 
 try:
     import sentencepiece
@@ -170,10 +170,9 @@ class SentenceLevelEvaluator(object):
             with open(self.output / "instances.log", "r") as f:
                 for line in f:
                     instance = LogInstance(line.strip())
-                    self.instances[instance.index] = instance
-                    self.instances[instance.index].set_target_spm_model(
-                        self.target_spm_model
-                    )
+                    index = instance.index - self.start_index
+                    self.instances[index] = instance
+                    self.instances[index].set_target_spm_model(self.target_spm_model)
 
     def build_instances_from_dataloader(self):
         if isinstance(self.dataloader, IterableDataloader):
@@ -245,11 +244,12 @@ class SentenceLevelEvaluator(object):
         with open(
             self.output / "instances.log", "a"
         ) if self.output else contextlib.nullcontext() as file:
-            idx = 0
             system.reset()
             for sample in self.iterator:
                 instance = (
-                    self.instance_class(idx, self.dataloader, self.args)
+                    self.instance_class(
+                        self.dataloader.cur_index, self.dataloader, self.args
+                    )
                     if isinstance(self.dataloader, IterableDataloader)
                     else sample
                 )
@@ -267,8 +267,6 @@ class SentenceLevelEvaluator(object):
 
                 if not self.score_only and self.output:
                     file.write(json.dumps(instance.summarize()) + "\n")
-
-                idx += 1
 
         if self.output:
             self.build_instances_from_log()
