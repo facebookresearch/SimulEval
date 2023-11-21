@@ -23,7 +23,6 @@ from .instance import INSTANCE_TYPE_DICT, LogInstance
 from .scorers import get_scorer_class
 from .scorers.latency_scorer import LatencyScorer
 from .scorers.quality_scorer import QualityScorer
-from simuleval.data.segments import Segment
 
 try:
     import sentencepiece
