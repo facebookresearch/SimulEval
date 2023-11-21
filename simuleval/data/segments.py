@@ -17,6 +17,7 @@ class Segment:
     is_empty: bool = False
     data_type: str = None
     tgt_lang: str = None
+    config: dict = field(default_factory=dict)
 
     def json(self) -> str:
         info_dict = {attribute: value for attribute, value in self.__dict__.items()}

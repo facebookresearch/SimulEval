@@ -69,11 +69,13 @@ class AgentPipeline(GenericAgent):
             upstream_states = []
 
         for index, module in enumerate(self.module_list[:-1]):
+            config = segment.config
             segment = module.pushpop(
                 segment,
                 states[index],
                 upstream_states=upstream_states + states_list[:index],
             )
+            segment.config = config
         self.module_list[-1].push(
             segment,
             states[-1],
@@ -276,12 +278,20 @@ class TreeAgentPipeline(AgentPipeline):
         # DFS over the tree
         children = self.module_dict[module]
         if len(children) == 0:  # leaf node
-            module.push(segment, states[module])
+            module.push(segment, states[module])  # , upstream_states)
+            # upstream_states[len(upstream_states)] = states[module]
+            # TODO: add upstream_states back for tree pipeline leaf nodes
             return []
 
+        # start = time.time()
+        config = segment.config
         segment = module.pushpop(segment, states[module], upstream_states)
+        segment.config = config
+        # logger.warning(f"{type(module).__name__}, {round(time.time() - start, 3)}")
         assert len(upstream_states) not in upstream_states
-        upstream_states[len(upstream_states)] = states[module]
+        upstream_states[len(upstream_states)] = (
+            states[module] if states[module] is not None else module.states
+        )
 
         for child in children:
             self.push_impl(child, segment, states, upstream_states)

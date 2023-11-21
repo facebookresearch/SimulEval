@@ -2,8 +2,6 @@ name: PyPI Publish
 
 on:
   push:
-    branches:
-      - main
     tags:
       - v*
 jobs:
