@@ -4,12 +4,13 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
-import os
-import importlib
-import sys
-import logging
 import argparse
+import importlib
+import logging
+import os
+import sys
 from typing import List, Optional
+
 from simuleval.data.dataloader import (
     DATALOADER_DICT,
     GenericDataloader,
@@ -147,7 +148,7 @@ def import_user_module(module_path):
 
 
 def general_parser():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(conflict_handler="resolve")
 
     parser.add_argument(
         "--user-dir",
