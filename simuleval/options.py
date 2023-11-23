@@ -147,17 +147,23 @@ def import_user_module(module_path):
     sys.path.pop(0)
 
 
-def general_parser():
-    parser = argparse.ArgumentParser(conflict_handler="resolve")
+def general_parser(
+    config_dict: Optional[dict] = None,
+    parser: Optional[argparse.ArgumentParser] = None,
+):
+    if parser is None:
+        parser = argparse.ArgumentParser(
+            add_help=False,
+            description="SimulEval - Simultaneous Evaluation CLI",
+            conflict_handler="resolve",
+        )
 
     parser.add_argument(
         "--user-dir",
         default=None,
         help="path to a python module containing custom agents",
     )
-    args, _ = parser.parse_known_args()
-    if args.user_dir is not None:
-        import_user_module(args.user_dir)
+
     parser.add_argument(
         "--remote-eval",
         action="store_true",

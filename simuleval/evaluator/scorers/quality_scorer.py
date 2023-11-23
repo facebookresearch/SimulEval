@@ -4,15 +4,15 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
-import re
 import logging
-import sacrebleu
+import string
+import subprocess
 from pathlib import Path
 from typing import Dict
-from sacrebleu.metrics.bleu import BLEU
-import subprocess
-import string
+
+import sacrebleu
 import tqdm
+from sacrebleu.metrics.bleu import BLEU
 
 QUALITY_SCORERS_DICT = {}
 
