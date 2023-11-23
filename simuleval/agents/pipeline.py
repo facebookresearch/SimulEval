@@ -278,9 +278,8 @@ class TreeAgentPipeline(AgentPipeline):
         # DFS over the tree
         children = self.module_dict[module]
         if len(children) == 0:  # leaf node
-            module.push(segment, states[module])  # , upstream_states)
-            # upstream_states[len(upstream_states)] = states[module]
-            # TODO: add upstream_states back for tree pipeline leaf nodes
+            module.push(segment, states[module], upstream_states)
+            upstream_states[len(upstream_states)] = states[module]
             return []
 
         # start = time.time()
