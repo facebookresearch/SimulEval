@@ -4,7 +4,7 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 with open("README.md", "r") as readme_file:
     long_description = readme_file.read()
@@ -12,7 +12,7 @@ with open("README.md", "r") as readme_file:
 setup(
     python_requires=">3.7.0",
     name="simuleval",
-    version="1.1.1",
+    version="1.1.2",
     author="Xutai Ma",
     description="SimulEval: A Flexible Toolkit for Automated Machine Translation Evaluation",
     long_description=long_description,
