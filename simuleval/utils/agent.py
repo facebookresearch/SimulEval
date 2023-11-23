@@ -5,17 +5,18 @@
 # LICENSE file in the root directory of this source tree.
 
 
+import importlib
+import logging
 import os
 import sys
-import yaml
-import logging
-import importlib
-from argparse import Namespace
-from typing import Union, Optional, Tuple
+from argparse import ArgumentParser, Namespace
 from pathlib import Path
+from typing import Optional, Tuple, Union
+
+import yaml
 from simuleval import options
 from simuleval.agents import GenericAgent
-from simuleval.utils.arguments import cli_argument_list, check_argument
+from simuleval.utils.arguments import check_argument, cli_argument_list
 
 EVALUATION_SYSTEM_LIST = []
 
@@ -121,8 +122,9 @@ def build_system_from_dir(
 
 def build_system_args(
     config_dict: Optional[dict] = None,
+    parser: Optional[ArgumentParser] = None,
 ) -> Tuple[GenericAgent, Namespace]:
-    parser = options.general_parser()
+    parser = options.general_parser(config_dict, parser)
     cli_arguments = cli_argument_list(config_dict)
     options.add_evaluator_args(parser)
     options.add_scorer_args(parser, cli_arguments)
@@ -138,6 +140,14 @@ def build_system_args(
         system_class.add_args(parser)
         args, _ = parser.parse_known_args(cli_argument_list(config_dict))
         system = system_class.from_args(args)
+
+    parser.add_argument(
+        "-h",
+        "--help",
+        action="help",
+        default="==SUPPRESS==",
+        help=("show this help message and exit"),
+    )
 
     args = parser.parse_args(cli_argument_list(config_dict))
 

@@ -5,8 +5,8 @@
 # LICENSE file in the root directory of this source tree.
 
 from abc import abstractmethod
-from typing import Any, Dict, List, Union, Optional
-from argparse import Namespace, ArgumentParser
+from argparse import ArgumentParser, Namespace
+from typing import Any, Dict, List, Optional, Union
 
 SUPPORTED_MEDIUM = ["text", "speech"]
 SUPPORTED_SOURCE_MEDIUM = ["youtube", "text", "speech"]

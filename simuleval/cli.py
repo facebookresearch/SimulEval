@@ -4,21 +4,21 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
-import sys
 import logging
+import sys
+
 from simuleval import options
-from simuleval.utils.agent import build_system_args
-from simuleval.utils.slurm import submit_slurm_job
-from simuleval.utils.arguments import check_argument
-from simuleval.utils import EVALUATION_SYSTEM_LIST
+from simuleval.agents import GenericAgent
+from simuleval.agents.service import start_agent_service
 from simuleval.evaluator import (
+    SentenceLevelEvaluator,
     build_evaluator,
     build_remote_evaluator,
-    SentenceLevelEvaluator,
 )
-from simuleval.agents.service import start_agent_service
-from simuleval.agents import GenericAgent
-
+from simuleval.utils import EVALUATION_SYSTEM_LIST
+from simuleval.utils.agent import build_system_args
+from simuleval.utils.arguments import check_argument
+from simuleval.utils.slurm import submit_slurm_job
 
 logging.basicConfig(
     format="%(asctime)s | %(levelname)-8s | %(name)-16s | %(message)s",
