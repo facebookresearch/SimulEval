@@ -163,6 +163,9 @@ def general_parser(
         default=None,
         help="path to a python module containing custom agents",
     )
+    args, _ = parser.parse_known_args()
+    if args.user_dir is not None:
+        import_user_module(args.user_dir)
 
     parser.add_argument(
         "--remote-eval",
