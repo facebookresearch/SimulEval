@@ -32,7 +32,7 @@ def read_scores_files(output_folder):
     return all_contents
 
 
-def process_result(output_folder, metric_names):
+def process_result(output_folder, metric_names=None):
     all_contents = read_scores_files(output_folder)
 
     # Extracting headers from the first line of each "scores.tsv" file
