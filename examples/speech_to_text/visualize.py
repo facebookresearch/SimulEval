@@ -41,11 +41,10 @@ def read_scores_files(output_folder):
     return all_contents, headers_list
 
 
-def process_result(output_folder, metric_names=None):
+def process_result(output_folder, metric_names):
     all_contents, headers_list = read_scores_files(output_folder)
-
+    
     # Extracting headers from the first line of each "scores.tsv" file
-
     reference_header = headers_list[0]
 
     if metric_names is None:
