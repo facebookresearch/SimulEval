@@ -457,7 +457,7 @@ INSTANCE_TYPE_DICT = {
 
 
 class LogInstance:
-    def __init__(self, info: str) -> None:
+    def __init__(self, info: str, latency_unit: str = "word") -> None:
         self.info = json.loads(info.strip())
         self.intervals = []
         for key, value in self.info.items():
