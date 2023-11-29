@@ -9,6 +9,7 @@ import logging
 from simuleval import options
 from simuleval.utils.agent import build_system_args
 from simuleval.utils.slurm import submit_slurm_job
+from simuleval.utils.visualize import process_result
 from simuleval.utils.arguments import check_argument
 from simuleval.utils import EVALUATION_SYSTEM_LIST
 from simuleval.evaluator import (
@@ -38,6 +39,10 @@ def main():
 
     if check_argument("score_only"):
         scoring()
+        return
+    
+    if check_argument("visualize"):
+        visualize()
         return
 
     if check_argument("slurm"):
@@ -98,6 +103,12 @@ def remote_evaluate():
     # evaluate system
     evaluator.remote_eval()
 
+def visualize():
+    parser = options.general_parser()
+    options.add_visualize_args(parser)
+    args = parser.parse_args()
+    visualizer = process_result(args.output, args.metrics)
+    print(visualizer)
 
 if __name__ == "__main__":
     main()
