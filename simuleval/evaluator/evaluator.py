@@ -172,6 +172,7 @@ class SentenceLevelEvaluator(object):
                     instance = LogInstance(line.strip())
                     index = instance.index - self.start_index
                     self.instances[index] = instance
+                    self.instances[index].latency_unit = self.args.eval_latency_unit
                     self.instances[index].set_target_spm_model(self.target_spm_model)
 
     def build_instances_from_dataloader(self):
