@@ -7,6 +7,8 @@
 import logging
 import sys
 
+from typing import Optional
+from argparse import ArgumentParser
 from simuleval import options
 from simuleval.agents import GenericAgent
 from simuleval.agents.service import start_agent_service
@@ -56,7 +58,7 @@ def main():
     evaluator(system)
 
 
-def evaluate(system_class: GenericAgent, config_dict: dict = {}):
+def evaluate(system_class: GenericAgent, config_dict: dict = {}, parser: Optional[ArgumentParser] = None):
     EVALUATION_SYSTEM_LIST.append(system_class)
     just_for_arg_check = {}
     for key, value in config_dict.items():
@@ -65,10 +67,10 @@ def evaluate(system_class: GenericAgent, config_dict: dict = {}):
         else:
             just_for_arg_check[key] = value
     if check_argument("slurm", just_for_arg_check):
-        submit_slurm_job(config_dict)
+        submit_slurm_job(config_dict, parser)
         return
 
-    system, args = build_system_args(config_dict)
+    system, args = build_system_args(config_dict, parser)
 
     # build evaluator
     evaluator = build_evaluator(args)
