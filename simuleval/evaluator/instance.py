@@ -465,7 +465,7 @@ class LogInstance:
 
         self.index = self.info["index"]
         self.reference = self.info.get("reference", "")
-        self.latency_unit = "word"
+        self.latency_unit = latency_unit
         self.source_length = self.info.get("source_length")  # just for testing!
         self.finish_prediction = True
         self.metrics = {}
