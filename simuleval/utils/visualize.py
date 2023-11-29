@@ -8,7 +8,6 @@ def read_scores_from_folder(folder_path, file_pattern=f"scores\.tsv$"):
     for file in os.listdir(folder_path):
         if file_pattern.search(file):
             score_file_path = os.path.join(folder_path, file)
-            # if os.path.isfile(score_file_path):
             with open(score_file_path, "r") as f:
                 contents = [
                     line.strip() for line in f.read().split("\n") if line.strip()
