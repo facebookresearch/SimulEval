@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 import argparse
-import pprint
+from pprint import pprint
 
 
 def read_scores_from_folder(folder_path):
@@ -29,18 +29,24 @@ def read_scores_files(output_folder):
             contents = read_scores_from_folder(folder_path)
             if contents:
                 all_contents.append(contents)
-    return all_contents
+
+    headers_list = []
+    for contents in all_contents:
+        if contents:
+            header = contents[0].split()
+            if not header:
+                raise ValueError(f"Empty header in {contents}")
+            headers_list.append(header)
+
+    return all_contents, headers_list
 
 
-def process_result(output_folder, metric_names):
-    all_contents = read_scores_files(output_folder)
+def process_result(output_folder, metric_names=None):
+    all_contents, headers_list = read_scores_files(output_folder)
 
     # Extracting headers from the first line of each "scores.tsv" file
-    headers = [contents[0].split() for contents in all_contents if contents]
 
-    if not headers:
-        raise ValueError("No headers found in the results")
-    reference_header = headers[0]
+    reference_header = headers_list[0]
 
     if metric_names is None:
         metric_names = reference_header
@@ -58,7 +64,8 @@ def process_result(output_folder, metric_names):
 
     df = pd.DataFrame(scores)
 
-    df = df.fillna(0.0)
+    # Fill NaN values with NaN
+    df = df.fillna("NaN")
     filtered_df = df[df.columns[df.columns.isin(common_metrics)]]
 
     if len(common_metrics) == 1:
@@ -77,4 +84,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     df = process_result(args.output, args.metrics)
-    pprint.pprint(df)
+    pprint(df)
