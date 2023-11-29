@@ -195,11 +195,11 @@ def general_parser():
     return parser
 
 
-
 def add_slurm_args(parser):
     parser.add_argument("--slurm-partition", default="", help="Slurm partition.")
     parser.add_argument("--slurm-job-name", default="simuleval", help="Slurm job name.")
     parser.add_argument("--slurm-time", default="2:00:00", help="Slurm partition.")
+
 
 def add_visualize_args(parser):
     parser.add_argument(

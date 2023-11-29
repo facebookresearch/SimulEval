@@ -40,7 +40,7 @@ def main():
     if check_argument("score_only"):
         scoring()
         return
-    
+
     if check_argument("visualize"):
         visualize()
         return
@@ -103,12 +103,14 @@ def remote_evaluate():
     # evaluate system
     evaluator.remote_eval()
 
+
 def visualize():
     parser = options.general_parser()
     options.add_visualize_args(parser)
     args = parser.parse_args()
     visualizer = process_result(args.output, args.metrics)
     print(visualizer)
+
 
 if __name__ == "__main__":
     main()

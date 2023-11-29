@@ -7,6 +7,7 @@
 import pandas
 import os
 import numbers
+import datetime
 from argparse import Namespace
 from typing import Dict, Generator, Optional
 from .scorers import get_scorer_class
@@ -213,19 +214,48 @@ class SentenceLevelEvaluator(object):
         df = pandas.DataFrame(new_scores)
         return df
 
-    def dump_results(self) -> None:
+    def create_output_dir(self) -> Path:
+        timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+        output_directory = self.output / f"run-{timestamp}"
+        output_directory.mkdir(exist_ok=True, parents=True)
+        return output_directory
+
+    def dump_results_and_metrics(self) -> None:
         results = self.results
-        if self.output:
-            results.to_csv(self.output / "scores.tsv", sep="\t", index=False)
+        metrics = pandas.DataFrame([ins.metrics for ins in self.instances.values()])
+        metrics = metrics.round(3)
+
+        output_folder = self.create_output_dir()
+
+        results_filename = "scores.tsv"
+        metrics_filename = "metrics.tsv"
+
+        results.to_csv(output_folder / results_filename, sep="\t", index=False)
+        metrics.to_csv(output_folder / metrics_filename, sep="\t", index=False)
 
         logger.info("Results:")
         print(results.to_string(index=False))
 
-    def dump_metrics(self) -> None:
-        metrics = pandas.DataFrame([ins.metrics for ins in self.instances.values()])
-        metrics = metrics.round(3)
-        if self.output:
-            metrics.to_csv(self.output / "metrics.tsv", sep="\t", index=False)
+    # def dump_results(self) -> None:
+    #     results = self.results
+
+    #     timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    #     filename = f"results-{timestamp}.tsv"
+
+    #     output_directory = self.output or Path(".")
+
+    #     if self.output:
+    #         output_directory = os.path.join(output_directory, filename)
+    #         results.to_csv(os.path.join(self.output, filename), sep="\t", index=False)
+
+    #     logger.info("Results:")
+    #     print(results.to_string(index=False))
+
+    # def dump_metrics(self) -> None:
+    #     metrics = pandas.DataFrame([ins.metrics for ins in self.instances.values()])
+    #     metrics = metrics.round(3)
+    #     if self.output:
+    #         metrics.to_csv(self.output / "metrics.tsv", sep="\t", index=False)
 
     def is_finished(self, instance) -> bool:
         if hasattr(instance, "source_finished_reading"):
@@ -250,8 +280,9 @@ class SentenceLevelEvaluator(object):
             if not self.score_only:
                 self.write_log(instance)
 
-        self.dump_results()
-        self.dump_metrics()
+        # self.dump_results()
+        # self.dump_metrics()
+        self.dump_results_and_metrics()
 
     @classmethod
     def from_args(cls, args):

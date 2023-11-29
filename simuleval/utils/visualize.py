@@ -2,6 +2,7 @@ import os
 import pandas as pd
 import re
 
+
 def read_scores_from_folder(folder_path, file_pattern=f"scores\.tsv$"):
     file_pattern = re.compile(file_pattern)
 
