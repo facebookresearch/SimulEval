@@ -207,16 +207,35 @@ def general_parser(
         choices=[x.lower() for x in logging._levelToName.values()],
         help="Log level.",
     )
-    parser.add_argument(
+    scoring_arg_group = parser.add_mutually_exclusive_group()
+    scoring_arg_group.add_argument(
         "--score-only",
         action="store_true",
         default=False,
         help="Only score the inference file.",
     )
+    scoring_arg_group.add_argument(
+        "--no-scoring",
+        action="store_true",
+        help="No scoring after inference",
+    )
     parser.add_argument(
         "--device", type=str, default="cpu", help="Device to run the model."
     )
-    parser.add_argument("--fp16", action="store_true", default=False, help="Use fp16.")
+    dtype_arg_group = parser.add_mutually_exclusive_group()
+    dtype_arg_group.add_argument(
+        "--dtype",
+        choices=["fp16", "fp32"],
+        type=str,
+        help=(
+            "Choose between half-precision (fp16) and single precision (fp32) floating point formats."
+            + " Prefer this over the fp16 flag."
+        ),
+    )
+    dtype_arg_group.add_argument(
+        "--fp16", action="store_true", default=False, help="Use fp16."
+    )
+
     return parser
 
 

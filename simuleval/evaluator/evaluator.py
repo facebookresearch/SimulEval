@@ -79,6 +79,7 @@ class SentenceLevelEvaluator(object):
         self.args = args
         self.output = Path(args.output) if args.output else None
         self.score_only = args.score_only
+        self.no_scoring = args.no_scoring
         self.source_segment_size = getattr(args, "source_segment_size", 1)
         self.source_type = getattr(args, "source_type", None)
         self.target_type = getattr(args, "target_type", None)
@@ -270,8 +271,9 @@ class SentenceLevelEvaluator(object):
 
         if self.output:
             self.build_instances_from_log()
-        self.dump_results()
-        self.dump_metrics()
+        if not self.no_scoring:
+            self.dump_results()
+            self.dump_metrics()
 
     @classmethod
     def from_args(cls, args):

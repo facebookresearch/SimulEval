@@ -138,9 +138,22 @@ def build_system_args(
     else:
         system_class = get_agent_class(config_dict)
         system_class.add_args(parser)
+        add_command_helper_arg(parser)
         args, _ = parser.parse_known_args(cli_argument_list(config_dict))
         system = system_class.from_args(args)
 
+    args = parser.parse_args(cli_argument_list(config_dict))
+
+    dtype = args.dtype if args.dtype else "fp16" if args.fp16 else "fp32"
+    logger.info(f"System will run on device: {args.device}. dtype: {dtype}")
+    system.to(args.device, fp16=(dtype == "fp16"))
+
+    args.source_type = system.source_type
+    args.target_type = system.target_type
+    return system, args
+
+
+def add_command_helper_arg(parser: ArgumentParser) -> None:
     parser.add_argument(
         "-h",
         "--help",
@@ -148,12 +161,3 @@ def build_system_args(
         default="==SUPPRESS==",
         help=("show this help message and exit"),
     )
-
-    args = parser.parse_args(cli_argument_list(config_dict))
-
-    logger.info(f"System will run on device: {args.device}. fp16: {args.fp16}")
-    system.to(args.device, fp16=args.fp16)
-
-    args.source_type = system.source_type
-    args.target_type = system.target_type
-    return system, args
