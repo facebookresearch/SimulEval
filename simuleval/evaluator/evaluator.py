@@ -169,7 +169,7 @@ class SentenceLevelEvaluator(object):
         if self.output is not None:
             with open(self.output / "instances.log", "r") as f:
                 for line in f:
-                    instance = LogInstance(line.strip())
+                    instance = LogInstance(line.strip(), self.args.eval_latency_unit)
                     index = instance.index - self.start_index
                     self.instances[index] = instance
                     self.instances[index].latency_unit = self.args.eval_latency_unit
