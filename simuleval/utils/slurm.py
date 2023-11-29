@@ -4,16 +4,18 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
+import itertools
+import logging
 import os
 import re
-import sys
-import logging
 import subprocess
-from typing import Optional, Dict, List
+import sys
+from argparse import ArgumentParser
+from typing import Dict, List, Optional
+
 from simuleval import options
-from simuleval.utils.arguments import cli_argument_list
 from simuleval.utils.agent import get_agent_class
-import itertools
+from simuleval.utils.arguments import cli_argument_list
 
 logger = logging.getLogger("simuleval.slurm")
 
@@ -29,7 +31,9 @@ def mkdir_output_dir(path: str) -> bool:
         return False
 
 
-def submit_slurm_job(config_dict: Optional[Dict] = None) -> None:
+def submit_slurm_job(
+    config_dict: Optional[Dict] = None, parser: Optional[ArgumentParser] = None
+) -> None:
     if config_dict is not None and "slurm" in config_dict:
         raise RuntimeError("--slurm is only available as a CLI argument")
 
@@ -48,7 +52,7 @@ def submit_slurm_job(config_dict: Optional[Dict] = None) -> None:
                 del config_dict[x[0][0]]
 
     cli_arguments = cli_argument_list(config_dict)
-    parser = options.general_parser()
+    parser = options.general_parser(config_dict, parser)
     options.add_evaluator_args(parser)
     options.add_scorer_args(parser, cli_arguments)
     options.add_slurm_args(parser)
