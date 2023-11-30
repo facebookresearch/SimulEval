@@ -456,7 +456,7 @@ INSTANCE_TYPE_DICT = {
 
 
 class LogInstance:
-    def __init__(self, info: str) -> None:
+    def __init__(self, info: str, latency_unit: str = "word") -> None:
         self.info = json.loads(info.strip())
         self.intervals = []
         for key, value in self.info.items():
@@ -464,9 +464,7 @@ class LogInstance:
 
         self.index = self.info["index"]
         self.reference = self.info.get("reference", "")
-        self.reference_length = len(
-            self.reference.split(" ")
-        )  # ToDo: temporary solution, make it configurable
+        self.latency_unit = latency_unit
         self.source_length = self.info.get("source_length")  # just for testing!
         self.finish_prediction = True
         self.metrics = {}
@@ -474,3 +472,15 @@ class LogInstance:
 
     def set_target_spm_model(self, spm_model):
         self.target_spm_model = spm_model
+
+    @property
+    def reference_length(self) -> int:
+        if self.latency_unit == "word":
+            return len(self.reference.split(" "))
+        elif self.latency_unit == "char":
+            return len(self.reference.strip())
+        elif self.latency_unit == "spm":
+            assert self.target_spm_model is not None
+            return len(self.target_spm_model.encode(self.reference, out_type=str))
+        else:
+            raise NotImplementedError
