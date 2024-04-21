@@ -142,7 +142,7 @@ def build_system_args(
         args, _ = parser.parse_known_args(cli_argument_list(config_dict))
         system = system_class.from_args(args)
 
-    args = parser.parse_args(cli_argument_list(config_dict))
+    args, _ = parser.parse_known_args(cli_argument_list(config_dict))
 
     dtype = args.dtype if args.dtype else "fp16" if args.fp16 else "fp32"
     logger.info(f"System will run on device: {args.device}. dtype: {dtype}")

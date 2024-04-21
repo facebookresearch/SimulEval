@@ -59,7 +59,7 @@ def submit_slurm_job(
     options.add_dataloader_args(parser, cli_arguments)
     system_class = get_agent_class(config_dict)
     system_class.add_args(parser)
-    args = parser.parse_args(cli_argument_list(config_dict))
+    args, _ = parser.parse_known_args(cli_argument_list(config_dict))
     args.output = os.path.abspath(args.output)
     assert mkdir_output_dir(args.output)
 
