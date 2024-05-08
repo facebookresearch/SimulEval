@@ -9,17 +9,22 @@ import string
 import subprocess
 from pathlib import Path
 from typing import Dict
+import numpy as np
 
 import sacrebleu
 import tqdm
 from sacrebleu.metrics.bleu import BLEU
+from argparse import ArgumentParser, Namespace
+
 
 QUALITY_SCORERS_DICT = {}
+QUALITY_SCORERS_NAME_DICT = {}
 
 
 def register_quality_scorer(name):
     def register(cls):
         QUALITY_SCORERS_DICT[name] = cls
+        QUALITY_SCORERS_NAME_DICT[cls.__name__] = name
         return cls
 
     return register
@@ -33,9 +38,12 @@ class QualityScorer:
         raise NotImplementedError
 
     @staticmethod
-    def add_args(parser):
+    def add_args(parser: ArgumentParser):
         pass
 
+    @classmethod
+    def from_args(cls, args: Namespace):
+        return cls()
 
 def add_sacrebleu_args(parser):
     parser.add_argument(
@@ -46,7 +54,24 @@ def add_sacrebleu_args(parser):
         help="Tokenizer in sacrebleu",
     )
 
+@register_quality_scorer("CHRF")
+class CHRFScorer(QualityScorer):
+    """ChrF1
 
+    Usage:
+        --quality-metrics CHRF
+    """
+
+    def __call__(self, instances) -> float:
+        scores = []
+        for ins in instances.values():
+            ref = ins.reference
+            hyp = ins.prediction
+            chrf = sacrebleu.corpus_chrf([hyp], [ref])
+            scores.append(chrf.score)
+
+        return np.mean(scores)
+    
 @register_quality_scorer("WER")
 class WERScorer(QualityScorer):
     """

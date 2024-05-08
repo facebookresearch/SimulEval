@@ -3,12 +3,13 @@
 #
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
-
+# test
 import contextlib
 import json
 import logging
 import numbers
-import os
+import os, time
+import argparse
 from argparse import Namespace
 from pathlib import Path
 from typing import Dict, Generator, Optional
@@ -153,6 +154,7 @@ class SentenceLevelEvaluator(object):
             )
         else:
             self.iterator = iterable
+        self.start_t = time.time()
 
     def write_log(self, instance):
         if self.output is not None:
@@ -224,6 +226,25 @@ class SentenceLevelEvaluator(object):
 
     def dump_results(self) -> None:
         results = self.results
+        finish_t = time.time()
+        results["TIME"] = finish_t - self.start_t
+
+        parser = argparse.ArgumentParser()
+        parser.add_argument("--use_api", action='store_true')
+        parser.add_argument("--k", type=int, default=4)
+        parser.add_argument("--dir", type=str, default=None)
+        parser.add_argument("--output", type=str, default=None)
+        parser.add_argument("--model_id", type=str, default=None)
+        parser.add_argument("--start-index", type=int, default=None)
+        parser.add_argument("--end-index", type=int, default=None)
+        custom_args, _ = parser.parse_known_args()
+        results["k"] = custom_args.k
+        results["dir"] = custom_args.dir
+        results["output"] = custom_args.output
+        results["use_api"] = custom_args.use_api
+        results["model_id"] = custom_args.model_id
+        results["start_index"] = custom_args.start_index
+        results["end_index"] = custom_args.end_index
         if self.output:
             results.to_csv(self.output / "scores.tsv", sep="\t", index=False)
 
