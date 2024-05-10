@@ -13,10 +13,13 @@ import argparse
 from argparse import Namespace
 from pathlib import Path
 from typing import Dict, Generator, Optional
+import editdistance
+from pydub import AudioSegment
 
 import pandas
 import yaml
-from simuleval.data.dataloader import GenericDataloader, build_dataloader
+from simuleval.data.dataloader import GenericDataloader
+from simuleval.data.dataloader import build_dataloader
 from simuleval.data.dataloader.dataloader import IterableDataloader
 from tqdm import tqdm
 
@@ -35,6 +38,36 @@ except Exception:
 
 logger = logging.getLogger("simuleval.sentence_level_evaluator")
 
+
+def get_audio_duration(wav_path):
+    audio = AudioSegment.from_wav(wav_path)
+    return len(audio) / 1000.0  # pydub provides length in milliseconds
+
+def get_RTF(eval_took_s, audio_file_list, start_index, end_index):
+    with open(audio_file_list, 'r') as f:
+        fnames = [i[:-1] for i in f.readlines()[start_index:end_index]]
+    dur = list(map(get_audio_duration, fnames))
+    return eval_took_s/sum(dur)
+
+def get_real_wer(output_path, source_file, start_index, end_index):
+
+    """ Calculate the WER between the ASR output and the source text."""
+    total_distance = 0
+    total_ref_words = 0
+    with open(f"{output_path}/asr", "r") as f:
+        hyp_setences = [i.replace("\n", "") for i in f.readlines()]
+    with open(f"{source_file}.txt", "r") as f:
+        ref_sentences = [i.replace("\n", "") for i in f.readlines()][start_index:end_index]
+    
+    for hyp_sentence, ref_sentence in zip(hyp_setences, ref_sentences):
+        hyp_words = hyp_sentence.split()
+        ref_words = ref_sentence.split()
+
+        total_distance += editdistance.eval(ref_words, hyp_words)
+        total_ref_words += len(ref_words)
+
+    return round(100.0 * total_distance / total_ref_words, 2)
+    
 
 class SentenceLevelEvaluator(object):
     """
@@ -228,8 +261,11 @@ class SentenceLevelEvaluator(object):
         results = self.results
         finish_t = time.time()
         results["TIME"] = finish_t - self.start_t
-
+        
         parser = argparse.ArgumentParser()
+        parser.add_argument("--source", type=str, default="")
+        parser.add_argument("--target", type=str, default="")
+        parser.add_argument("--background", type=str, default=None)
         parser.add_argument("--use_api", action='store_true')
         parser.add_argument("--k", type=int, default=4)
         parser.add_argument("--dir", type=str, default=None)
@@ -237,14 +273,32 @@ class SentenceLevelEvaluator(object):
         parser.add_argument("--model_id", type=str, default=None)
         parser.add_argument("--start-index", type=int, default=None)
         parser.add_argument("--end-index", type=int, default=None)
+        parser.add_argument("--source-segment-size", type=int, default=None)
+        parser.add_argument("--use_asr_api", action='store_true')
+        parser.add_argument("--asr_model_size", type=str, default=None)
+        parser.add_argument("--prompt_id", type=int, default=0)
         custom_args, _ = parser.parse_known_args()
+
+        audio_file_list = custom_args.source.replace(".txt", "")
+        results["RTF1"] = get_RTF(results["TIME"], audio_file_list, custom_args.start_index, custom_args.end_index)
+        
+        if custom_args.asr_model_size is not None:
+            results["WER"] = get_real_wer(custom_args.output, custom_args.source, custom_args.start_index, custom_args.end_index)
+        else:
+            results["WER"] = None
         results["k"] = custom_args.k
         results["dir"] = custom_args.dir
         results["output"] = custom_args.output
         results["use_api"] = custom_args.use_api
         results["model_id"] = custom_args.model_id
-        results["start_index"] = custom_args.start_index
         results["end_index"] = custom_args.end_index
+        results["source_segment_size"] = custom_args.source_segment_size
+        results["use_asr_api"] = custom_args.use_asr_api
+        results["asr_model_size"] = custom_args.asr_model_size
+        results["prompt_id"] = custom_args.prompt_id
+        results["background"] = custom_args.background
+        
+        
         if self.output:
             results.to_csv(self.output / "scores.tsv", sep="\t", index=False)
 
@@ -267,7 +321,7 @@ class SentenceLevelEvaluator(object):
             self.output / "instances.log", "a"
         ) if self.output else contextlib.nullcontext() as file:
             system.reset()
-            for sample in self.iterator:
+            for sample in self.iterator: # "sample" is an input-output-(background) pair(triplet) 
                 instance = (
                     self.instance_class(
                         self.dataloader.cur_index, self.dataloader, self.args
@@ -275,10 +329,13 @@ class SentenceLevelEvaluator(object):
                     if isinstance(self.dataloader, IterableDataloader)
                     else sample
                 )
+                # update background info for the sentence
+                if self.args.background is not None:
+                    system._set_background(sample.background)
                 while not self.is_finished(instance):
                     input_segment = instance.send_source(self.source_segment_size)
                     output_segment = system.pushpop(input_segment)
-                    instance.receive_prediction(output_segment)
+                    instance.receive_prediction(output_segment) 
                     if instance.finish_prediction:
                         # if instance.finish_prediction where set by the reader,
                         # source_finished_reading will be set as well. If it is

@@ -28,7 +28,7 @@ def register_dataloader_class(name, cls):
 
 class GenericDataloader:
     """
-    Load source and target data
+    Load source, target and background data
 
     .. argparse::
         :ref: simuleval.options.add_data_args
@@ -41,10 +41,12 @@ class GenericDataloader:
         self,
         source_list: List[str],
         target_list: Union[List[str], List[None]],
+        background_list: Union[List[str], List[None]],
         tgt_lang_list: Optional[List[str]] = None,
     ) -> None:
         self.source_list = source_list
         self.target_list = target_list
+        self.background_list = background_list
         self.tgt_lang_list = tgt_lang_list
         assert len(self.source_list) == len(self.target_list)
 
@@ -56,6 +58,9 @@ class GenericDataloader:
 
     def get_target(self, index: int) -> Any:
         return self.preprocess_target(self.target_list[index])
+    
+    def get_background(self, index: int) -> Any:
+        return self.background_list[index]
 
     def get_tgt_lang(self, index: int) -> Optional[str]:
         if getattr(self, "tgt_lang_list", None) is None or index >= len(
@@ -69,6 +74,7 @@ class GenericDataloader:
         return {
             "source": self.get_source(index),
             "target": self.get_target(index),
+            "background": self.get_background(index),
             "tgt_lang": self.get_tgt_lang(index),
         }
 
@@ -93,6 +99,11 @@ class GenericDataloader:
             "--target",
             type=str,
             help="Target file.",
+        )
+        parser.add_argument(
+            "--background",
+            type=str,
+            help="Background info file.",
         )
         parser.add_argument(
             "--source-type",
