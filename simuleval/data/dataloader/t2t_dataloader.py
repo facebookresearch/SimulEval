@@ -15,11 +15,15 @@ from argparse import Namespace
 @register_dataloader("text-to-text")
 class TextToTextDataloader(GenericDataloader):
     def __init__(
-        self, source_list: List[str], target_list: Union[List[str], List[None]]
+        self, 
+        source_list: List[str], 
+        target_list: Union[List[str], List[None]],
+        bgd_info_list: Union[List[str], List[None]],
     ) -> None:
-        super().__init__(source_list, target_list)
+        super().__init__(source_list, target_list, bgd_info_list)
         self.source_splitter = lambda x: x.split()
         self.target_splitter = lambda x: x
+        self.bgd_splitter = lambda x: x
 
     def set_source_splitter(self, function: Callable) -> None:
         # TODO, make is configurable
@@ -33,7 +37,10 @@ class TextToTextDataloader(GenericDataloader):
 
     @classmethod
     def from_files(
-        cls, source: Union[Path, str], target: Optional[Union[Path, str]]
+        cls, 
+        source: Union[Path, str], 
+        target: Optional[Union[Path, str]],
+        background: Optional[Union[Path, str]]
     ) -> TextToTextDataloader:
         assert source
         with open(source) as f:
@@ -43,11 +50,16 @@ class TextToTextDataloader(GenericDataloader):
                 target_list = f.readlines()
         else:
             target_list = [None for _ in source_list]
-        dataloader = cls(source_list, target_list)
+        if background:
+            with open(background) as f:
+                background_list = f.readlines()
+        else:
+            background_list = [None for _ in source_list]
+        dataloader = cls(source_list, target_list, background_list)
         return dataloader
 
     @classmethod
     def from_args(cls, args: Namespace):
         args.source_type = "text"
         args.target_type = "text"
-        return cls.from_files(args.source, args.target)
+        return cls.from_files(args.source, args.target, args.background)

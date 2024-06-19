@@ -22,6 +22,7 @@ from simuleval.evaluator.instance import (
 )
 from argparse import ArgumentParser, Namespace
 from subprocess import Popen, PIPE
+import numpy as np
 
 logger = logging.getLogger("simuleval.latency_scorer")
 
@@ -109,6 +110,22 @@ class LatencyScorer:
             computation_aware=args.computation_aware,
             use_ref_len=not args.no_use_ref_len,
         )
+
+
+@register_latency_scorer("RTF")
+class RTFScorer(LatencyScorer):
+    """Real time factor
+
+    Usage:
+        --latency-metrics RTF
+    """
+
+    def __call__(self, instances) -> float:
+        scores = []
+        for ins in instances.values():
+            scores.append(ins.delays[-1] / ins.source_length)
+
+        return np.mean(scores)
 
 
 @register_latency_scorer("AL")

@@ -3,19 +3,23 @@
 #
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
-
+# test
 import contextlib
 import json
 import logging
 import numbers
-import os
+import os, time
+import argparse
 from argparse import Namespace
 from pathlib import Path
 from typing import Dict, Generator, Optional
+import editdistance
+from pydub import AudioSegment
 
 import pandas
 import yaml
-from simuleval.data.dataloader import GenericDataloader, build_dataloader
+from simuleval.data.dataloader import GenericDataloader
+from simuleval.data.dataloader import build_dataloader
 from simuleval.data.dataloader.dataloader import IterableDataloader
 from tqdm import tqdm
 
@@ -33,6 +37,37 @@ except Exception:
 
 
 logger = logging.getLogger("simuleval.sentence_level_evaluator")
+
+
+def get_audio_duration(wav_path):
+    audio = AudioSegment.from_wav(wav_path)
+    return len(audio) / 1000.0  # pydub provides length in milliseconds
+
+
+def get_RTF(eval_took_s, audio_file_list, start_index, end_index):
+    with open(audio_file_list, "r") as f:
+        fnames = [i[:-1] for i in f.readlines()[start_index:end_index]]
+    dur = list(map(get_audio_duration, fnames))
+    return eval_took_s / sum(dur)
+
+
+def get_real_wer(output_path, source_file, start_index, end_index):
+    """Calculate the WER between the ASR output and the source text."""
+    total_distance = 0
+    total_ref_words = 0
+    with open(f"{output_path}/asr.log", "r") as f:
+        hyp_setences = [i.replace("\n", "") for i in f.readlines()]
+    with open(f"{source_file}.txt", "r") as f:
+        ref_sentences = [i.replace("\n", "") for i in f.readlines()][start_index:end_index]
+
+    for hyp_sentence, ref_sentence in zip(hyp_setences, ref_sentences):
+        hyp_words = hyp_sentence.split()
+        ref_words = ref_sentence.split()
+
+        total_distance += editdistance.eval(ref_words, hyp_words)
+        total_ref_words += len(ref_words)
+
+    return round(100.0 * total_distance / total_ref_words, 2)
 
 
 class SentenceLevelEvaluator(object):
@@ -88,15 +123,9 @@ class SentenceLevelEvaluator(object):
         if args.eval_latency_unit == "spm":
             assert args.eval_latency_spm_model
             assert IS_IMPORT_SPM
-            self.target_spm_model = sentencepiece.SentencePieceProcessor(
-                model_file=args.eval_latency_spm_model
-            )
+            self.target_spm_model = sentencepiece.SentencePieceProcessor(model_file=args.eval_latency_spm_model)
 
-        if (
-            self.source_type is None
-            and self.target_type is None
-            and self.output is not None
-        ):
+        if self.source_type is None and self.target_type is None and self.output is not None:
             with open(self.output / "config.yaml") as f:
                 configs = yaml.safe_load(f)
                 self.source_type = configs["source_type"]
@@ -114,18 +143,13 @@ class SentenceLevelEvaluator(object):
                     default_flow_style=False,
                 )
 
-        self.instance_class = INSTANCE_TYPE_DICT[
-            f"{self.source_type}-{self.target_type}"
-        ]
+        self.instance_class = INSTANCE_TYPE_DICT[f"{self.source_type}-{self.target_type}"]
         self.start_index = getattr(args, "start_index", 0)
         self.end_index = getattr(args, "end_index", -1)
 
         if not self.score_only:
             if self.output:
-                if (
-                    self.args.continue_unfinished
-                    and (self.output / "instances.log").exists()
-                ):
+                if self.args.continue_unfinished and (self.output / "instances.log").exists():
                     with open(self.output / "instances.log", "r") as f:
                         line = None
                         for line in f:  # noqa
@@ -153,6 +177,7 @@ class SentenceLevelEvaluator(object):
             )
         else:
             self.iterator = iterable
+        self.start_t = time.time()
 
     def write_log(self, instance):
         if self.output is not None:
@@ -198,17 +223,11 @@ class SentenceLevelEvaluator(object):
 
     @property
     def quality(self) -> Dict[str, float]:
-        return {
-            name: scorer(self.instances)
-            for name, scorer in self.quality_scorers.items()
-        }
+        return {name: scorer(self.instances) for name, scorer in self.quality_scorers.items()}
 
     @property
     def latency(self) -> Dict[str, float]:
-        return {
-            name: scorer(self.instances)
-            for name, scorer in self.latency_scorers.items()
-        }
+        return {name: scorer(self.instances) for name, scorer in self.latency_scorers.items()}
 
     @property
     def results(self):
@@ -224,8 +243,65 @@ class SentenceLevelEvaluator(object):
 
     def dump_results(self) -> None:
         results = self.results
+        finish_t = time.time()
+        results["TIME"] = finish_t - self.start_t
+
+        parser = argparse.ArgumentParser()
+        parser.add_argument("--source", type=str, default="")
+        parser.add_argument("--target", type=str, default="")
+        parser.add_argument("--background", type=str, default=None)
+        parser.add_argument("--use_api", action="store_true")
+        parser.add_argument("--k", type=int, default=4)
+        parser.add_argument("--dir", type=str, default=None)
+        parser.add_argument("--output", type=str, default=None)
+        parser.add_argument("--model_id", type=str, default=None)
+        parser.add_argument("--min_read_time", type=str, default=None)
+        parser.add_argument("--min_lag_words", type=int, default=None)
+        parser.add_argument("--start-index", type=int, default=None)
+        parser.add_argument("--end-index", type=int, default=None)
+        parser.add_argument("--source-segment-size", type=int, default=None)
+        parser.add_argument("--use_asr_api", action="store_true")
+        parser.add_argument("--asr_model_size", type=str, default=None)
+        parser.add_argument("--prompt_id", type=int, default=0)
+        parser.add_argument("--func_wrds", type=str, default="[]")
+        parser.add_argument("--priming", action="store_true")
+        custom_args, _ = parser.parse_known_args()
+
+        if custom_args.asr_model_size is not None:
+            audio_file_list = custom_args.source.replace(".txt", "")
+            results["RTF1"] = get_RTF(
+                results["TIME"],
+                audio_file_list,
+                custom_args.start_index,
+                custom_args.end_index,
+            )
+            results["WER"] = get_real_wer(
+                custom_args.output,
+                custom_args.source,
+                custom_args.start_index,
+                custom_args.end_index,
+            )
+            results["min_read_time"] = custom_args.min_read_time
+            results["min_lag_words"] = custom_args.min_lag_words
+            results["src_seg_sz"] = custom_args.source_segment_size
+            results["use_asr_api"] = custom_args.use_asr_api
+            results["asr_model_size"] = custom_args.asr_model_size
+        else:
+            results["WER"] = None
+        results["k"] = custom_args.k
+        results["dir"] = custom_args.dir
+        results["output"] = custom_args.output
+        results["use_api"] = custom_args.use_api
+        results["model_id"] = custom_args.model_id
+        results["end_index"] = custom_args.end_index
+        results["prompt_id"] = custom_args.prompt_id
+        results["background"] = custom_args.background
+        results["func_wrds"] = custom_args.func_wrds
+        results["priming"] = custom_args.priming
+
         if self.output:
             results.to_csv(self.output / "scores.tsv", sep="\t", index=False)
+            results.to_json(self.output / "scores.json", index=False, orient="records")
 
         logger.info("Results:")
         print(results.to_string(index=False))
@@ -242,18 +318,17 @@ class SentenceLevelEvaluator(object):
         return instance.finish_prediction
 
     def __call__(self, system):
-        with open(
-            self.output / "instances.log", "a"
-        ) if self.output else contextlib.nullcontext() as file:
+        with open(self.output / "instances.log", "a") if self.output else contextlib.nullcontext() as file:
             system.reset()
-            for sample in self.iterator:
+            for sample in self.iterator:  # "sample" is an input-output-(background) pair(triplet)
                 instance = (
-                    self.instance_class(
-                        self.dataloader.cur_index, self.dataloader, self.args
-                    )
+                    self.instance_class(self.dataloader.cur_index, self.dataloader, self.args)
                     if isinstance(self.dataloader, IterableDataloader)
                     else sample
                 )
+                # update background info for the sentence
+                if self.args.background is not None:
+                    system._set_background(sample.background)
                 while not self.is_finished(instance):
                     input_segment = instance.send_source(self.source_segment_size)
                     output_segment = system.pushpop(input_segment)

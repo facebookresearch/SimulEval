@@ -46,6 +46,8 @@ class Instance(object):
             self.source = self.dataloader[self.index]["source"]
             self.reference = self.dataloader[self.index]["target"]
             self.tgt_lang = self.dataloader[self.index]["tgt_lang"]
+            if args.background is not None:
+                self.background = self.dataloader[self.index]["background"]
 
         self.reset()
         if args is not None:

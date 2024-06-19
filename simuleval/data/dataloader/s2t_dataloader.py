@@ -71,9 +71,9 @@ class SpeechToTextDataloader(GenericDataloader):
         self,
         source_list: List[str],
         target_list: List[str],
-        tgt_lang_list: Optional[List[str]] = None,
+        bgd_info_list: Union[List[str], List[None]],
     ) -> None:
-        super().__init__(source_list, target_list, tgt_lang_list)
+        super().__init__(source_list, target_list, bgd_info_list)
 
     def preprocess_source(self, source: Union[Path, str]) -> List[float]:
         assert IS_IMPORT_SOUNDFILE, "Please make sure soundfile is properly installed."
@@ -95,21 +95,27 @@ class SpeechToTextDataloader(GenericDataloader):
         cls,
         source: Union[Path, str],
         target: Union[Path, str],
-        tgt_lang: Union[Path, str],
+        background: Optional[Union[Path, str]]
     ) -> SpeechToTextDataloader:
         source_list = load_list_from_file(source)
         target_list = load_list_from_file(target)
         tgt_lang_list = []
-        if tgt_lang is not None:
-            tgt_lang_list = load_list_from_file(tgt_lang)
-        dataloader = cls(source_list, target_list, tgt_lang_list)
+        # if tgt_lang is not None:
+        #     tgt_lang_list = load_list_from_file(tgt_lang)
+        if background:
+            with open(background) as f:
+                background_list = f.readlines()
+        else:
+            background_list = [None for _ in source_list]
+        
+        dataloader = cls(source_list, target_list, background_list)
         return dataloader
 
     @classmethod
     def from_args(cls, args: Namespace):
         args.source_type = "speech"
         args.target_type = "text"
-        return cls.from_files(args.source, args.target, args.tgt_lang)
+        return cls.from_files(args.source, args.target,  args.background)
 
 
 @register_dataloader("speech-to-speech")

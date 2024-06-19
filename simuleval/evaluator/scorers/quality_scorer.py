@@ -4,22 +4,28 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
+import re
 import logging
 import string
 import subprocess
 from pathlib import Path
 from typing import Dict
+import numpy as np
 
 import sacrebleu
 import tqdm
 from sacrebleu.metrics.bleu import BLEU
+from argparse import ArgumentParser, Namespace
+
 
 QUALITY_SCORERS_DICT = {}
+QUALITY_SCORERS_NAME_DICT = {}
 
 
 def register_quality_scorer(name):
     def register(cls):
         QUALITY_SCORERS_DICT[name] = cls
+        QUALITY_SCORERS_NAME_DICT[cls.__name__] = name
         return cls
 
     return register
@@ -33,8 +39,12 @@ class QualityScorer:
         raise NotImplementedError
 
     @staticmethod
-    def add_args(parser):
+    def add_args(parser: ArgumentParser):
         pass
+
+    @classmethod
+    def from_args(cls, args: Namespace):
+        return cls()
 
 
 def add_sacrebleu_args(parser):
@@ -45,6 +55,25 @@ def add_sacrebleu_args(parser):
         choices=sacrebleu.metrics.METRICS["BLEU"].TOKENIZERS,
         help="Tokenizer in sacrebleu",
     )
+
+
+@register_quality_scorer("CHRF")
+class CHRFScorer(QualityScorer):
+    """ChrF1
+
+    Usage:
+        --quality-metrics CHRF
+    """
+
+    def __call__(self, instances) -> float:
+        scores = []
+        for ins in instances.values():
+            ref = ins.reference
+            hyp = ins.prediction
+            chrf = sacrebleu.corpus_chrf([hyp], [ref])
+            scores.append(chrf.score)
+
+        return np.mean(scores)
 
 
 @register_quality_scorer("WER")
@@ -64,9 +93,7 @@ class WERScorer(QualityScorer):
             raise ImportError("Please install editdistance to use WER scorer")
         self.logger = logging.getLogger("simuleval.scorer.wer")
         self.logger.warning("WER scorer only support language with spaces.")
-        self.logger.warning(
-            "Current WER scorer is on raw text (un-tokenized with punctuations)."
-        )
+        self.logger.warning("Current WER scorer is on raw text (un-tokenized with punctuations).")
         self.ed = ed
 
     def __call__(self, instances: Dict) -> float:
@@ -114,6 +141,54 @@ class SacreBLEUScorer(QualityScorer):
                 .corpus_score(
                     [ins.prediction for ins in instances.values()],
                     [[ins.reference for ins in instances.values()]],
+                )
+                .score
+            )
+        except Exception as e:
+            self.logger.error(str(e))
+            return 0
+
+    @staticmethod
+    def add_args(parser):
+        add_sacrebleu_args(parser)
+
+    @classmethod
+    def from_args(cls, args):
+        return cls(args.sacrebleu_tokenizer)
+
+
+@register_quality_scorer("BLEUp")
+class SacreBLEUScorerPunkt(QualityScorer):
+    """
+    SacreBLEU Scorer
+
+    Usage:
+        :code:`--quality-metrics BLEU`
+
+    Additional command line arguments:
+
+    .. argparse::
+        :ref: simuleval.evaluator.scorers.quality_scorer.add_sacrebleu_args
+        :passparser:
+        :prog:
+    """
+
+    def __init__(self, tokenizer: str = "13a") -> None:
+        super().__init__()
+        self.logger = logging.getLogger("simuleval.scorer.bleu")
+        self.tokenizer = tokenizer
+
+    def _remove_punctuation(self, string):
+        return re.sub(r"[^\w\s]", "", string)
+
+    def __call__(self, instances: Dict) -> float:
+
+        try:
+            return (
+                BLEU(tokenize=self.tokenizer)
+                .corpus_score(
+                    [self._remove_punctuation(ins.prediction) for ins in instances.values()],
+                    [[self._remove_punctuation(ins.reference) for ins in instances.values()]],
                 )
                 .score
             )
@@ -232,16 +307,12 @@ class ASRSacreBLEUScorer(QualityScorer):
         return cls(args.sacrebleu_tokenizer, args.target_speech_lang)
 
 
-PUNCTUATIONS_EXCLUDE_APOSTROPHE = (
-    string.punctuation.replace("'", "") + "¡¨«°³º»¿‘“”…♪♫ˆᵉ™，ʾ˚"
-)
+PUNCTUATIONS_EXCLUDE_APOSTROPHE = string.punctuation.replace("'", "") + "¡¨«°³º»¿‘“”…♪♫ˆᵉ™，ʾ˚"
 PUNCTUATIONS_TO_SPACE = "-/–·—•"
 
 
 def remove_punctuations(text, punctuations=string.punctuation):
-    text = text.translate(
-        str.maketrans(PUNCTUATIONS_TO_SPACE, " " * len(PUNCTUATIONS_TO_SPACE))
-    )
+    text = text.translate(str.maketrans(PUNCTUATIONS_TO_SPACE, " " * len(PUNCTUATIONS_TO_SPACE)))
     return text.translate(str.maketrans("", "", punctuations))
 
 
@@ -292,9 +363,7 @@ class WhisperASRSacreBLEUScorer(QualityScorer):
         return score
 
     def asr_transcribe(self, instances):
-        self.logger.info(
-            "Evaluating speech output by ASR BLEU. whisper and sacrebleu are required."
-        )
+        self.logger.info("Evaluating speech output by ASR BLEU. whisper and sacrebleu are required.")
         self.logger.info("Configs:")
         self.logger.info(f"tokenizer = {self.tokenizer}")
         self.logger.info(f"target_lang = {self.target_lang}")

@@ -222,6 +222,9 @@ def general_parser(
     parser.add_argument(
         "--device", type=str, default="cpu", help="Device to run the model."
     )
+    parser.add_argument(
+        "--background", type=str, help="Path to background info.", default=None
+    )
     dtype_arg_group = parser.add_mutually_exclusive_group()
     dtype_arg_group.add_argument(
         "--dtype",

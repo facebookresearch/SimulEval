@@ -87,7 +87,7 @@ def scoring():
     options.add_evaluator_args(parser)
     options.add_scorer_args(parser)
     options.add_dataloader_args(parser)
-    args = parser.parse_args()
+    args, _ = parser.parse_known_args()
     evaluator = SentenceLevelEvaluator.from_args(args)
     print(evaluator.results)
 
@@ -98,7 +98,7 @@ def remote_evaluate():
     options.add_dataloader_args(parser)
     options.add_evaluator_args(parser)
     options.add_scorer_args(parser)
-    args = parser.parse_args()
+    args, _ = parser.parse_known_args()
     evaluator = build_remote_evaluator(args)
 
     # evaluate system
