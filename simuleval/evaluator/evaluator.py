@@ -255,12 +255,16 @@ class SentenceLevelEvaluator(object):
         parser.add_argument("--dir", type=str, default=None)
         parser.add_argument("--output", type=str, default=None)
         parser.add_argument("--model_id", type=str, default=None)
+        parser.add_argument("--min_read_time", type=str, default=None)
+        parser.add_argument("--min_lag_words", type=int, default=None)
         parser.add_argument("--start-index", type=int, default=None)
         parser.add_argument("--end-index", type=int, default=None)
         parser.add_argument("--source-segment-size", type=int, default=None)
         parser.add_argument("--use_asr_api", action="store_true")
         parser.add_argument("--asr_model_size", type=str, default=None)
         parser.add_argument("--prompt_id", type=int, default=0)
+        parser.add_argument("--func_wrds", type=str, default="[]")
+        parser.add_argument("--priming", action="store_true")
         custom_args, _ = parser.parse_known_args()
 
         if custom_args.asr_model_size is not None:
@@ -277,6 +281,11 @@ class SentenceLevelEvaluator(object):
                 custom_args.start_index,
                 custom_args.end_index,
             )
+            results["min_read_time"] = custom_args.min_read_time
+            results["min_lag_words"] = custom_args.min_lag_words
+            results["src_seg_sz"] = custom_args.source_segment_size
+            results["use_asr_api"] = custom_args.use_asr_api
+            results["asr_model_size"] = custom_args.asr_model_size
         else:
             results["WER"] = None
         results["k"] = custom_args.k
@@ -285,14 +294,14 @@ class SentenceLevelEvaluator(object):
         results["use_api"] = custom_args.use_api
         results["model_id"] = custom_args.model_id
         results["end_index"] = custom_args.end_index
-        results["source_segment_size"] = custom_args.source_segment_size
-        results["use_asr_api"] = custom_args.use_asr_api
-        results["asr_model_size"] = custom_args.asr_model_size
         results["prompt_id"] = custom_args.prompt_id
         results["background"] = custom_args.background
+        results["func_wrds"] = custom_args.func_wrds
+        results["priming"] = custom_args.priming
 
         if self.output:
             results.to_csv(self.output / "scores.tsv", sep="\t", index=False)
+            results.to_json(self.output / "scores.json", index=False, orient="records")
 
         logger.info("Results:")
         print(results.to_string(index=False))
