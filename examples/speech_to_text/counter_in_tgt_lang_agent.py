@@ -26,7 +26,12 @@ class CounterInTargetLanguage(SpeechToTextAgent):
             # empty source, source_sample_rate not set yet
             length_in_seconds = 0
         else:
-            length_in_seconds = round(len(states.source) / states.source_sample_rate)
+            length_in_seconds = round(
+                len(states.source) / states.source_sample_rate)
+
+        # import pdb
+        # pdb.set_trace()
+
         if not states.source_finished and length_in_seconds < self.wait_seconds:
             return ReadAction()
 

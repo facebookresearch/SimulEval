@@ -35,6 +35,7 @@ logger = logging.getLogger("simuleval.cli")
 
 def main():
     if check_argument("remote_eval"):
+        # what does check_argument mean?
         remote_evaluate()
         return
 
@@ -46,7 +47,12 @@ def main():
         submit_slurm_job()
         return
 
+    # import pdb
+    # pdb.set_trace()
+
     system, args = build_system_args()
+    # system = the backend, the system we need to evaluate
+    # args = command line arguments
 
     if check_argument("standalone"):
         start_agent_service(system)
@@ -54,6 +60,7 @@ def main():
 
     # build evaluator
     evaluator = build_evaluator(args)
+    # evaluator = the front end
     # evaluate system
     evaluator(system)
 
@@ -75,9 +82,12 @@ def evaluate(
         return
 
     system, args = build_system_args(config_dict, parser)
+    # system = system we want to evaluate (backend)
+    # args = the command line argument (eg. how many seconds of wait time)
 
     # build evaluator
     evaluator = build_evaluator(args)
+    # evaluator = the front end, computes latency & quality
     # evaluate system
     evaluator(system)
 

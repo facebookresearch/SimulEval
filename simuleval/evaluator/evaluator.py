@@ -23,6 +23,7 @@ from .instance import INSTANCE_TYPE_DICT, LogInstance
 from .scorers import get_scorer_class
 from .scorers.latency_scorer import LatencyScorer
 from .scorers.quality_scorer import QualityScorer
+from ..utils.visualize import Visualize
 
 try:
     import sentencepiece
@@ -83,6 +84,7 @@ class SentenceLevelEvaluator(object):
         self.source_segment_size = getattr(args, "source_segment_size", 1)
         self.source_type = getattr(args, "source_type", None)
         self.target_type = getattr(args, "target_type", None)
+        self.visualize = args.visualize
 
         self.target_spm_model = None
         if args.eval_latency_unit == "spm":
@@ -109,7 +111,8 @@ class SentenceLevelEvaluator(object):
             os.makedirs(self.output, exist_ok=True)
             with open(self.output / "config.yaml", "w") as f:
                 yaml.dump(
-                    {"source_type": self.source_type, "target_type": self.source_type},
+                    {"source_type": self.source_type,
+                        "target_type": self.source_type},
                     f,
                     default_flow_style=False,
                 )
@@ -170,17 +173,20 @@ class SentenceLevelEvaluator(object):
         if self.output is not None:
             with open(self.output / "instances.log", "r") as f:
                 for line in f:
-                    instance = LogInstance(line.strip(), self.args.eval_latency_unit)
+                    instance = LogInstance(
+                        line.strip(), self.args.eval_latency_unit)
                     index = instance.index - self.start_index
                     self.instances[index] = instance
-                    self.instances[index].set_target_spm_model(self.target_spm_model)
+                    self.instances[index].set_target_spm_model(
+                        self.target_spm_model)
 
     def build_instances_from_dataloader(self):
         if isinstance(self.dataloader, IterableDataloader):
             return
 
         for i in self.get_indices():
-            self.instances[i] = self.instance_class(i, self.dataloader, self.args)
+            self.instances[i] = self.instance_class(
+                i, self.dataloader, self.args)
             self.instances[i].set_target_spm_model(self.target_spm_model)
 
     def __len__(self) -> int:
@@ -231,7 +237,8 @@ class SentenceLevelEvaluator(object):
         print(results.to_string(index=False))
 
     def dump_metrics(self) -> None:
-        metrics = pandas.DataFrame([ins.metrics for ins in self.instances.values()])
+        metrics = pandas.DataFrame(
+            [ins.metrics for ins in self.instances.values()])
         metrics = metrics.round(3)
         if self.output:
             metrics.to_csv(self.output / "metrics.tsv", sep="\t", index=False)
@@ -255,7 +262,10 @@ class SentenceLevelEvaluator(object):
                     else sample
                 )
                 while not self.is_finished(instance):
-                    input_segment = instance.send_source(self.source_segment_size)
+                    # import pdb
+                    # pdb.set_trace()
+                    input_segment = instance.send_source(
+                        self.source_segment_size)
                     output_segment = system.pushpop(input_segment)
                     instance.receive_prediction(output_segment)
                     if instance.finish_prediction:
@@ -274,6 +284,12 @@ class SentenceLevelEvaluator(object):
         if not self.no_scoring:
             self.dump_results()
             self.dump_metrics()
+        if not self.score_only and self.output:
+            visualize = Visualize(self.output)
+            if self.visualize:
+                visualize.make_staircase_graph()
+            else:
+                visualize.override_graphs()
 
     @classmethod
     def from_args(cls, args):
@@ -285,7 +301,8 @@ class SentenceLevelEvaluator(object):
         latency_scorers = {}
         use_ref_len = not args.no_use_ref_len
         for name in args.latency_metrics:
-            latency_scorers[name] = get_scorer_class("latency", name).from_args(args)
+            latency_scorers[name] = get_scorer_class(
+                "latency", name).from_args(args)
             if args.computation_aware:
                 latency_scorers[name + "_CA"] = get_scorer_class("latency", name)(
                     computation_aware=True, use_ref_len=use_ref_len
@@ -293,6 +310,7 @@ class SentenceLevelEvaluator(object):
 
         quality_scorers = {}
         for name in args.quality_metrics:
-            quality_scorers[name] = get_scorer_class("quality", name).from_args(args)
+            quality_scorers[name] = get_scorer_class(
+                "quality", name).from_args(args)
 
         return cls(dataloader, quality_scorers, latency_scorers, args)
