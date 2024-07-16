@@ -83,6 +83,7 @@ class Visualize:
 
         # Flip the y-axis
         plt.gca().invert_yaxis()
+
         # Set the limits of the axes to start at (0,0)
         plt.gca().set_xlim(left=0)
         plt.gca().set_ylim(top=0)
@@ -115,17 +116,16 @@ class Visualize:
             if(i % 2 == 0):
                 plt.gca().text(0, start_y, additional_text[i][0], ha='left', va='top', transform=plt.gca(
                 ).transAxes, fontsize=10, bbox=dict(facecolor='white', alpha=0.5))
-                plt.gca().text(0.3, start_y,
+                plt.gca().text(0.15, start_y,
                                additional_text[i][1], ha='right', va='top', transform=plt.gca().transAxes, fontsize=10)
             else:
                 plt.gca().text(0.65, start_y, additional_text[i][0], ha='left', va='top', transform=plt.gca(
                 ).transAxes, fontsize=10, bbox=dict(facecolor='white', alpha=0.5))
-                plt.gca().text(0.95, start_y,
+                plt.gca().text(0.8, start_y,
                                additional_text[i][1], ha='right', va='top', transform=plt.gca().transAxes, fontsize=10)
                 start_y -= line_space
 
-        # Adjust layout to make room for the bottom text
+        # Output
         plt.tight_layout()
-
         # Write to output/staircase_graph.png
         plt.savefig(self.path / self.staircase_path)
