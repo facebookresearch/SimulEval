@@ -1,1 +1,3 @@
 This is a synthesized audio file to test your simultaneous speech to text and to speech to speach translation system.
+Hello, my name is Eric, and I like chickens
+Joe Biden is the president of the United States

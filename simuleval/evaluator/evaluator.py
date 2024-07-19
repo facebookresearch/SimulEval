@@ -284,12 +284,16 @@ class SentenceLevelEvaluator(object):
         if not self.no_scoring:
             self.dump_results()
             self.dump_metrics()
-        if not self.score_only and self.output:
-            visualize = Visualize(self.output)
-            if self.visualize:
-                visualize.make_staircase_graph()
-            else:
-                visualize.override_graphs()
+        if not self.score_only and self.output and self.visualize:
+            with open(self.output / "instances.log", "r") as file:
+                for line in file:
+                    # Load data & index
+                    data = json.loads(line)
+                    index = data.get("index", 0)
+
+                    # Create object & graph
+                    visualize = Visualize(data, index, self.output)
+                    visualize.make_graph()
 
     @classmethod
     def from_args(cls, args):

@@ -1,21 +1,15 @@
-import matplotlib.pyplot as plt
-import numpy as np
+import soundfile
 import matplotlib.patches as patches
+import numpy as np
+import matplotlib.pyplot as plt
 
 
 class Visualize:
-    def __init__(self, path):
-        self.path = path
-        with open(self.path / "instances.log", "r") as file:
-            data = file.read()
-        self.data = eval(data)
-        self.staircase_path = "staircase_graph.png"
+    def __init__(self, data, index, path):
+        self.data = data
+        self.graph_path = "staircase_graph.png"
 
-    def override_graphs(self):
-        with open(self.path / self.staircase_path, "w") as file:
-            file.close()
-
-    def make_staircase_graph(self):
+    def make_graph(self):
         data = self.data
 
         # Organize all data
@@ -113,7 +107,7 @@ class Visualize:
         start_y = -0.1
         line_space = 0.07
         for i in range(len(additional_text)):
-            if(i % 2 == 0):
+            if (i % 2 == 0):
                 plt.gca().text(0, start_y, additional_text[i][0], ha='left', va='top', transform=plt.gca(
                 ).transAxes, fontsize=10, bbox=dict(facecolor='white', alpha=0.5))
                 plt.gca().text(0.15, start_y,
@@ -129,3 +123,42 @@ class Visualize:
         plt.tight_layout()
         # Write to output/staircase_graph.png
         plt.savefig(self.path / self.staircase_path)
+
+    def make_waveform_graph(self):
+        data = self.data
+
+        # Load the audio file data
+        audio_data, rate = soundfile.read(self.path / '../test.wav')
+        delay_time = data.get("delays", "N/A delays data")[0]
+        delay_audio = [0 for i in range(round(delay_time/1000*rate))]
+        audio_data = np.append(delay_audio, audio_data)
+        length = audio_data.shape[0] / rate * 1000
+        time = np.linspace(0, length, audio_data.shape[0])
+
+        # Load the words
+        prediction_word_list = data.get(
+            "prediction", "N/A predition data").split(" ")
+        time_word = [(time, word) for time, word in zip(
+            data.get("delays", "N/A delays data"), prediction_word_list)]
+
+        # Make the figure
+        plt.figure(figsize=(16, 6))
+        plt.gca().set_xlim(left=0)
+        plt.gca().set_xlim(right=length)
+
+        # Plot the waveform
+        plt.plot(time, audio_data)
+        plt.legend()
+        plt.xlabel("Delays [ms]")
+        plt.ylabel("Amplitude")
+
+        # Make text annotation
+        for i in range(len(time_word)):
+            plt.annotate(
+                text=time_word[i][1],
+                xy=(time_word[i][0], 0.5),
+                xytext=(time_word[i][0], 0.9),
+            )
+
+        # Write to output/waveform_graph.png
+        plt.savefig(self.path / self.waveform_path)
