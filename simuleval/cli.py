@@ -35,7 +35,6 @@ logger = logging.getLogger("simuleval.cli")
 
 def main():
     if check_argument("remote_eval"):
-        # what does check_argument mean?
         remote_evaluate()
         return
 
@@ -46,9 +45,6 @@ def main():
     if check_argument("slurm"):
         submit_slurm_job()
         return
-
-    # import pdb
-    # pdb.set_trace()
 
     system, args = build_system_args()
     # system = the backend, the system we need to evaluate

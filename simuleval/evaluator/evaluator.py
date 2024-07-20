@@ -226,6 +226,8 @@ class SentenceLevelEvaluator(object):
             new_scores[name] = [value]
 
         df = pandas.DataFrame(new_scores)
+        if self.output and self.visualize:
+            self.make_visual()
         return df
 
     def dump_results(self) -> None:
@@ -247,6 +249,17 @@ class SentenceLevelEvaluator(object):
         if hasattr(instance, "source_finished_reading"):
             return instance.source_finished_reading
         return instance.finish_prediction
+
+    def make_visual(self):
+        with open(self.output / "instances.log", "r") as file:
+            for line in file:
+                # Load data & index
+                data = json.loads(line)
+                index = data.get("index", 0)
+
+                # Create object & graph
+                visualize = Visualize(data, index, self.output)
+                visualize.make_graph()
 
     def __call__(self, system):
         with open(
@@ -284,16 +297,8 @@ class SentenceLevelEvaluator(object):
         if not self.no_scoring:
             self.dump_results()
             self.dump_metrics()
-        if not self.score_only and self.output and self.visualize:
-            with open(self.output / "instances.log", "r") as file:
-                for line in file:
-                    # Load data & index
-                    data = json.loads(line)
-                    index = data.get("index", 0)
-
-                    # Create object & graph
-                    visualize = Visualize(data, index, self.output)
-                    visualize.make_graph()
+        if self.output and self.visualize:
+            self.make_visual()
 
     @classmethod
     def from_args(cls, args):
