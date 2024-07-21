@@ -2,6 +2,7 @@ import soundfile
 import matplotlib.patches as patches
 import numpy as np
 import matplotlib.pyplot as plt
+import os
 
 
 class Visualize:
@@ -135,7 +136,7 @@ class Visualize:
 
         ##### 2nd PLOT #####
         # Load the audio file data
-        audio_path = str(self.path) + "/../" + data["source"][0]
+        audio_path = os.path.join(self.path, "../", data["source"][0])
         audio_data, rate = soundfile.read(audio_path)
         length = audio_data.shape[0] / rate
         time = np.linspace(0, length, audio_data.shape[0])

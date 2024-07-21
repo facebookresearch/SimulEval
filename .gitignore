@@ -140,3 +140,11 @@ cython_debug/
 
 # Mac files
 .DS_Store
+
+# Visualization
+examples/speech_to_text/output/visual.ipynb
+examples/speech_to_text/chicken.wav
+examples/speech_to_text/joe_biden.wav
+examples/speech_to_text/output/visual/graph0.png
+examples/speech_to_text/output/visual/graph1.png
+examples/speech_to_text/output/visual/graph2.png
