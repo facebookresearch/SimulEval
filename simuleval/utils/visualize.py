@@ -3,7 +3,7 @@ import matplotlib.patches as patches
 import numpy as np
 import matplotlib.pyplot as plt
 import os
-
+from pathlib import Path
 
 class Visualize:
     def __init__(self, data, index, path):
@@ -155,5 +155,8 @@ class Visualize:
         # Set the grid
         ax2.grid(True)
 
-        # Write to output/graph_.png
-        plt.savefig(self.path / "visual/" / ("graph" + str(self.index)))
+        # Write to output/visual/graph_.png
+        img_path = Path(self.path) / "visual"
+        img_path.mkdir(exist_ok=True, parents=True)
+        ## here we use / instead of os.path.join because img_path is a Path object which cannot be joined with this function
+        plt.savefig(img_path / ("graph" + str(self.index)))
