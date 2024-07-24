@@ -236,16 +236,16 @@ def general_parser(
         "--fp16", action="store_true", default=False, help="Use fp16."
     )
     parser.add_argument(
-        "--visualize", action="store_true", default=False, help="Create visualization graphs"
+        "--visualize",
+        action="store_true",
+        default=False,
+        help="Create visualization graphs",
     )
 
     return parser
 
 
 def add_slurm_args(parser):
-    parser.add_argument("--slurm-partition", default="",
-                        help="Slurm partition.")
-    parser.add_argument("--slurm-job-name",
-                        default="simuleval", help="Slurm job name.")
-    parser.add_argument("--slurm-time", default="2:00:00",
-                        help="Slurm partition.")
+    parser.add_argument("--slurm-partition", default="", help="Slurm partition.")
+    parser.add_argument("--slurm-job-name", default="simuleval", help="Slurm job name.")
+    parser.add_argument("--slurm-time", default="2:00:00", help="Slurm partition.")

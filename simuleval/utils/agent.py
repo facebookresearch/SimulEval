@@ -34,15 +34,13 @@ def get_agent_class(config_dict: Optional[dict] = None) -> GenericAgent:
 
     if class_name is not None:
         if not check_argument("agent"):
-            EVALUATION_SYSTEM_LIST.append(
-                get_agent_class_from_string(class_name))
+            EVALUATION_SYSTEM_LIST.append(get_agent_class_from_string(class_name))
 
     system_dir = check_argument("system_dir")
     config_name = check_argument("system_config")
 
     if system_dir is not None:
-        EVALUATION_SYSTEM_LIST.append(
-            get_agent_class_from_dir(system_dir, config_name))
+        EVALUATION_SYSTEM_LIST.append(get_agent_class_from_dir(system_dir, config_name))
 
     agent_file = check_argument("agent")
     if agent_file is not None:
@@ -81,8 +79,7 @@ def get_system_config(path: Union[Path, str], config_name) -> dict:
 
 def get_agent_class_from_string(class_name: str) -> GenericAgent:
     try:
-        agent_module = importlib.import_module(
-            ".".join(class_name.split(".")[:-1]))
+        agent_module = importlib.import_module(".".join(class_name.split(".")[:-1]))
         agent_class = getattr(agent_module, class_name.split(".")[-1])
     except Exception as e:
         logger.error(f"Not able to load {class_name}. Try setting --user-dir?")
@@ -137,8 +134,7 @@ def build_system_args(
 
     if check_argument("system_dir"):
         system = build_system_from_dir(
-            check_argument("system_dir"), check_argument(
-                "system_config"), config_dict
+            check_argument("system_dir"), check_argument("system_config"), config_dict
         )
     else:
         system_class = get_agent_class(config_dict)
