@@ -272,8 +272,6 @@ class SentenceLevelEvaluator(object):
                     else sample
                 )
                 while not self.is_finished(instance):
-                    # import pdb
-                    # pdb.set_trace()
                     input_segment = instance.send_source(self.source_segment_size)
                     output_segment = system.pushpop(input_segment)
                     instance.receive_prediction(output_segment)

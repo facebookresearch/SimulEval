@@ -140,9 +140,6 @@ class Visualize:
         )
         ax1.set_yticks(words)
 
-        # # Adjust layout to make room for additional text
-        # plt.subplots_adjust(top=0.75)  # Adjust the top to make space for additional text
-
         # Additional text at the bottom
         additional_text = [
             ("Source", data.get("source", "N/A source data")[0]),
