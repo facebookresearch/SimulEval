@@ -75,7 +75,6 @@ class WaitkWhisper(SpeechToTextAgent):
         # We encode the whole audio to get the full transcription each time a new audio chunk is received.
         audio = whisper.pad_or_trim(numpy.array(states.source).astype("float32"))
         mel = whisper.log_mel_spectrogram(audio).to(self.model.device)
-        # print(mel.size())
         output = self.model.decode(mel, options)
         prediction = output.text.split()
 

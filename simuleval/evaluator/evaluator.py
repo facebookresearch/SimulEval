@@ -23,7 +23,6 @@ from .instance import INSTANCE_TYPE_DICT, LogInstance
 from .scorers import get_scorer_class
 from .scorers.latency_scorer import LatencyScorer
 from .scorers.quality_scorer import QualityScorer
-from ..utils.visualize import Visualize
 
 try:
     import sentencepiece
@@ -84,7 +83,6 @@ class SentenceLevelEvaluator(object):
         self.source_segment_size = getattr(args, "source_segment_size", 1)
         self.source_type = getattr(args, "source_type", None)
         self.target_type = getattr(args, "target_type", None)
-        self.visualize = args.visualize
 
         self.target_spm_model = None
         if args.eval_latency_unit == "spm":
@@ -111,7 +109,7 @@ class SentenceLevelEvaluator(object):
             os.makedirs(self.output, exist_ok=True)
             with open(self.output / "config.yaml", "w") as f:
                 yaml.dump(
-                    {"source_type": self.source_type, "target_type": self.target_type},
+                    {"source_type": self.source_type, "target_type": self.source_type},
                     f,
                     default_flow_style=False,
                 )
@@ -222,8 +220,6 @@ class SentenceLevelEvaluator(object):
             new_scores[name] = [value]
 
         df = pandas.DataFrame(new_scores)
-        if self.output and self.visualize:
-            self.make_visual()
         return df
 
     def dump_results(self) -> None:
@@ -245,23 +241,10 @@ class SentenceLevelEvaluator(object):
             return instance.source_finished_reading
         return instance.finish_prediction
 
-    def make_visual(self):
-        with open(self.output / "instances.log", "r") as file:
-            for line in file:
-                # Load data & index
-                data = json.loads(line)
-                index = data.get("index", 0)
-
-                # Create object & graph
-                visualize = Visualize(data, index, self.output)
-                visualize.make_graph()
-
     def __call__(self, system):
-        with (
-            open(self.output / "instances.log", "a")
-            if self.output
-            else contextlib.nullcontext()
-        ) as file:
+        with open(
+            self.output / "instances.log", "a"
+        ) if self.output else contextlib.nullcontext() as file:
             system.reset()
             for sample in self.iterator:
                 instance = (
@@ -272,8 +255,6 @@ class SentenceLevelEvaluator(object):
                     else sample
                 )
                 while not self.is_finished(instance):
-                    # import pdb
-                    # pdb.set_trace()
                     input_segment = instance.send_source(self.source_segment_size)
                     output_segment = system.pushpop(input_segment)
                     instance.receive_prediction(output_segment)
@@ -293,8 +274,6 @@ class SentenceLevelEvaluator(object):
         if not self.no_scoring:
             self.dump_results()
             self.dump_metrics()
-        if self.output and self.visualize:
-            self.make_visual()
 
     @classmethod
     def from_args(cls, args):

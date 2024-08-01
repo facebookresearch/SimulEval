@@ -130,7 +130,6 @@ def build_system_args(
     options.add_scorer_args(parser, cli_arguments)
     options.add_slurm_args(parser)
     options.add_dataloader_args(parser, cli_arguments)
-    # finish parsing command line
 
     if check_argument("system_dir"):
         system = build_system_from_dir(
