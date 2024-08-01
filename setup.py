@@ -41,6 +41,7 @@ setup(
         "yt-dlp",
         "pydub",
         "numpy==1.19.5",
+        "fairseq==0.12.2",
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
