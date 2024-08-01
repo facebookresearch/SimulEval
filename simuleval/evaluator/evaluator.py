@@ -242,9 +242,11 @@ class SentenceLevelEvaluator(object):
         return instance.finish_prediction
 
     def __call__(self, system):
-        with open(
-            self.output / "instances.log", "a"
-        ) if self.output else contextlib.nullcontext() as file:
+        with (
+            open(self.output / "instances.log", "a")
+            if self.output
+            else contextlib.nullcontext()
+        ) as file:
             system.reset()
             for sample in self.iterator:
                 instance = (
