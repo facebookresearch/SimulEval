@@ -31,7 +31,6 @@ jobs:
           pip install g2p-en
           pip install huggingface-hub
           pip install fairseq
-          pip install numpy==1.19.5
           pip install sentencepiece
           pip install -e .
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
