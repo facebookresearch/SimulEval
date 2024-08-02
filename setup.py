@@ -40,7 +40,6 @@ setup(
         "bitarray==2.6.0",
         "yt-dlp",
         "pydub",
-        "black==24.4.2",
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
