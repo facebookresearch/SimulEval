@@ -40,8 +40,7 @@ setup(
         "bitarray==2.6.0",
         "yt-dlp",
         "pydub",
-        "fairseq==0.12.0",
-        "omegaconf==2.0.6",
+        "numpy==1.19.0",
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
