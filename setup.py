@@ -41,7 +41,7 @@ setup(
         "yt-dlp",
         "pydub",
         "fairseq==0.12.0",
-        "hydra-core==1.0.4",
+        "hydra-core==1.0.7",
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
