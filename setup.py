@@ -40,8 +40,6 @@ setup(
         "bitarray==2.6.0",
         "yt-dlp",
         "pydub",
-        "fairseq==0.12.0",
-        "hydra-core==1.0.7",
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
