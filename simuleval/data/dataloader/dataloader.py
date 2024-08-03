@@ -124,9 +124,7 @@ class IterableDataloader:
     cur_index: int
 
     @abstractmethod
-    def __iter__(self):
-        pass
+    def __iter__(self): ...
 
     @abstractmethod
-    def __next__(self):
-        pass
+    def __next__(self): ...
