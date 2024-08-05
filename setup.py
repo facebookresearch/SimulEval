@@ -41,6 +41,7 @@ setup(
         "yt-dlp",
         "pydub",
         "openai-whisper",
+        "editdistance",
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
