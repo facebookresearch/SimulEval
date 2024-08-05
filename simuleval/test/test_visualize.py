@@ -57,8 +57,9 @@ def test_visualize_score_only(root_path=ROOT_PATH):
     os.chdir(args_path)
 
     # Create sample instances.log and config.yaml in output directory
-    Path.mkdir("output")
-    os.chdir("output")
+    output = Path("output")
+    output.mkdir()
+    os.chdir(output)
     with open("config.yaml", "w") as config:
         config.write("source_type: speech\n")
         config.write("target_type: speech")
