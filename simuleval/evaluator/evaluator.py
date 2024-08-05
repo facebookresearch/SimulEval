@@ -9,7 +9,6 @@ import json
 import logging
 import numbers
 import os
-import sys
 from argparse import Namespace
 from pathlib import Path
 from typing import Dict, Generator, Optional
@@ -102,14 +101,8 @@ class SentenceLevelEvaluator(object):
         ):
             with open(self.output / "config.yaml") as f:
                 configs = yaml.safe_load(f)
-                try:
-                    self.source_type = configs["source_type"]
-                    self.target_type = configs["target_type"]
-                except TypeError:
-                    logger.warning(
-                        "Unable to process source and target type, check if config.yaml is empty"
-                    )
-                    sys.exit(1)
+                self.source_type = configs["source_type"]
+                self.target_type = configs["target_type"]
 
         assert self.source_type
         assert self.target_type

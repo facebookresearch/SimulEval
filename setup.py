@@ -40,7 +40,7 @@ setup(
         "bitarray==2.6.0",
         "yt-dlp",
         "pydub",
-        "whisper",
+        "openai-whisper",
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
