@@ -42,6 +42,8 @@ setup(
         "pydub",
         "openai-whisper",
         "editdistance",
+        "matplotlib.patches",
+        "matplotlib.pyplot",
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
