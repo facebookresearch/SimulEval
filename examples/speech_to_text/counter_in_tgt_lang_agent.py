@@ -27,6 +27,7 @@ class CounterInTargetLanguage(SpeechToTextAgent):
             length_in_seconds = 0
         else:
             length_in_seconds = round(len(states.source) / states.source_sample_rate)
+
         if not states.source_finished and length_in_seconds < self.wait_seconds:
             return ReadAction()
 

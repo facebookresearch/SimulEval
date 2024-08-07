@@ -235,6 +235,12 @@ def general_parser(
     dtype_arg_group.add_argument(
         "--fp16", action="store_true", default=False, help="Use fp16."
     )
+    parser.add_argument(
+        "--visualize",
+        action="store_true",
+        default=False,
+        help="Create visualization graphs",
+    )
 
     return parser
 
