@@ -36,7 +36,7 @@ class RemoteEvaluator:
         return self.evaluator.results()
 
     def remote_eval(self):
-        for instance in self.evaluator.instance_iterator:
+        for instance in self.evaluator.iterator:
             self.system_reset()
             while not instance.finish_prediction:
                 self.send_source(instance.send_source(self.source_segment_size))
