@@ -125,8 +125,8 @@ class IterableDataloader:
 
     @abstractmethod
     def __iter__(self):
-        ...
+        pass
 
     @abstractmethod
     def __next__(self):
-        ...
+        pass
