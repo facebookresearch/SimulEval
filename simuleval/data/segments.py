@@ -37,14 +37,14 @@ class EmptySegment(Segment):
 class TextSegment(Segment):
     content: str = ""
     data_type: str = "text"
-    tgt_lang: str = Optional[str]
+    tgt_lang: Optional[str] = None
 
 
 @dataclass
 class SpeechSegment(Segment):
     sample_rate: int = -1
     data_type: str = "speech"
-    tgt_lang: str = Optional[str]
+    tgt_lang: Optional[str] = None
 
 
 @dataclass
