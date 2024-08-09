@@ -40,8 +40,6 @@ setup(
         "bitarray==2.6.0",
         "yt-dlp",
         "pydub",
-        "openai-whisper",
-        "editdistance",
         "matplotlib",
     ],
     classifiers=[
