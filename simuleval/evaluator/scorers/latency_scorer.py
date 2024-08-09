@@ -106,7 +106,7 @@ class LatencyScorer:
     @classmethod
     def from_args(cls, args: Namespace):
         return cls(
-            computation_aware=args.computation_aware,
+            computation_aware=False,
             use_ref_len=not args.no_use_ref_len,
         )
 
