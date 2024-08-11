@@ -55,6 +55,9 @@ class SpeechTextSegment:
 
 
 def segment_from_json_string(string: str):
+    import pdb
+
+    pdb.set_trace()
     info_dict = json.loads(string)
     if info_dict["data_type"] == "text":
         return TextSegment.from_json(string)
