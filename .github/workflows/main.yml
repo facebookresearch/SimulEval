@@ -31,10 +31,10 @@ jobs:
           pip install g2p-en
           pip install huggingface-hub
           pip install fairseq
-          pip install sentencepiece
-          pip install nltk
+          pip install sentencepiece  
           pip install -e .
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          nltk.download('averaged_perceptron_tagger')
       - name: Lint with black
         run: black --check --diff .
       - name: Lint with flake8
