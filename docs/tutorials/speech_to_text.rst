@@ -13,11 +13,11 @@ Then, run the example code:
 
 .. code-block:: bash
     simuleval \
-    --agent whisper_waitk.py \
-    --source-segment-size 500 \
-    --waitk-lagging 3 \
-    --source source.txt --target reference/transcript.txt \
-    --output output --quality-metrics WER --visualize
+        --agent whisper_waitk.py \
+        --source-segment-size 500 \
+        --waitk-lagging 3 \
+        --source source.txt --target reference/transcript.txt \
+        --output output --quality-metrics WER --visualize
 
 The optional :code:`--visualize` tag generates N number of graphs in speech_to_text/output/visual directory where N corresponds to the number of source audio provided. An example graph can be seen `here <https://github.com/facebookresearch/SimulEval/pull/107>`_.
 
