@@ -35,6 +35,7 @@ jobs:
           pip install openai-whisper editdistance
           pip install -e .
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          python -c "import nltk; nltk.download('averaged_perceptron_tagger_eng')"
       - name: Lint with black
         run: black --check --diff .
       - name: Lint with flake8
