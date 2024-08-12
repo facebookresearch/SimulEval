@@ -7,11 +7,13 @@ Use whisper to evaluate custom audio for speech to text transcription.
 First, change directory to :code:`speech_to_text`:
 
 .. code-block:: bash
+
     cd examples/speech-to-text
 
 Then, run the example code:
 
 .. code-block:: bash
+
     simuleval \
         --agent whisper_waitk.py \
         --source-segment-size 500 \
@@ -25,4 +27,5 @@ The optional :code:`--visualize` tag generates N number of graphs in speech_to_t
 In addition, it supports the :code:`--score-only` command, where it will read data from :code:`instances.log` without running inference, which saves time if you just want the scores.
 
 .. code-block:: bash
+    
     simuleval --score-only --output output --visualize
