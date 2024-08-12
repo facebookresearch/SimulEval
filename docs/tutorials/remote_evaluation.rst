@@ -14,7 +14,7 @@ For instance, with the agent in :ref:`first-agent`,
     2022-12-06 19:12:26 | INFO | simuleval.cli | Evaluate system: DummyWaitkTextAgent
     2022-12-06 19:12:26 | INFO | simuleval.agent_server | Simultaneous Translation Server Started (process id 53902). Listening to port 8888
 
-
+|
 For custom speech to text transcription, you could also use the whisper agent in :ref: `speech-to-text`, 
 
 .. code-block:: bash
@@ -40,7 +40,7 @@ Build and run the docker image:
     cd examples/quick_start && docker build -t simuleval_agent .
     docker run -p 8888:8888 simuleval_agent:latest
 
-
+|
 The custom audio file speech to text :code:`Dockerfile` is
 
 .. literalinclude:: ../../examples/speech_to_text/Dockerfile
@@ -65,7 +65,7 @@ We can start a remote evaluator as follow. For simplicity we assume they are on 
         --source source.txt --target target.txt \
         --source-type text --target-type text
 
-
+|
 For whisper agent's speech to text:
 
 .. code-block:: bash
