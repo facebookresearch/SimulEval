@@ -15,7 +15,7 @@ For instance, with the agent in :ref:`first-agent`,
     2022-12-06 19:12:26 | INFO | simuleval.agent_server | Simultaneous Translation Server Started (process id 53902). Listening to port 8888
 
 |
-For custom speech to text transcription, you could also use the whisper agent in :ref: `speech-to-text`, 
+For custom speech to text transcription, you could also use the whisper agent in :ref:`speech-to-text`, 
 
 .. code-block:: bash
 
