@@ -40,6 +40,7 @@ setup(
         "bitarray==2.6.0",
         "yt-dlp",
         "pydub",
+        "matplotlib",
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
