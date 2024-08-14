@@ -10,7 +10,7 @@ For instance, with the agent in :ref:`first-agent`,
 
 .. code-block:: bash
 
-    > simuleval --standalone --remote-port 8888 --agent first_agent.py.py
+    > simuleval --standalone --remote-port 8888 --agent first_agent.py
     2022-12-06 19:12:26 | INFO | simuleval.cli | Evaluate system: DummyWaitkTextAgent
     2022-12-06 19:12:26 | INFO | simuleval.agent_server | Simultaneous Translation Server Started (process id 53902). Listening to port 8888
 
