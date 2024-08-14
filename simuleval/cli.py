@@ -54,6 +54,7 @@ def main():
 
     # build evaluator
     evaluator = build_evaluator(args)
+
     # evaluate system
     evaluator(system)
 
@@ -78,6 +79,7 @@ def evaluate(
 
     # build evaluator
     evaluator = build_evaluator(args)
+
     # evaluate system
     evaluator(system)
 

@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.7, 3.8]
+        python-version: [3.8]
 
     steps:
       - uses: actions/checkout@v2
@@ -32,8 +32,10 @@ jobs:
           pip install huggingface-hub
           pip install fairseq
           pip install sentencepiece
+          pip install openai-whisper editdistance
           pip install -e .
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          python -c "import nltk; nltk.download('averaged_perceptron_tagger_eng')"
       - name: Lint with black
         run: black --check --diff .
       - name: Lint with flake8
@@ -49,3 +51,4 @@ jobs:
           pytest simuleval/test/test_evaluator.py
           pytest simuleval/test/test_remote_evaluation.py
           pytest simuleval/test/test_s2s.py
+          pytest simuleval/test/test_visualize.py
