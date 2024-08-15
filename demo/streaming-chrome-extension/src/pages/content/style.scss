@@ -1,0 +1,91 @@
+@import '@assets/style/theme.scss';
+
+.modal-wrapper {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 9999999;
+}
+
+.main-container {
+  background-color: white;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  margin: 10px;
+  border-radius: 8px;
+  box-shadow: 0px 24px 30px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  min-height: 300px;
+  max-height: 95vh;
+  max-width: 500px;
+  overflow: hidden;
+}
+
+.top-section {
+  padding-top: 24px;
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.horizontal-padding {
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
+.header-container {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.header-icon {
+  display: block;
+  margin-right: 12px;
+}
+
+.translation-text-container {
+  background-color: #f8f8f8;
+  flex-grow: 1; // make it expand to fill the available space
+  padding-top: 16px;
+  padding-bottom: 4px;
+}
+
+.translation-text {
+  overflow-y: scroll;
+  max-height: 500px;
+}
+
+.translation-container-header {
+  margin-bottom: 16px;
+}
+
+.text-chunk {
+  margin-bottom: 12px;
+}
+
+#translation_feed {
+  font-size: 18px;
+  margin-top: 20px;
+  max-height: 250px;
+  overflow-y: scroll;
+  white-space: pre-line;
+}
+#hear_checkbox {
+  font-size: 16px;
+  margin-top: 20px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+#controls_row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin-top: 20px;
+}
