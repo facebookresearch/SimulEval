@@ -109,6 +109,8 @@ class SpeechToTextDataloader(GenericDataloader):
     def from_args(cls, args: Namespace):
         args.source_type = "speech"
         args.target_type = "text"
+        if args.demo:
+            return cls([], [], [])
         return cls.from_files(args.source, args.target, args.tgt_lang)
 
 
