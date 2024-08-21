@@ -12,7 +12,7 @@ import numpy as np
 import pyaudio
 
 sys.path.append("..")
-from simuleval.data.segments import Segment, segment_from_json_string
+from simuleval.data.segments import Segment, segment_from_json_string, SpeechSegment
 from simuleval.evaluator import SentenceLevelEvaluator
 import requests
 
@@ -65,15 +65,16 @@ class DemoRemote(RemoteEvaluator):
     def __init__(self, evaluator: SentenceLevelEvaluator) -> None:
         super().__init__(evaluator)
         self.float_array = np.asarray([])
+        self.sample_rate = 22050
 
-    def record_audio(self):
+    def record_audio(self, counter):
         CHUNK = 1024
         FORMAT = pyaudio.paInt16
         CHANNELS = 1 if sys.platform == "darwin" else 2
-        RATE = 22050
+        RATE = self.sample_rate
         RECORD_SECONDS = self.source_segment_size / 1000
 
-        with wave.open("output.wav", "wb") as wf:
+        with wave.open(f"output{counter}.wav", "wb") as wf:
             p = pyaudio.PyAudio()
             wf.setnchannels(CHANNELS)
             wf.setsampwidth(p.get_sample_size(FORMAT))
@@ -81,20 +82,33 @@ class DemoRemote(RemoteEvaluator):
 
             stream = p.open(format=FORMAT, channels=CHANNELS, rate=RATE, input=True)
 
-            print("Recording...")
             for _ in range(0, round(RATE // CHUNK * RECORD_SECONDS)):
                 data = stream.read(CHUNK)
                 wf.writeframes(data)
 
-                self.float_array = byte_to_float(data)
-            print("Done")
+                self.float_array = byte_to_float(data).tolist()
 
             stream.close()
             p.terminate()
 
     def remote_eval(self):
         self.system_reset()
-        self.record_audio()
+        print("Recording...")
+        counter = 0
+        while True:
+            self.record_audio(counter)
+            counter += 1
+            segment = SpeechSegment(
+                index=self.source_segment_size,
+                content=self.float_array,
+                sample_rate=self.sample_rate,
+                finished=False,
+            )
+            self.send_source(segment)
+            output_segment = self.receive_prediction()
+            prediction_list = str(output_segment.content.replace(" ", ""))
+            print(prediction_list, end=" ")
+            sys.stdout.flush()
 
 
 def pcm2float(sig, dtype="float32"):
