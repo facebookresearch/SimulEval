@@ -7,10 +7,13 @@
 import sys
 import logging
 
+import wave
+import numpy as np
+import pyaudio
+
 sys.path.append("..")
 from simuleval.data.segments import Segment, segment_from_json_string
 from simuleval.evaluator import SentenceLevelEvaluator
-from examples.speech_to_text.demo_remote import DemoRemote
 import requests
 
 logger = logging.getLogger("simuleval.remote_evaluator")
@@ -23,7 +26,6 @@ class RemoteEvaluator:
         self.port = evaluator.args.remote_port
         self.source_segment_size = evaluator.args.source_segment_size
         self.base_url = f"http://{self.address}:{self.port}"
-        self.is_demo = evaluator.args.demo
 
     def send_source(self, segment: Segment):
         url = f"{self.base_url}/input"
@@ -41,11 +43,6 @@ class RemoteEvaluator:
         return self.evaluator.results()
 
     def remote_eval(self):
-        if self.is_demo:
-            demo = DemoRemote(self.source_segment_size / 1000)  # ms -> s
-            demo.record_audio()
-            return
-
         for instance in self.evaluator.iterator:
             self.system_reset()
             while not instance.finish_prediction:
@@ -62,3 +59,59 @@ class RemoteEvaluator:
             self.evaluator.write_log(instance)
 
         self.evaluator.dump_results()
+
+
+class DemoRemote(RemoteEvaluator):
+    def __init__(self, evaluator: SentenceLevelEvaluator) -> None:
+        super().__init__(evaluator)
+        self.float_array = np.asarray([])
+
+    def record_audio(self):
+        CHUNK = 1024
+        FORMAT = pyaudio.paInt16
+        CHANNELS = 1 if sys.platform == "darwin" else 2
+        RATE = 22050
+        RECORD_SECONDS = self.source_segment_size / 1000
+
+        with wave.open("output.wav", "wb") as wf:
+            p = pyaudio.PyAudio()
+            wf.setnchannels(CHANNELS)
+            wf.setsampwidth(p.get_sample_size(FORMAT))
+            wf.setframerate(RATE)
+
+            stream = p.open(format=FORMAT, channels=CHANNELS, rate=RATE, input=True)
+
+            print("Recording...")
+            for _ in range(0, round(RATE // CHUNK * RECORD_SECONDS)):
+                data = stream.read(CHUNK)
+                wf.writeframes(data)
+
+                self.float_array = byte_to_float(data)
+            print("Done")
+
+            stream.close()
+            p.terminate()
+
+    def remote_eval(self):
+        self.system_reset()
+        self.record_audio()
+
+
+def pcm2float(sig, dtype="float32"):
+    sig = np.asarray(sig)
+    if sig.dtype.kind not in "iu":
+        raise TypeError("'sig' must be an array of integers")
+    dtype = np.dtype(dtype)
+    if dtype.kind != "f":
+        raise TypeError("'dtype' must be a floating point type")
+
+    # pcm (16 bit) min = -32768, max = 32767, map it to -1 to 1 by dividing by max (32767)
+    i = np.iinfo(sig.dtype)
+    abs_max = 2 ** (i.bits - 1)
+    offset = i.min + abs_max
+    return (sig.astype(dtype) - offset) / abs_max
+
+
+def byte_to_float(byte):
+    # byte -> int16(PCM_16) -> float32
+    return pcm2float(np.frombuffer(byte, dtype=np.int16), dtype="float32")
