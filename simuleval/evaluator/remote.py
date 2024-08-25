@@ -6,12 +6,14 @@
 
 import sys
 import logging
+import threading
+import time
+from queue import Queue
 
 import wave
 import numpy as np
 import pyaudio
 
-sys.path.append("..")
 from simuleval.data.segments import Segment, segment_from_json_string, SpeechSegment
 from simuleval.evaluator import SentenceLevelEvaluator
 import requests
@@ -66,6 +68,8 @@ class DemoRemote(RemoteEvaluator):
         super().__init__(evaluator)
         self.float_array = np.asarray([])
         self.sample_rate = 22050
+        self.finished = False
+        self.queue = Queue(maxsize=0)
 
     def record_audio(self, counter):
         CHUNK = 1024
@@ -91,24 +95,84 @@ class DemoRemote(RemoteEvaluator):
             stream.close()
             p.terminate()
 
+    def read_from_audio(self):
+        CHUNK = 1024
+        with wave.open("test.wav", "rb") as wf:
+            # Instantiate PyAudio and initialize PortAudio system resources (1)
+            p = pyaudio.PyAudio()
+            # Open stream (2)
+            stream = p.open(
+                format=p.get_format_from_width(wf.getsampwidth()),
+                channels=wf.getnchannels(),
+                rate=wf.getframerate(),
+                output=True,
+            )
+            # Play samples from the wave file (3)
+            all_data = bytearray()
+            start = time.time()
+            while len(data := wf.readframes(CHUNK)):  # Requires Python 3.8+ for :=
+                stream.write(data)
+                all_data += data
+                if time.time() - start > 0.5:
+                    self.queue.put(all_data)
+                    all_data = bytearray()
+                    start = time.time()
+                    # print("inside", self.queue.qsize())
+
+            self.queue.put(all_data)
+            # print("inside", self.queue.qsize())
+
+            # Close stream (4)
+            stream.close()
+            # Release PortAudio system resources (5)
+            p.terminate()
+            self.finished = True
+            # import pdb
+
+            # pdb.set_trace()
+
     def remote_eval(self):
+        # Initialization
         self.system_reset()
-        print("Recording...")
-        counter = 0
-        while True:
-            self.record_audio(counter)
-            counter += 1
+        recording = threading.Thread(target=self.read_from_audio)
+        recording.start()
+
+        while not self.finished or not self.queue.empty():
+            # print(self.queue.qsize())
+            data = byte_to_float(self.queue.get()).tolist()
+            # print(self.queue.qsize())
             segment = SpeechSegment(
                 index=self.source_segment_size,
-                content=self.float_array,
+                content=data,
                 sample_rate=self.sample_rate,
                 finished=False,
             )
             self.send_source(segment)
             output_segment = self.receive_prediction()
+            # import pdb
+
+            # pdb.set_trace()
             prediction_list = str(output_segment.content.replace(" ", ""))
             print(prediction_list, end=" ")
             sys.stdout.flush()
+            # time.sleep(1)
+
+        # print("Recording...")
+        # counter = 0
+        # while True:
+        #     self.record_audio(counter)
+        #     counter += 1
+        #     segment = SpeechSegment(
+        #         index=self.source_segment_size,
+        #         content=self.float_array,
+        #         sample_rate=self.sample_rate,
+        #         finished=False,
+        #     )
+        #     self.send_source(segment)
+        #     output_segment = self.receive_prediction()
+        #     prediction_list = str(output_segment.content.replace(" ", ""))
+        #     print(prediction_list, end=" ")
+        #     sys.stdout.flush()
 
 
 def pcm2float(sig, dtype="float32"):
