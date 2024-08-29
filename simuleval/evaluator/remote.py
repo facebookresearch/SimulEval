@@ -71,14 +71,14 @@ class DemoRemote(RemoteEvaluator):
         self.finished = False
         self.queue = Queue(maxsize=0)
 
-    def record_audio(self, counter):
+    def record_audio(self):
         CHUNK = 1024
         FORMAT = pyaudio.paInt16
         CHANNELS = 1 if sys.platform == "darwin" else 2
         RATE = self.sample_rate
-        RECORD_SECONDS = self.source_segment_size / 1000
+        RECORD_SECONDS = 100
 
-        with wave.open(f"output{counter}.wav", "wb") as wf:
+        with wave.open(f"output.wav", "wb") as wf:
             p = pyaudio.PyAudio()
             wf.setnchannels(CHANNELS)
             wf.setsampwidth(p.get_sample_size(FORMAT))
@@ -86,14 +86,22 @@ class DemoRemote(RemoteEvaluator):
 
             stream = p.open(format=FORMAT, channels=CHANNELS, rate=RATE, input=True)
 
+            all_data = bytearray()
+            start = time.time()
             for _ in range(0, round(RATE // CHUNK * RECORD_SECONDS)):
                 data = stream.read(CHUNK)
                 wf.writeframes(data)
+                all_data += data
+                if time.time() - start > 0.5:
+                    self.queue.put(all_data)
+                    all_data = bytearray()
+                    start = time.time()
 
-                self.float_array = byte_to_float(data).tolist()
+            self.queue.put(all_data)
 
             stream.close()
             p.terminate()
+            self.finished = True
 
     def read_from_audio(self):
         CHUNK = 1024
@@ -134,45 +142,46 @@ class DemoRemote(RemoteEvaluator):
     def remote_eval(self):
         # Initialization
         self.system_reset()
-        recording = threading.Thread(target=self.read_from_audio)
+        recording = threading.Thread(target=self.record_audio)
         recording.start()
 
+        # while not self.finished or not self.queue.empty():
+        #     # print(self.queue.qsize())
+        #     data = byte_to_float(self.queue.get()).tolist()
+        #     # print(self.queue.qsize())
+        #     segment = SpeechSegment(
+        #         index=self.source_segment_size,
+        #         content=data,
+        #         sample_rate=self.sample_rate,
+        #         finished=False,
+        #     )
+        #     self.send_source(segment)
+        #     output_segment = self.receive_prediction()
+        #     # import pdb
+
+        #     # pdb.set_trace()
+        #     prediction_list = str(output_segment.content.replace(" ", ""))
+        #     print(prediction_list, end=" ")
+        #     sys.stdout.flush()
+        #     # time.sleep(1)
+
+        print("Recording...")
         while not self.finished or not self.queue.empty():
-            # print(self.queue.qsize())
             data = byte_to_float(self.queue.get()).tolist()
-            # print(self.queue.qsize())
             segment = SpeechSegment(
                 index=self.source_segment_size,
                 content=data,
                 sample_rate=self.sample_rate,
                 finished=False,
             )
+            # Send to VAD
+            # 1. At the beginning, if sound, send to model. If no sound, skip segment (if not then hallucinations)
+            # 2. At the end of sentence (VAD), reset model (finished=True)
             self.send_source(segment)
             output_segment = self.receive_prediction()
-            # import pdb
-
-            # pdb.set_trace()
             prediction_list = str(output_segment.content.replace(" ", ""))
             print(prediction_list, end=" ")
             sys.stdout.flush()
-            # time.sleep(1)
-
-        # print("Recording...")
-        # counter = 0
-        # while True:
-        #     self.record_audio(counter)
-        #     counter += 1
-        #     segment = SpeechSegment(
-        #         index=self.source_segment_size,
-        #         content=self.float_array,
-        #         sample_rate=self.sample_rate,
-        #         finished=False,
-        #     )
-        #     self.send_source(segment)
-        #     output_segment = self.receive_prediction()
-        #     prediction_list = str(output_segment.content.replace(" ", ""))
-        #     print(prediction_list, end=" ")
-        #     sys.stdout.flush()
 
 
 def pcm2float(sig, dtype="float32"):
