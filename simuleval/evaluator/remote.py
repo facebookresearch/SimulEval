@@ -13,8 +13,14 @@ from queue import Queue
 import wave
 import numpy as np
 import pyaudio
+from silero_vad import load_silero_vad, read_audio, get_speech_timestamps
 
-from simuleval.data.segments import Segment, segment_from_json_string, SpeechSegment
+from simuleval.data.segments import (
+    Segment,
+    segment_from_json_string,
+    SpeechSegment,
+    EmptySegment,
+)
 from simuleval.evaluator import SentenceLevelEvaluator
 import requests
 
@@ -67,16 +73,18 @@ class DemoRemote(RemoteEvaluator):
     def __init__(self, evaluator: SentenceLevelEvaluator) -> None:
         super().__init__(evaluator)
         self.float_array = np.asarray([])
-        self.sample_rate = 22050
+        self.sample_rate = 16000
         self.finished = False
         self.queue = Queue(maxsize=0)
+        self.VADmodel = load_silero_vad()
+        self.silence_count = 0
 
     def record_audio(self):
         CHUNK = 1024
         FORMAT = pyaudio.paInt16
         CHANNELS = 1 if sys.platform == "darwin" else 2
         RATE = self.sample_rate
-        RECORD_SECONDS = 100
+        RECORD_SECONDS = 10000  # Indefinite time
 
         with wave.open(f"output.wav", "wb") as wf:
             p = pyaudio.PyAudio()
@@ -92,52 +100,15 @@ class DemoRemote(RemoteEvaluator):
                 data = stream.read(CHUNK)
                 wf.writeframes(data)
                 all_data += data
-                if time.time() - start > 0.5:
+                if time.time() - start > (self.source_segment_size / 1000.0):
                     self.queue.put(all_data)
                     all_data = bytearray()
                     start = time.time()
 
             self.queue.put(all_data)
-
             stream.close()
             p.terminate()
             self.finished = True
-
-    def read_from_audio(self):
-        CHUNK = 1024
-        with wave.open("test.wav", "rb") as wf:
-            # Instantiate PyAudio and initialize PortAudio system resources (1)
-            p = pyaudio.PyAudio()
-            # Open stream (2)
-            stream = p.open(
-                format=p.get_format_from_width(wf.getsampwidth()),
-                channels=wf.getnchannels(),
-                rate=wf.getframerate(),
-                output=True,
-            )
-            # Play samples from the wave file (3)
-            all_data = bytearray()
-            start = time.time()
-            while len(data := wf.readframes(CHUNK)):  # Requires Python 3.8+ for :=
-                stream.write(data)
-                all_data += data
-                if time.time() - start > 0.5:
-                    self.queue.put(all_data)
-                    all_data = bytearray()
-                    start = time.time()
-                    # print("inside", self.queue.qsize())
-
-            self.queue.put(all_data)
-            # print("inside", self.queue.qsize())
-
-            # Close stream (4)
-            stream.close()
-            # Release PortAudio system resources (5)
-            p.terminate()
-            self.finished = True
-            # import pdb
-
-            # pdb.set_trace()
 
     def remote_eval(self):
         # Initialization
@@ -145,43 +116,39 @@ class DemoRemote(RemoteEvaluator):
         recording = threading.Thread(target=self.record_audio)
         recording.start()
 
-        # while not self.finished or not self.queue.empty():
-        #     # print(self.queue.qsize())
-        #     data = byte_to_float(self.queue.get()).tolist()
-        #     # print(self.queue.qsize())
-        #     segment = SpeechSegment(
-        #         index=self.source_segment_size,
-        #         content=data,
-        #         sample_rate=self.sample_rate,
-        #         finished=False,
-        #     )
-        #     self.send_source(segment)
-        #     output_segment = self.receive_prediction()
-        #     # import pdb
-
-        #     # pdb.set_trace()
-        #     prediction_list = str(output_segment.content.replace(" ", ""))
-        #     print(prediction_list, end=" ")
-        #     sys.stdout.flush()
-        #     # time.sleep(1)
-
+        # Start recording
         print("Recording...")
         while not self.finished or not self.queue.empty():
             data = byte_to_float(self.queue.get()).tolist()
-            segment = SpeechSegment(
-                index=self.source_segment_size,
-                content=data,
-                sample_rate=self.sample_rate,
-                finished=False,
+            # VAD
+            speech_timestamps = get_speech_timestamps(
+                audio=data, model=self.VADmodel, sampling_rate=self.sample_rate
             )
-            # Send to VAD
-            # 1. At the beginning, if sound, send to model. If no sound, skip segment (if not then hallucinations)
-            # 2. At the end of sentence (VAD), reset model (finished=True)
-            self.send_source(segment)
-            output_segment = self.receive_prediction()
-            prediction_list = str(output_segment.content.replace(" ", ""))
-            print(prediction_list, end=" ")
-            sys.stdout.flush()
+            if len(speech_timestamps) != 0:  # has audio
+                segment = SpeechSegment(
+                    index=self.source_segment_size,
+                    content=data,
+                    sample_rate=self.sample_rate,
+                    finished=False,
+                )
+                self.send_source(segment)
+                output_segment = self.receive_prediction()
+                prediction_list = str(output_segment.content.replace(" ", ""))
+                print(prediction_list, end=" ")
+                sys.stdout.flush()
+                self.silence_count = 0
+
+            else:
+                self.silence_count += 1
+                if (
+                    self.silence_count >= 6
+                ):  # if more than 3 seconds of silence (6 * 500ms), start a new sentence
+                    segment = EmptySegment(
+                        index=self.source_segment_size,
+                        finished=True,
+                    )
+                    self.send_source(segment)
+                    self.silence_count = 0
 
 
 def pcm2float(sig, dtype="float32"):
