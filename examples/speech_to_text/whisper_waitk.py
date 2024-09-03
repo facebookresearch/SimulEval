@@ -48,6 +48,7 @@ class WaitkWhisper(SpeechToTextAgent):
         )
 
     def policy(self, states: Optional[AgentStates] = None):
+        print(states)
         if states is None:
             states = self.states
 

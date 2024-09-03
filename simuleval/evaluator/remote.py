@@ -124,7 +124,13 @@ class DemoRemote(RemoteEvaluator):
             speech_timestamps = get_speech_timestamps(
                 audio=data, model=self.VADmodel, sampling_rate=self.sample_rate
             )
+
             if len(speech_timestamps) != 0:  # has audio
+                self.silence_count = 0
+            else:
+                self.silence_count += 1
+
+            if self.silence_count <= 4:
                 segment = SpeechSegment(
                     index=self.source_segment_size,
                     content=data,
@@ -133,22 +139,22 @@ class DemoRemote(RemoteEvaluator):
                 )
                 self.send_source(segment)
                 output_segment = self.receive_prediction()
+                if len(output_segment.content) == 0:
+                    continue
                 prediction_list = str(output_segment.content.replace(" ", ""))
                 print(prediction_list, end=" ")
                 sys.stdout.flush()
-                self.silence_count = 0
 
             else:
-                self.silence_count += 1
-                if (
-                    self.silence_count >= 6
-                ):  # if more than 3 seconds of silence (6 * 500ms), start a new sentence
-                    segment = EmptySegment(
-                        index=self.source_segment_size,
-                        finished=True,
-                    )
-                    self.send_source(segment)
-                    self.silence_count = 0
+                segment = SpeechSegment(
+                    index=self.source_segment_size,
+                    content=[0.0, 0.0],
+                    sample_rate=self.sample_rate,
+                    finished=True,
+                )
+                self.send_source(segment)
+                output_segment = self.receive_prediction()
+                self.silence_count = 0
 
 
 def pcm2float(sig, dtype="float32"):
