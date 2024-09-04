@@ -9,11 +9,16 @@ import logging
 import threading
 import time
 from queue import Queue
-
-import wave
 import numpy as np
-import pyaudio
-from silero_vad import load_silero_vad, read_audio, get_speech_timestamps
+
+try:
+    import wave
+    import pyaudio
+    from silero_vad import load_silero_vad, read_audio, get_speech_timestamps
+except:
+    wave, pyaudio, load_silero_vad, read_audio, get_speech_timestamps = [
+        None for _ in range(5)
+    ]
 
 from simuleval.data.segments import (
     Segment,
@@ -71,6 +76,10 @@ class RemoteEvaluator:
 
 class DemoRemote(RemoteEvaluator):
     def __init__(self, evaluator: SentenceLevelEvaluator) -> None:
+        if None in [wave, pyaudio, load_silero_vad, read_audio, get_speech_timestamps]:
+            raise Exception(
+                "Please install wave, pyaudio, and silero_vad to run the demo"
+            )
         super().__init__(evaluator)
         self.float_array = np.asarray([])
         self.sample_rate = 16000
