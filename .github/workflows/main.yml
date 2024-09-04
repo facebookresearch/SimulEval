@@ -26,6 +26,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install libsndfile1
+          sudo apt-get install portaudio19-dev
           python -m pip install --upgrade pip==24.0
           pip install flake8 pytest black
           pip install g2p-en
