@@ -148,7 +148,7 @@ class DemoRemote(RemoteEvaluator):
             else:
                 segment = SpeechSegment(
                     index=self.source_segment_size,
-                    content=[0.0, 0.0],
+                    content=[0.0 for _ in range(8192)],
                     sample_rate=self.sample_rate,
                     finished=True,
                 )

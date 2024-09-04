@@ -62,3 +62,17 @@ WER     LAAL    AL      AP      DAL     ATD
 ```
 
 This agent can also perform S2T task, by adding `--task translate`.
+
+### Streaming Speech-to-Text Demo
+
+A streaming speech to text demo feature, taking input from user's microphone, sending it to Whisper's wait-k model, and displaying the prediction texts in the terminal.
+
+1. Kick off a remote agent. More information [Remote_agent](../../docs/tutorials/remote_evaluation.rst)
+2. Enter demo mode by providing a desired segment size (usually 500ms):
+
+```bash
+simuleval --remote-eval --demo --source-segment-size 500 --remote-port 8888
+```
+
+3. Speak into the microphone and watch the live transcription!
+4. Press ^c (Control C) to exit the program in terminal
