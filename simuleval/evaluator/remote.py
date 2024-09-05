@@ -164,6 +164,7 @@ class DemoRemote(RemoteEvaluator):
                 self.send_source(segment)
                 output_segment = self.receive_prediction()
                 self.silence_count = 0
+                self.system_reset()
 
 
 def pcm2float(sig, dtype="float32"):
