@@ -26,13 +26,14 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install libsndfile1
+          sudo apt-get install portaudio19-dev
           python -m pip install --upgrade pip==24.0
           pip install flake8 pytest black
           pip install g2p-en
           pip install huggingface-hub
           pip install fairseq
           pip install sentencepiece
-          pip install openai-whisper editdistance
+          pip install openai-whisper editdistance pyaudio silero-vad
           pip install -e .
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           python -c "import nltk; nltk.download('averaged_perceptron_tagger_eng')"

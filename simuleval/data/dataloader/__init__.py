@@ -29,7 +29,9 @@ def build_dataloader(args: Namespace) -> GenericDataloader:
         assert dataloader_key in DATALOADER_DICT, f"{dataloader_key} is not defined"
         logger.info(f"Evaluating from dataloader {dataloader_key}.")
         return DATALOADER_DICT[dataloader_key].from_args(args)
-
+    if args.demo:
+        args.source_type = "speech"
+        args.target_type = "text"
     assert args.source_type in SUPPORTED_SOURCE_MEDIUM
     assert args.target_type in SUPPORTED_TARGET_MEDIUM
 

@@ -6,6 +6,7 @@
 
 from .evaluator import SentenceLevelEvaluator
 from .remote import RemoteEvaluator
+from .remote import DemoRemote
 
 
 def build_evaluator(args):
@@ -13,4 +14,6 @@ def build_evaluator(args):
 
 
 def build_remote_evaluator(args):
+    if args.demo:
+        return DemoRemote(build_evaluator(args))
     return RemoteEvaluator(build_evaluator(args))

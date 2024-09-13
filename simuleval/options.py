@@ -241,6 +241,12 @@ def general_parser(
         default=False,
         help="Create visualization graphs",
     )
+    parser.add_argument(
+        "--demo",
+        action="store_true",
+        default=False,
+        help="Live remote speech to text demonstration in terminal",
+    )
 
     return parser
 
