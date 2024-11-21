@@ -44,7 +44,7 @@ class Instance(object):
         self.dataloader = dataloader
         if self.dataloader is not None:
             self.source = self.dataloader[self.index]["source"]
-            self.reference = self.dataloader[self.index]["target"]
+            self.reference = self.dataloader[self.index]["target"].strip()
             self.tgt_lang = self.dataloader[self.index]["tgt_lang"]
 
         self.reset()
